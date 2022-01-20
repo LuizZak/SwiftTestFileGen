@@ -11,9 +11,17 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     progress?.report({ message: "Finding Swift package..." });
 
     const expandedFileUris = await expandSwiftFoldersInUris(fileUris);
+    const swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
+
+    if (swiftFiles.length === 0) {
+        vscode.window.showWarningMessage("No .swift files found in selection");
+
+        return [];
+    }
+
     const needsConfirmation = await shouldRequestConfirmation(fileUris, confirmationMode);
 
-    const packagePaths = await Promise.all(expandedFileUris.map((fileUri) => {
+    const packagePaths = await Promise.all(swiftFiles.map((fileUri) => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
@@ -51,7 +59,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     progress?.report({ message: "Generating test files..." });
 
-    const result = suggestTestFiles(expandedFileUris, packagePath, pkg);
+    const result = suggestTestFiles(swiftFiles, packagePath, pkg);
 
     // Emit diagnostics
     emitDiagnostics(result[1]);
