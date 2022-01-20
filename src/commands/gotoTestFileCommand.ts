@@ -3,7 +3,7 @@ import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { fileExists } from '../fileDiskUtils';
 import { generateTestFilesEntry } from '../frontend';
 import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
-import { proposeTestFiles } from '../testFileGeneration';
+import { suggestTestFiles } from '../testFileGeneration';
 
 export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active) {
     const pkgPath = await findSwiftPackagePath(fileUri);
@@ -15,7 +15,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
     const pkg = await swiftPackageManifestForFile(fileUri);
     const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
 
-    const [files, diagnostics] = proposeTestFiles([fileUri], pkgRoot, pkg);
+    const [files, diagnostics] = suggestTestFiles([fileUri], pkgRoot, pkg);
 
     // Emit diagnostics
     emitDiagnostics(diagnostics);

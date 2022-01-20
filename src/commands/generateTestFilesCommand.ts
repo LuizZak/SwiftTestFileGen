@@ -1,7 +1,7 @@
 import path = require('path');
 import * as vscode from 'vscode';
 import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
-import { proposeTestFiles } from '../testFileGeneration';
+import { suggestTestFiles } from '../testFileGeneration';
 import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
@@ -51,7 +51,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     progress?.report({ message: "Generating test files..." });
 
-    const result = proposeTestFiles(expandedFileUris, packagePath, pkg);
+    const result = suggestTestFiles(expandedFileUris, packagePath, pkg);
 
     // Emit diagnostics
     emitDiagnostics(result[1]);
