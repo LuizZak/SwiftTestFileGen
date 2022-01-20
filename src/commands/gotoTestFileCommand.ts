@@ -1,3 +1,4 @@
+import path = require('path');
 import * as vscode from 'vscode';
 import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { fileExists } from '../fileDiskUtils';
@@ -32,7 +33,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
         await vscode.window.showTextDocument(document, { viewColumn });
     } else {
         const response = await vscode.window.showInformationMessage(
-            "Test file not found. Would you like to generate a test file now?",
+            `Test file for ${path.basename(fileUri.fsPath)} not found. Would you like to generate a test file now?`,
             "Yes",
             "No"
         );

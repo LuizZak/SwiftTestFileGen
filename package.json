@@ -31,12 +31,13 @@
 		"commands": [
 			{
 				"command": "swifttestfilegen.generateTestFiles",
-				"title": "Generate Test File(s)"
+				"title": "SwiftTestFileGen: Generate Test File(s)...",
+				"shortTitle": "Generate Test File(s)..."
 			},
 			{
 				"command": "swifttestfilegen.gotoTestFile",
-				"title": "SwiftTestFileGen: Go to Test File",
-				"shortTitle": "Go to Test File"
+				"title": "SwiftTestFileGen: Go to Test File...",
+				"shortTitle": "Go to Test File..."
 			}
 		],
 		"menus": {
