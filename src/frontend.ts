@@ -22,8 +22,8 @@ export async function gotoTestFileEntry(fileUri: vscode.Uri) {
     vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: "Going to test file..."
-    }, (_progress) => {
+    }, (progress, cancellation) => {
 
-        return gotoTestFileCommand(fileUri);
+        return gotoTestFileCommand(fileUri, vscode.ViewColumn.Active, progress, cancellation);
     });
 }

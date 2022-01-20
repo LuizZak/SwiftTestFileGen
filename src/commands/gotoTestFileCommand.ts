@@ -7,7 +7,9 @@ import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPacka
 import { isTestFile } from '../swiftPackageUtils';
 import { suggestTestFiles } from '../testFileGeneration';
 
-export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active) {
+export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress: vscode.Progress<{ message?: string }> | null = null, cancellation: vscode.CancellationToken | undefined = undefined) {
+    progress?.report({ message: "Finding Swift package..." });
+
     const pkgPath = await findSwiftPackagePath(fileUri);
     if (pkgPath === null) {
         vscode.window.showErrorMessage("Cannot find Package.swift manifest for the current workspace.");
@@ -15,6 +17,11 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
     }
 
     const pkg = await swiftPackageManifestForFile(fileUri);
+
+    if (cancellation?.isCancellationRequested) {
+        throw new vscode.CancellationError();
+    }
+
     const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
 
     if (isTestFile(fileUri, pkgRoot, pkg)) {
@@ -44,6 +51,10 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
             "No"
         );
 
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
+        }
+    
         if (response === "Yes") {
             await generateTestFilesEntry([fileUri]);
         }
