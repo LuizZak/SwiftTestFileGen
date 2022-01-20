@@ -1,24 +1,16 @@
 import * as vscode from 'vscode';
 import { generateTestFilesCommand } from './commands/generateTestFilesCommand';
 
-export function activate(context: vscode.ExtensionContext) {
-	console.log('Congratulations, your extension "swifttestgen" is now active!');
-
+export async function activate(context: vscode.ExtensionContext) {
 	let disposable: vscode.Disposable;
 
 	disposable = vscode.commands.registerCommand('swifttestgen.generateTestFiles', async (_, fileUris: vscode.Uri[]) => {
 		vscode.window.withProgress({
 			location: vscode.ProgressLocation.Notification,
 			title: "Generating test files..."
-		}, (_progress) => {
-			return generateTestFilesCommand(fileUris);
+		}, (_progress, cancellation) => {
+			return generateTestFilesCommand(fileUris, cancellation);
 		});
 	});
 	context.subscriptions.push(disposable);
-}
-
-async function findExtensionFolders(): Promise<vscode.Uri[]> {
-	
-
-	return [];
 }

@@ -4,9 +4,14 @@ import * as fs from 'fs';
 import { findSwiftPackage, swiftPackageManifestForFile } from '../swiftPackageFinder';
 import { proposeTestFiles } from '../testFileGeneration';
 import { TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
+import { SwiftPackageManifest } from '../data/swiftPackage';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[]) {
+export async function generateTestFilesCommand(fileUris: vscode.Uri[], cancellation: vscode.CancellationToken | undefined = undefined) {
     const packagePaths = await Promise.all(fileUris.map((fileUri) => {
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
+        }
+
         return findSwiftPackage(fileUri);
     }));
 
@@ -18,6 +23,10 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[]) {
         return [path];
     });
 
+    if(cancellation?.isCancellationRequested) {
+        throw new vscode.CancellationError();
+    }
+
     if (filteredPackagePaths.length === 0) {
         vscode.window.showWarningMessage('Did not find a Package.swift manifest to derive test paths from for the selected files!');
         return;
@@ -26,27 +35,41 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[]) {
     const packageManifestPath = filteredPackagePaths[0];
     const packagePath = vscode.Uri.joinPath(packageManifestPath, "..");
 
+    let pkg: SwiftPackageManifest;
     try {
-        const pkg = await swiftPackageManifestForFile(packageManifestPath);
-        const result = proposeTestFiles(fileUris, packagePath, pkg);
-
-        // Emit diagnostics
-        emitDiagnostics(result[1]);
-
-        const testFiles =
-            result[0]
-                .filter(testFile => !fs.existsSync(testFile.path.fsPath));
-
-        const wsEdit = new vscode.WorkspaceEdit();
-
-        testFiles.forEach(file => {
-            wsEdit.createFile(file.path);
-            wsEdit.insert(file.path, new vscode.Position(0, 0), file.contents);
-        });
-
-        await vscode.workspace.applyEdit(wsEdit);
+        pkg = await swiftPackageManifestForFile(packageManifestPath, cancellation);
     } catch (err) {
         vscode.window.showErrorMessage(`Error while loading package manifest @ ${packageManifestPath.fsPath}: ${err}`);
+        return;
+    }
+
+    const result = proposeTestFiles(fileUris, packagePath, pkg);
+
+    // Emit diagnostics
+    emitDiagnostics(result[1]);
+
+    const testFiles = result[0];
+    const wsEdit = new vscode.WorkspaceEdit();
+
+    for(const testFile of testFiles) {
+        try {
+            await vscode.workspace.fs.stat(testFile.path);
+            // Ignore files that already exist
+        } catch {
+            wsEdit.createFile(testFile.path, {ignoreIfExists: true});
+            wsEdit.insert(testFile.path, new vscode.Position(0, 0), testFile.contents);
+        }
+    }
+
+    if (cancellation?.isCancellationRequested) {
+        throw new vscode.CancellationError();
+    }
+
+    await vscode.workspace.applyEdit(wsEdit);
+    
+    // Move focus to first file created
+    if (testFiles.length > 0) {
+        
     }
 }
 
