@@ -7,7 +7,7 @@
 		"vscode": "^1.63.0"
 	},
 	"categories": [
-		"Other"
+		"Testing", "Other"
 	],
 	"activationEvents": [
 		"workspaceContains:**/Package.swift"
