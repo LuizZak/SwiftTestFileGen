@@ -1,4 +1,4 @@
-# swifttestfilegen for Visual Studio Code
+# SwiftTestFileGen for Visual Studio Code
 
 An extension for Visual Studio Code that adds a shortcut for generating test files for Swift Package Manager projects.
 
