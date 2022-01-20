@@ -4,6 +4,7 @@ import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { fileExists } from '../fileDiskUtils';
 import { generateTestFilesEntry } from '../frontend';
 import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
+import { isTestFile } from '../swiftPackageUtils';
 import { suggestTestFiles } from '../testFileGeneration';
 
 export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active) {
@@ -15,6 +16,11 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
 
     const pkg = await swiftPackageManifestForFile(fileUri);
     const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
+
+    if (isTestFile(fileUri, pkgRoot, pkg)) {
+        vscode.window.showInformationMessage("Already in a test file!");
+        return;
+    }
 
     const [files, diagnostics] = suggestTestFiles([fileUri], pkgRoot, pkg);
 

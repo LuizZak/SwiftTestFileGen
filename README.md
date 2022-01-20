@@ -30,6 +30,10 @@ This extension contributes the following settings:
 
 A Package.swift is required on the workspace for the extension to find source and test files properly.
 
+## TODO
+
+Add support for going back from a Tests/ file to a Sources/ file to compliment the Sources -> Tests command.
+
 ## Release Notes
 
 ### 0.0.1
