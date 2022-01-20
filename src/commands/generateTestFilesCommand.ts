@@ -6,13 +6,16 @@ import { TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFi
 import { SwiftPackageManifest } from '../data/swiftPackage';
 
 export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfirm: boolean = false, cancellation: vscode.CancellationToken | undefined = undefined) {
-    const packagePaths = await Promise.all(fileUris.map((fileUri) => {
+    const expandedFileUris = await expandSwiftFoldersInUris(fileUris);
+
+    const packagePaths = await Promise.all(expandedFileUris.map((fileUri) => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
 
         return findSwiftPackage(fileUri);
     }));
+
 
     // TODO: Handle cases where multiple package manifests where found.
     const filteredPackagePaths = packagePaths.flatMap(path => {
@@ -22,7 +25,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
         return [path];
     });
 
-    if(cancellation?.isCancellationRequested) {
+    if (cancellation?.isCancellationRequested) {
         throw new vscode.CancellationError();
     }
 
@@ -42,7 +45,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
         return;
     }
 
-    const result = proposeTestFiles(fileUris, packagePath, pkg);
+    const result = proposeTestFiles(expandedFileUris, packagePath, pkg);
 
     // Emit diagnostics
     emitDiagnostics(result[1]);
@@ -50,13 +53,13 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
     const testFiles = result[0];
     const wsEdit = new vscode.WorkspaceEdit();
 
-    for(const testFile of testFiles) {
+    for (const testFile of testFiles) {
         try {
             await vscode.workspace.fs.stat(testFile.path);
             // Ignore files that already exist
             continue;
         } catch {
-            
+
         }
 
         const createFileMetadata: vscode.WorkspaceEditEntryMetadata = {
@@ -68,7 +71,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
             label: "Insert boilerplate code for test file"
         };
 
-        wsEdit.createFile(testFile.path, {ignoreIfExists: true}, createFileMetadata);
+        wsEdit.createFile(testFile.path, { ignoreIfExists: true }, createFileMetadata);
         wsEdit.insert(testFile.path, new vscode.Position(0, 0), testFile.contents, insertMetadata);
     }
 
@@ -77,10 +80,10 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
     }
 
     await vscode.workspace.applyEdit(wsEdit);
-    
+
     // Move focus to first file created
     if (testFiles.length > 0) {
-        
+
     }
 }
 
@@ -101,7 +104,32 @@ function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
 
         vscode.window.showWarningMessage(
             "One or more files where not contained within a recognized Sources/ folder:",
-            {detail: filePaths}
+            { detail: filePaths }
         );
     }
+}
+
+/**
+ * Returns a new list of of filesystem Uris by expanding folders in the input list to all .swift files
+ * contained within the folders.
+ */
+async function expandSwiftFoldersInUris(fileUris: vscode.Uri[]): Promise<vscode.Uri[]> {
+    const promises = fileUris.map(async (fileUri) => {
+        const stat = await vscode.workspace.fs.stat(fileUri);
+        
+        switch (stat.type) {
+            case vscode.FileType.File:
+                return [fileUri];
+
+            case vscode.FileType.Directory:
+                const pattern = new vscode.RelativePattern(fileUri, "**/*.swift");
+                const files = await vscode.workspace.findFiles(pattern);
+
+                return files;
+        }
+
+        return [];
+    });
+    
+    return (await Promise.all(promises)).flat();
 }
