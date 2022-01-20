@@ -6,14 +6,14 @@ import { SwiftTestFile } from './data/swiftTestFile';
 import { isSubdirectory, rootDirectoryOfRelativePath } from './pathUtils';
 
 /**
- * Proposes test files for a list of .swift file paths.
+ * Returns a set of suggested test files for a list of .swift file paths.
  * 
  * @param filePaths File paths to generate test files out of
  * @param packageRoot Path to the root of the Swift package, aka the folder containing its Package.swift.
  * @param pkg An optional package that can be used to derive qualified paths for the test file generation step.
  * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
  */
-export function proposeTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Uri, pkg: SwiftPackageManifest): [SwiftTestFile[], TestFileDiagnosticResult[]] {
+export function suggestTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Uri, pkg: SwiftPackageManifest): [SwiftTestFile[], TestFileDiagnosticResult[]] {
     // For computing potential test target paths
     // TODO: Delegate this path hardcoding to SwiftPM somehow.
     const sourcesPath = vscode.Uri.joinPath(packageRoot, "Sources");
