@@ -1,21 +1,35 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
-import { F_OK } from 'constants';
 import { SwiftPackageManifest, SwiftPackageManifestParser } from './data/swiftPackage';
 import { exec } from 'child_process';
+import { isSubdirectory } from './pathUtils';
 
+/** Returns a Uri for a Package.swift that contains a given file path, or `null`, if no Package.swift exists within the file path's hierarchy. */
 export async function findSwiftPackage(filePath: vscode.Uri, packageManifestFile: string = "Package.swift"): Promise<vscode.Uri | null> {
+    if (vscode.workspace.workspaceFolders !== undefined) {
+        const packages = await vscode.workspace.findFiles("**/Package.swift");
+        
+        if (packages.length > 0) {
+            for (const pkgUri of packages) {
+                const packageFolder = vscode.Uri.joinPath(pkgUri, "..");
+
+                if (isSubdirectory(filePath, packageFolder)) {
+                    return pkgUri;
+                }
+            }
+        }
+    }
+
+    // Fallback to recursive search up the file tree
     let currentDirectory = path.dirname(filePath.fsPath);
 
-    // Perform a recursive search up the file tree
     while (path.dirname(currentDirectory) !== currentDirectory) {
-        let packagePath = path.join(currentDirectory, packageManifestFile);
+        let packagePath = vscode.Uri.file(path.join(currentDirectory, packageManifestFile));
         
         try {
-            await fs.access(packagePath, F_OK);
+            await vscode.workspace.fs.stat(packagePath);
 
-            return vscode.Uri.file(packagePath);
+            return packagePath;
         } catch {
 
         }

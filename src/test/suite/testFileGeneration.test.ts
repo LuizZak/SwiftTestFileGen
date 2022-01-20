@@ -1,155 +1,194 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { SwiftPackageManifest, SwiftPackageManifestParser, TargetType } from '../../data/swiftPackage';
+import { describe } from 'mocha';
+import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
 import { proposeTestFiles } from '../../testFileGeneration';
+import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
 
 suite('Test File Generation Test Suite', () => {
-	test('proposeTestFiles with target rooted in Sources/', () => {
-        const testPackage = makeSingleTargetTestPackage();
+    describe('proposeTestFiles', () => {
+        test('with target rooted in Sources/', () => {
+            const testPackage = makeSingleTargetTestPackage();
 
-        const packageRoot = vscode.Uri.file("Package/Path");
-		const filePaths: vscode.Uri[] = [
-            vscode.Uri.file("/Package/Path/Sources/A.swift"),
-            vscode.Uri.file("/Package/Path/Sources/B.swift"),
-        ];
+            const packageRoot = vscode.Uri.file("Package/Path");
+            const filePaths: vscode.Uri[] = [
+                vscode.Uri.file("/Package/Path/Sources/A.swift"),
+                vscode.Uri.file("/Package/Path/Sources/B.swift"),
+            ];
+            
+            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+
+            assert.deepStrictEqual(
+                result[0],
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        contents: makeExpectedTestString("Target", "ATests")
+                    },
+                    {
+                        name: "BTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
+                        contents: makeExpectedTestString("Target", "BTests")
+                    },
+                ]
+            );
+        });
+
+        test('with file in nested folder', () => {
+            const testPackage = makeMultiTargetTestPackage();
+
+            const packageRoot = vscode.Uri.file("Package/Path");
+            const filePaths: vscode.Uri[] = [
+                vscode.Uri.file("/Package/Path/Sources/Target/SubfolderA/A.swift"),
+                vscode.Uri.file("/Package/Path/Sources/TargetWithPath/SubfolderA/SubfolderB/B.swift"),
+            ];
+            
+            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+
+            assert.deepStrictEqual(
+                result[0],
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
+                        contents: makeExpectedTestString("Target", "ATests")
+                    },
+                    {
+                        name: "BTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
+                        contents: makeExpectedTestString("TargetWithPath", "BTests")
+                    },
+                ]
+            );
+            assert.deepStrictEqual(result[1], []);
+        });
+
+        test('with target with explicit path', () => {
+            const testPackage = makeMultiTargetTestPackage();
+
+            const packageRoot = vscode.Uri.file("Package/Path");
+            const filePaths: vscode.Uri[] = [
+                vscode.Uri.file("/Package/Path/Sources/ExplicitPath/A.swift"),
+                vscode.Uri.file("/Package/Path/Sources/ExplicitPath/B.swift"),
+            ];
+            
+            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+
+            assert.deepStrictEqual(
+                result[0],
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
+                        contents: makeExpectedTestString("TargetWithPath", "ATests")
+                    },
+                    {
+                        name: "BTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
+                        contents: makeExpectedTestString("TargetWithPath", "BTests")
+                    },
+                ]
+            );
+            assert.deepStrictEqual(result[1], []);
+        });
+
+        test('with test target with explicit path', () => {
+            const testPackage = makeExplicitTestTargetPathTestPackage();
+
+            const packageRoot = vscode.Uri.file("Package/Path");
+            const filePaths: vscode.Uri[] = [
+                vscode.Uri.file("/Package/Path/Sources/Target/A.swift"),
+                vscode.Uri.file("/Package/Path/Sources/Target/B.swift"),
+            ];
+            
+            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+
+            assert.deepStrictEqual(
+                result[0],
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
+                        contents: makeExpectedTestString("Target", "ATests")
+                    },
+                    {
+                        name: "BTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
+                        contents: makeExpectedTestString("Target", "BTests")
+                    },
+                ]
+            );
+            assert.deepStrictEqual(result[1], []);
+        });
+
+        test('with unknown targets', () => {
+            const testPackage = makeEmptyTestPackage();
+
+            const packageRoot = vscode.Uri.file("Package/Path");
+            const filePaths: vscode.Uri[] = [
+                vscode.Uri.file("/Package/Path/Sources/TargetA/A.swift"),
+                vscode.Uri.file("/Package/Path/Sources/TargetB/B.swift"),
+                vscode.Uri.file("/Package/Path/Sources/C.swift"),
+            ];
+            
+            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+
+            assert.deepStrictEqual(
+                result[0],
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
+                        contents: makeExpectedTestString("TargetA", "ATests")
+                    },
+                    {
+                        name: "BTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
+                        contents: makeExpectedTestString("TargetB", "BTests")
+                    },
+                    {
+                        name: "CTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
+                        contents: makeExpectedTestString("<#TargetName#>", "CTests")
+                    },
+                ]
+            );
+            assert.deepStrictEqual(result[1], []);
+        });
         
-        const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+        test('with files in tests folder', () => {
+            const testPackage = makeMultiTargetTestPackage();
 
-        assert.deepStrictEqual(
-            result,
-            [
+            const fileA = vscode.Uri.file("/Package/Path/Tests/TargetTests/ATests.swift");
+            const fileB = vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/Subdirectory/BTests.swift");
+
+            const packageRoot = vscode.Uri.file("Package/Path");
+            const filePaths: vscode.Uri[] = [
+                fileA,
+                fileB,
+            ];
+            
+            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+
+            assert.deepStrictEqual(result[0], []);
+            assert.deepStrictEqual(result[1], [
                 {
-                    name: "ATests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
-                    contents: makeExpectedTestString("Target", "ATests")
+                    message: "File is not contained within a recognized Sources/ folder",
+                    sourceFile: fileA,
+                    kind: TestFileDiagnosticKind.fileNotInSourcesFolder
                 },
                 {
-                    name: "BTests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
-                    contents: makeExpectedTestString("Target", "BTests")
-                },
-            ]
-        );
-	});
-
-    test('proposeTestFiles with file in nested folder', () => {
-        const testPackage = makeMultiTargetTestPackage();
-
-        const packageRoot = vscode.Uri.file("Package/Path");
-		const filePaths: vscode.Uri[] = [
-            vscode.Uri.file("/Package/Path/Sources/Target/SubfolderA/A.swift"),
-            vscode.Uri.file("/Package/Path/Sources/TargetWithPath/SubfolderA/SubfolderB/B.swift"),
-        ];
-        
-        const result = proposeTestFiles(filePaths, packageRoot, testPackage);
-
-        assert.deepStrictEqual(
-            result,
-            [
-                {
-                    name: "ATests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
-                    contents: makeExpectedTestString("Target", "ATests")
-                },
-                {
-                    name: "BTests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
-                    contents: makeExpectedTestString("TargetWithPath", "BTests")
-                },
-            ]
-        );
-	});
-
-    test('proposeTestFiles with target with explicit path', () => {
-        const testPackage = makeMultiTargetTestPackage();
-
-        const packageRoot = vscode.Uri.file("Package/Path");
-		const filePaths: vscode.Uri[] = [
-            vscode.Uri.file("/Package/Path/Sources/ExplicitPath/A.swift"),
-            vscode.Uri.file("/Package/Path/Sources/ExplicitPath/B.swift"),
-        ];
-        
-        const result = proposeTestFiles(filePaths, packageRoot, testPackage);
-
-        assert.deepStrictEqual(
-            result,
-            [
-                {
-                    name: "ATests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
-                    contents: makeExpectedTestString("TargetWithPath", "ATests")
-                },
-                {
-                    name: "BTests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
-                    contents: makeExpectedTestString("TargetWithPath", "BTests")
-                },
-            ]
-        );
-	});
-
-    test('proposeTestFiles with test target with explicit path', () => {
-        const testPackage = makeExplicitTestTargetPathTestPackage();
-
-        const packageRoot = vscode.Uri.file("Package/Path");
-		const filePaths: vscode.Uri[] = [
-            vscode.Uri.file("/Package/Path/Sources/Target/A.swift"),
-            vscode.Uri.file("/Package/Path/Sources/Target/B.swift"),
-        ];
-        
-        const result = proposeTestFiles(filePaths, packageRoot, testPackage);
-
-        assert.deepStrictEqual(
-            result,
-            [
-                {
-                    name: "ATests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
-                    contents: makeExpectedTestString("Target", "ATests")
-                },
-                {
-                    name: "BTests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
-                    contents: makeExpectedTestString("Target", "BTests")
-                },
-            ]
-        );
-	});
-
-    test('proposeTestFiles with unknown targets', () => {
-        const testPackage = makeEmptyTestPackage();
-
-        const packageRoot = vscode.Uri.file("Package/Path");
-		const filePaths: vscode.Uri[] = [
-            vscode.Uri.file("/Package/Path/Sources/TargetA/A.swift"),
-            vscode.Uri.file("/Package/Path/Sources/TargetB/B.swift"),
-            vscode.Uri.file("/Package/Path/Sources/C.swift"),
-        ];
-        
-        const result = proposeTestFiles(filePaths, packageRoot, testPackage);
-
-        assert.deepStrictEqual(
-            result,
-            [
-                {
-                    name: "ATests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
-                    contents: makeExpectedTestString("TargetA", "ATests")
-                },
-                {
-                    name: "BTests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
-                    contents: makeExpectedTestString("TargetB", "BTests")
-                },
-                {
-                    name: "CTests.swift",
-                    path: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
-                    contents: makeExpectedTestString("<#TargetName#>", "CTests")
-                },
-            ]
-        );
-	});
+                    message: "File is not contained within a recognized Sources/ folder",
+                    sourceFile: fileB,
+                    kind: TestFileDiagnosticKind.fileNotInSourcesFolder
+                }
+            ]);
+        });
+    });
 });
+
+// --
 
 function makeSingleTargetTestPackage(): SwiftPackageManifest {
     return {

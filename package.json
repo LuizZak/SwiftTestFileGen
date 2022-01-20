@@ -16,14 +16,15 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "swifttestgen.generateTestFile",
+				"command": "swifttestgen.generateTestFiles",
 				"title": "Generate Test File(s)"
 			}
 		],
 		"menus": {
 			"explorer/context": [
 				{
-					"command": "swifttestgen.generateTestFile"
+					"command": "swifttestgen.generateTestFiles",
+					"when": "resourceExtname == .swift"
 				}
 			]
 		}
