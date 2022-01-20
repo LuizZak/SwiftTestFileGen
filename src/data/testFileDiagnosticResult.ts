@@ -1,3 +1,4 @@
+import path = require('path');
 import * as vscode from 'vscode';
 
 /**
@@ -27,15 +28,26 @@ export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
     if (filesNotInSources.length > 0) {
         const filePaths = filesNotInSources.flatMap((file) => {
             if (typeof file.sourceFile?.fsPath === "string") {
-                return [file.sourceFile.fsPath];
+                return [
+                    path.basename(file.sourceFile.fsPath)
+                ];
             }
 
             return [];
-        }).join("\n");
+        });
+
+        const truncateListAt = 2;
+
+        const filePathTruncatedList = filePaths.slice(0, truncateListAt).join("\n");
+        
+        let filePathList = filePathTruncatedList;
+        const truncated = filePaths.length - truncateListAt;
+        if (truncated > 0) {
+            filePathList = filePathList.concat(`\n...and ${truncated} more`);
+        }
 
         vscode.window.showWarningMessage(
-            "One or more files where not contained within a recognized Sources/ folder:",
-            { detail: filePaths }
+            `One or more files where not contained within a recognized Sources/ folder:\n${filePathList}`,
         );
     }
 }
