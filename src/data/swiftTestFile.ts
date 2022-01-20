@@ -6,9 +6,12 @@ import * as vscode from 'vscode';
 export interface SwiftTestFile {
     /** File name, including extension. */
     name: string;
-    
+
     /** Full file path. */
     path: vscode.Uri;
+
+    /** Path for original source file this test file is mirroring. */
+    originalFile: vscode.Uri;
 
     /** Contents of file. */
     contents: string;

@@ -1,12 +1,11 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { findSwiftPackage, swiftPackageManifestForFile } from '../swiftPackageFinder';
 import { proposeTestFiles } from '../testFileGeneration';
 import { TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], cancellation: vscode.CancellationToken | undefined = undefined) {
+export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfirm: boolean = false, cancellation: vscode.CancellationToken | undefined = undefined) {
     const packagePaths = await Promise.all(fileUris.map((fileUri) => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
@@ -55,10 +54,22 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], cancellat
         try {
             await vscode.workspace.fs.stat(testFile.path);
             // Ignore files that already exist
+            continue;
         } catch {
-            wsEdit.createFile(testFile.path, {ignoreIfExists: true});
-            wsEdit.insert(testFile.path, new vscode.Position(0, 0), testFile.contents);
+            
         }
+
+        const createFileMetadata: vscode.WorkspaceEditEntryMetadata = {
+            needsConfirmation: !skipConfirm,
+            label: `Create a new test file for ${path.basename(testFile.originalFile.fsPath)}`
+        };
+        const insertMetadata: vscode.WorkspaceEditEntryMetadata = {
+            needsConfirmation: !skipConfirm,
+            label: "Insert boilerplate code for test file"
+        };
+
+        wsEdit.createFile(testFile.path, {ignoreIfExists: true}, createFileMetadata);
+        wsEdit.insert(testFile.path, new vscode.Position(0, 0), testFile.contents, insertMetadata);
     }
 
     if (cancellation?.isCancellationRequested) {

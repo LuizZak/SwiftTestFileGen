@@ -24,12 +24,14 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
-                        contents: makeExpectedTestString("Target", "ATests")
+                        contents: makeExpectedTestString("Target", "ATests"),
+                        originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
-                        contents: makeExpectedTestString("Target", "BTests")
+                        contents: makeExpectedTestString("Target", "BTests"),
+                        originalFile: filePaths[1]
                     },
                 ]
             );
@@ -52,12 +54,14 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
-                        contents: makeExpectedTestString("Target", "ATests")
+                        contents: makeExpectedTestString("Target", "ATests"),
+                        originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
-                        contents: makeExpectedTestString("TargetWithPath", "BTests")
+                        contents: makeExpectedTestString("TargetWithPath", "BTests"),
+                        originalFile: filePaths[1]
                     },
                 ]
             );
@@ -81,12 +85,14 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
-                        contents: makeExpectedTestString("TargetWithPath", "ATests")
+                        contents: makeExpectedTestString("TargetWithPath", "ATests"),
+                        originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
-                        contents: makeExpectedTestString("TargetWithPath", "BTests")
+                        contents: makeExpectedTestString("TargetWithPath", "BTests"),
+                        originalFile: filePaths[1]
                     },
                 ]
             );
@@ -110,12 +116,14 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
-                        contents: makeExpectedTestString("Target", "ATests")
+                        contents: makeExpectedTestString("Target", "ATests"),
+                        originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
-                        contents: makeExpectedTestString("Target", "BTests")
+                        contents: makeExpectedTestString("Target", "BTests"),
+                        originalFile: filePaths[1]
                     },
                 ]
             );
@@ -140,17 +148,20 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
-                        contents: makeExpectedTestString("TargetA", "ATests")
+                        contents: makeExpectedTestString("TargetA", "ATests"),
+                        originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
-                        contents: makeExpectedTestString("TargetB", "BTests")
+                        contents: makeExpectedTestString("TargetB", "BTests"),
+                        originalFile: filePaths[1]
                     },
                     {
                         name: "CTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
-                        contents: makeExpectedTestString("<#TargetName#>", "CTests")
+                        contents: makeExpectedTestString("<#TargetName#>", "CTests"),
+                        originalFile: filePaths[2]
                     },
                 ]
             );

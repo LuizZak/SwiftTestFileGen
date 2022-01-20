@@ -1,6 +1,6 @@
 {
-  "name": "swifttestgen",
-	"displayName": "SwiftTestGen",
+  	"name": "swifttestfilegen",
+	"displayName": "SwiftTestFileGen",
 	"description": "Generates test files from Swift Package Manager target files",
 	"version": "0.0.1",
 	"engines": {
@@ -16,17 +16,27 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "swifttestgen.generateTestFiles",
+				"command": "swifttestfilegen.generateTestFiles",
 				"title": "Generate Test File(s)"
 			}
 		],
 		"menus": {
 			"explorer/context": [
 				{
-					"command": "swifttestgen.generateTestFiles",
+					"command": "swifttestfilegen.generateTestFiles",
 					"when": "resourceExtname == .swift"
 				}
 			]
+		},
+		"configuration": {
+			"title": "SwiftTestFileGen",
+			"properties": {
+				"swifttestfilegen.fileGen.skipConfirm": {
+					"type": "boolean",
+					"default": false,
+					"description": "Whether to skip confirmation while creating files, and applying changes immediately after invoking the file generation command."
+				}
+			}
 		}
 	},
 	"scripts": {

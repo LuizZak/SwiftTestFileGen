@@ -1,6 +1,6 @@
-# swifttestgen README
+# swifttestfilegen README
 
-This is the README for your extension "swifttestgen". After writing up a brief description, we recommend including the following sections.
+This is the README for your extension "swifttestfilegen". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 

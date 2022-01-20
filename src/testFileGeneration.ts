@@ -90,6 +90,7 @@ export function proposeTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Ur
         const result: SwiftTestFile = {
             name: testFileName,
             path: fullTestFilePath,
+            originalFile: filePath,
             contents:
 `
 import XCTest
