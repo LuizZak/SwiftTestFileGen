@@ -10,19 +10,14 @@
 		"Other"
 	],
 	"activationEvents": [
-		"*",
-        "onCommand:swifttestgen.helloWorld"
+		"workspaceContains:**/Package.swift"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "swifttestgen.helloWorld",
-				"title": "Hello World"
-			},
-			{
 				"command": "swifttestgen.generateTestFile",
-				"title": "Generates test file from selected file in Explorer"
+				"title": "Generate Test File(s)"
 			}
 		],
 		"menus": {
