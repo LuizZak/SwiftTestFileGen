@@ -10,6 +10,7 @@
 		"Other"
 	],
 	"activationEvents": [
+		"*",
         "onCommand:swifttestgen.helloWorld"
 	],
 	"main": "./out/extension.js",
@@ -18,8 +19,19 @@
 			{
 				"command": "swifttestgen.helloWorld",
 				"title": "Hello World"
+			},
+			{
+				"command": "swifttestgen.generateTestFile",
+				"title": "Generates test file from selected file in Explorer"
 			}
-		]
+		],
+		"menus": {
+			"explorer/context": [
+				{
+					"command": "swifttestgen.generateTestFile"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
