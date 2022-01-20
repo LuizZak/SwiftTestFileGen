@@ -1,8 +1,8 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { findSwiftPackage, swiftPackageManifestForFile } from '../swiftPackageFinder';
+import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
 import { proposeTestFiles } from '../testFileGeneration';
-import { TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
+import { emitDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { isDirectoryUri } from '../fileDiskUtils';
@@ -16,7 +16,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
             throw new vscode.CancellationError();
         }
 
-        return findSwiftPackage(fileUri);
+        return findSwiftPackagePath(fileUri);
     }));
 
     // TODO: Handle cases where multiple package manifests where found.
@@ -131,28 +131,6 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMod
 
         default:
             return true;
-    }
-}
-
-function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
-    // Collapse diagnostic for files not in Sources/ directory
-    const filesNotInSources = diagnostics.filter(diagnostic => {
-        return diagnostic.kind === TestFileDiagnosticKind.fileNotInSourcesFolder;
-    });
-
-    if (filesNotInSources.length > 0) {
-        const filePaths = filesNotInSources.flatMap((file) => {
-            if (typeof file.sourceFile?.fsPath === "string") {
-                return [file.sourceFile.fsPath];
-            }
-
-            return [];
-        }).join("\n");
-
-        vscode.window.showWarningMessage(
-            "One or more files where not contained within a recognized Sources/ folder:",
-            { detail: filePaths }
-        );
     }
 }
 

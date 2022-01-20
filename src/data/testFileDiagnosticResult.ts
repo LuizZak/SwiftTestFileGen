@@ -17,3 +17,25 @@ export interface TestFileDiagnosticResult {
 export enum TestFileDiagnosticKind {
     fileNotInSourcesFolder
 };
+
+export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
+    // Collapse diagnostic for files not in Sources/ directory
+    const filesNotInSources = diagnostics.filter(diagnostic => {
+        return diagnostic.kind === TestFileDiagnosticKind.fileNotInSourcesFolder;
+    });
+
+    if (filesNotInSources.length > 0) {
+        const filePaths = filesNotInSources.flatMap((file) => {
+            if (typeof file.sourceFile?.fsPath === "string") {
+                return [file.sourceFile.fsPath];
+            }
+
+            return [];
+        }).join("\n");
+
+        vscode.window.showWarningMessage(
+            "One or more files where not contained within a recognized Sources/ folder:",
+            { detail: filePaths }
+        );
+    }
+}

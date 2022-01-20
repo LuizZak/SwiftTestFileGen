@@ -3,6 +3,9 @@
 	"displayName": "SwiftTestFileGen",
 	"description": "Generates test files from Swift Package Manager target files",
 	"version": "0.0.1",
+	"author": "LuizZak",
+	"publisher": "LuizZak",
+	"license": "MIT",
 	"engines": {
 		"vscode": "^1.63.0"
 	},
@@ -10,15 +13,29 @@
 		"Testing", "Other"
 	],
 	"activationEvents": [
-		"workspaceContains:**/Package.swift"
+		"workspaceContains:Package.swift",
+		"onLanguage:swift"
 	],
-	"repository": "https://github.com/LuizZak/SwiftTestFileGen",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/LuizZak/SwiftTestFileGen.git"
+	},
+	"keywords": [
+		"swift",
+		"test",
+		"testing",
+		"unit test"
+	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
 				"command": "swifttestfilegen.generateTestFiles",
 				"title": "Generate Test File(s)"
+			},
+			{
+				"command": "swifttestfilegen.gotoTestFile",
+				"title": "Go to Test File"
 			}
 		],
 		"menus": {
