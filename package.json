@@ -12,6 +12,7 @@
 	"activationEvents": [
 		"workspaceContains:**/Package.swift"
 	],
+	"repository": "https://github.com/LuizZak/SwiftTestFileGen",
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
