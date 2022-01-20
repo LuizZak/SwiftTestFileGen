@@ -281,8 +281,7 @@ function makeEmptyTestPackage(): SwiftPackageManifest {
 }
 
 function makeExpectedTestString(targetName: string, testName: string): string {
-    return `
-import XCTest
+    return `import XCTest
 
 @testable import ${targetName}
 

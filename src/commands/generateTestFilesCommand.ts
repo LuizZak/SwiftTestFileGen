@@ -4,9 +4,12 @@ import { findSwiftPackage, swiftPackageManifestForFile } from '../swiftPackageFi
 import { proposeTestFiles } from '../testFileGeneration';
 import { TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
+import { ConfirmationMode } from '../data/configurations/confirmationMode';
+import { isDirectoryUri } from '../fileDiskUtils';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfirm: boolean = false, cancellation: vscode.CancellationToken | undefined = undefined) {
+export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, cancellation: vscode.CancellationToken | undefined = undefined) {
     const expandedFileUris = await expandSwiftFoldersInUris(fileUris);
+    const needsConfirmation = await shouldRequestConfirmation(fileUris, confirmationMode);
 
     const packagePaths = await Promise.all(expandedFileUris.map((fileUri) => {
         if (cancellation?.isCancellationRequested) {
@@ -15,7 +18,6 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
 
         return findSwiftPackage(fileUri);
     }));
-
 
     // TODO: Handle cases where multiple package manifests where found.
     const filteredPackagePaths = packagePaths.flatMap(path => {
@@ -52,6 +54,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
 
     const testFiles = result[0];
     const wsEdit = new vscode.WorkspaceEdit();
+    const filesOpened: vscode.Uri[] = [];
 
     for (const testFile of testFiles) {
         try {
@@ -63,13 +66,15 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
         }
 
         const createFileMetadata: vscode.WorkspaceEditEntryMetadata = {
-            needsConfirmation: !skipConfirm,
+            needsConfirmation: needsConfirmation,
             label: `Create a new test file for ${path.basename(testFile.originalFile.fsPath)}`
         };
         const insertMetadata: vscode.WorkspaceEditEntryMetadata = {
-            needsConfirmation: !skipConfirm,
+            needsConfirmation: needsConfirmation,
             label: "Insert boilerplate code for test file"
         };
+
+        filesOpened.push(testFile.path);
 
         wsEdit.createFile(testFile.path, { ignoreIfExists: true }, createFileMetadata);
         wsEdit.insert(testFile.path, new vscode.Position(0, 0), testFile.contents, insertMetadata);
@@ -81,9 +86,51 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], skipConfi
 
     await vscode.workspace.applyEdit(wsEdit);
 
-    // Move focus to first file created
-    if (testFiles.length > 0) {
+    // Pre-save all files
+    filesOpened.forEach(async fileUri => {
+        const document = await vscode.workspace.openTextDocument(fileUri);
+        await document.save();
+    });
 
+    // Move focus to first file created
+    if (filesOpened.length > 0) {
+        const document = await vscode.workspace.openTextDocument(filesOpened[0]);
+        await vscode.window.showTextDocument(filesOpened[0]);
+    }
+}
+
+async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode): Promise<boolean> {
+    switch (confirmationMode) {
+        case ConfirmationMode.always:
+            return true;
+
+        case ConfirmationMode.never:
+            return false;
+
+        case ConfirmationMode.onlyIfMultiFile:
+            if (fileUris.length > 1) {
+                return true;
+            }
+
+            for (const fileUri of fileUris) {
+                if (await isDirectoryUri(fileUri)) {
+                    return true;
+                }
+            }
+
+            return false;
+
+        case ConfirmationMode.onlyOnDirectories:
+            for (const fileUri of fileUris) {
+                if (await isDirectoryUri(fileUri)) {
+                    return true;
+                }
+            }
+            
+            return false;
+
+        default:
+            return true;
     }
 }
 

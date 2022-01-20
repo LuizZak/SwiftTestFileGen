@@ -16,7 +16,13 @@ A Swift 5.4 or later installation.
 
 This extension contributes the following settings:
 
-* `swifttestfilegen.fileGen.skipConfirm`: whether to skip confirmation and generate files straight away.
+| `swiftTestFileGen.fileGen.confirmation` | When to trigger a confirmation of the operation through a Refactor Preview window |
+|---|---|
+| Configuration | Description |
+| `always` | Always requests confirmation of changes |
+| `onlyIfMultiFile` | Only requests confirmation if more than one file is selected, or if the selected item is a directory |
+| `onlyOnDirectories` | Only requests confirmation if the selection contains one or more directories |
+| `never` | Never requests confirmation; always create test files straight away |
 
 ## Known Issues
 

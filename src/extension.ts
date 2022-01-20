@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import { generateTestFilesCommand } from './commands/generateTestFilesCommand';
+import { ConfirmationMode } from './data/configurations/confirmationMode';
 
 export async function activate(context: vscode.ExtensionContext) {
-	const config = vscode.workspace.getConfiguration('swifttestfilegen');
-
 	let disposable: vscode.Disposable;
 
 	disposable = vscode.commands.registerCommand('swifttestfilegen.generateTestFiles', async (_, fileUris: vscode.Uri[]) => {
@@ -11,7 +10,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			location: vscode.ProgressLocation.Notification,
 			title: "Generating test files..."
 		}, (_progress, cancellation) => {
-			return generateTestFilesCommand(fileUris, config.get("fileGen.skipConfirm"), cancellation);
+			
+			const config = vscode.workspace.getConfiguration('swiftTestFileGen');
+			const confirmationMode: ConfirmationMode = config.get("fileGen.confirmation") ?? ConfirmationMode.always;
+
+			return generateTestFilesCommand(fileUris, confirmationMode, cancellation);
 		});
 	});
 	context.subscriptions.push(disposable);

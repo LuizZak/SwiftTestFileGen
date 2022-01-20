@@ -32,10 +32,22 @@
 		"configuration": {
 			"title": "SwiftTestFileGen",
 			"properties": {
-				"swifttestfilegen.fileGen.skipConfirm": {
-					"type": "boolean",
-					"default": false,
-					"description": "Whether to skip confirmation while creating files, and applying changes immediately after invoking the file generation command."
+				"swiftTestFileGen.fileGen.confirmation": {
+					"type": "string",
+					"default": "always",
+					"enum": [
+						"always",
+						"onlyIfMultiFile",
+						"onlyOnDirectories",
+						"never"
+					],
+					"enumDescriptions": [
+						"Always requests confirmation of changes through a Refactor Preview window",
+						"Only requests confirmation if more than one file is selected, or if the selected item is a directory",
+						"Only requests confirmation if the selection contains one or more directories",
+						"Never requests confirmation; always create test files straight away"
+					],
+					"description": "Whether to request confirmation of changes through a Refactor Preview window while creating files, or apply changes immediately after invoking the file generation command."
 				}
 			}
 		}

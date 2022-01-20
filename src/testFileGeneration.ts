@@ -91,9 +91,8 @@ export function proposeTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Ur
             name: testFileName,
             path: fullTestFilePath,
             originalFile: filePath,
-            contents:
-`
-import XCTest
+            contents: 
+`import XCTest
 
 ${importLine}
 
