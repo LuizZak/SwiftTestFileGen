@@ -2,12 +2,14 @@ import path = require('path');
 import * as vscode from 'vscode';
 import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
 import { proposeTestFiles } from '../testFileGeneration';
-import { emitDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
+import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { isDirectoryUri } from '../fileDiskUtils';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, cancellation: vscode.CancellationToken | undefined = undefined) {
+export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, progress: vscode.Progress<{ message?: string }> | null = null, cancellation: vscode.CancellationToken | undefined = undefined): Promise<vscode.TextDocument[]> {
+    progress?.report({ message: "Finding Swift package..." });
+
     const expandedFileUris = await expandSwiftFoldersInUris(fileUris);
     const needsConfirmation = await shouldRequestConfirmation(fileUris, confirmationMode);
 
@@ -33,7 +35,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     if (filteredPackagePaths.length === 0) {
         vscode.window.showWarningMessage('Did not find a Package.swift manifest to derive test paths from for the selected files!');
-        return;
+        return [];
     }
 
     const packageManifestPath = filteredPackagePaths[0];
@@ -44,8 +46,10 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
         pkg = await swiftPackageManifestForFile(packageManifestPath, cancellation);
     } catch (err) {
         vscode.window.showErrorMessage(`Error while loading package manifest @ ${packageManifestPath.fsPath}: ${err}`);
-        return;
+        return [];
     }
+
+    progress?.report({ message: "Generating test files..." });
 
     const result = proposeTestFiles(expandedFileUris, packagePath, pkg);
 
@@ -87,16 +91,21 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     await vscode.workspace.applyEdit(wsEdit);
 
     // Pre-save all files
-    filesOpened.forEach(async fileUri => {
+    const documents = await Promise.all(filesOpened.map(async fileUri => {
         const document = await vscode.workspace.openTextDocument(fileUri);
         await document.save();
-    });
+
+        return document;
+    }));
 
     // Move focus to first file created
-    if (filesOpened.length > 0) {
-        const document = await vscode.workspace.openTextDocument(filesOpened[0]);
-        await vscode.window.showTextDocument(filesOpened[0]);
+    if (documents.length > 0) {
+        await vscode.window.showTextDocument(documents[0]);
     }
+
+    progress?.report({ message: "Done!" });
+
+    return documents;
 }
 
 async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode): Promise<boolean> {
@@ -126,7 +135,7 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMod
                     return true;
                 }
             }
-            
+
             return false;
 
         default:
@@ -141,7 +150,7 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMod
 async function expandSwiftFoldersInUris(fileUris: vscode.Uri[]): Promise<vscode.Uri[]> {
     const promises = fileUris.map(async (fileUri) => {
         const stat = await vscode.workspace.fs.stat(fileUri);
-        
+
         switch (stat.type) {
             case vscode.FileType.File:
                 return [fileUri];
@@ -155,6 +164,6 @@ async function expandSwiftFoldersInUris(fileUris: vscode.Uri[]): Promise<vscode.
 
         return [];
     });
-    
+
     return (await Promise.all(promises)).flat();
 }

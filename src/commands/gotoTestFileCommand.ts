@@ -5,7 +5,7 @@ import { generateTestFilesEntry } from '../frontend';
 import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
 import { proposeTestFiles } from '../testFileGeneration';
 
-export async function gotoTestFileCommand(fileUri: vscode.Uri) {
+export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active) {
     const pkgPath = await findSwiftPackagePath(fileUri);
     if (pkgPath === null) {
         vscode.window.showErrorMessage("Cannot find Package.swift manifest for the current workspace.");
@@ -28,7 +28,8 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri) {
     const testFile = files[0].path;
 
     if (await fileExists(testFile)) {
-        vscode.workspace.openTextDocument(files[0].path);
+        const document = await vscode.workspace.openTextDocument(files[0].path);
+        await vscode.window.showTextDocument(document, { viewColumn });
     } else {
         const response = await vscode.window.showInformationMessage(
             "Test file not found. Would you like to generate a test file now?",

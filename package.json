@@ -35,7 +35,8 @@
 			},
 			{
 				"command": "swifttestfilegen.gotoTestFile",
-				"title": "Go to Test File"
+				"title": "SwiftTestFileGen: Go to Test File",
+				"shortTitle": "Go to Test File"
 			}
 		],
 		"menus": {
