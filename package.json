@@ -6,6 +6,7 @@
 	"author": "LuizZak",
 	"publisher": "LuizZak",
 	"license": "MIT",
+	"icon": "icon.png",
 	"engines": {
 		"vscode": "^1.63.0"
 	},
