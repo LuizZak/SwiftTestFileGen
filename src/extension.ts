@@ -1,21 +1,23 @@
 import * as vscode from 'vscode';
-import { generateTestFilesCommand } from './commands/generateTestFilesCommand';
-import { ConfirmationMode } from './data/configurations/confirmationMode';
+import { generateTestFilesEntry, gotoTestFileEntry } from './frontend';
 
 export async function activate(context: vscode.ExtensionContext) {
 	let disposable: vscode.Disposable;
 
 	disposable = vscode.commands.registerCommand('swifttestfilegen.generateTestFiles', async (_, fileUris: vscode.Uri[]) => {
-		vscode.window.withProgress({
-			location: vscode.ProgressLocation.Notification,
-			title: "Generating test files..."
-		}, (_progress, cancellation) => {
-			
-			const config = vscode.workspace.getConfiguration('swiftTestFileGen');
-			const confirmationMode: ConfirmationMode = config.get("fileGen.confirmation") ?? ConfirmationMode.always;
+		await generateTestFilesEntry(fileUris);
+	});
+	context.subscriptions.push(disposable);
 
-			return generateTestFilesCommand(fileUris, confirmationMode, cancellation);
-		});
+	disposable = vscode.commands.registerCommand('swifttestfilegen.gotoTestFile', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor === undefined) {
+			return;
+		}
+
+		if (editor.document.uri.scheme === "file") {
+			await gotoTestFileEntry(editor.document.uri);
+		}
 	});
 	context.subscriptions.push(disposable);
 }

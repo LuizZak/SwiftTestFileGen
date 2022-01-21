@@ -1,7 +1,6 @@
 import * as assert from 'assert';
 import { describe } from 'mocha';
 import path = require('path');
-import * as vscode from 'vscode';
 import { isSubdirectory, rootDirectoryOfRelativePath } from '../../pathUtils';
 
 suite('pathUtils Test Suite', () => {

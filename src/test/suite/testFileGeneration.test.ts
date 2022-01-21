@@ -2,11 +2,11 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { describe } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
-import { proposeTestFiles } from '../../testFileGeneration';
+import { suggestTestFiles } from '../../testFileGeneration';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
 
 suite('Test File Generation Test Suite', () => {
-    describe('proposeTestFiles', () => {
+    describe('suggestTestFiles', () => {
         test('with target rooted in Sources/', () => {
             const testPackage = makeSingleTargetTestPackage();
 
@@ -16,7 +16,7 @@ suite('Test File Generation Test Suite', () => {
                 vscode.Uri.file("/Package/Path/Sources/B.swift"),
             ];
             
-            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+            const result = suggestTestFiles(filePaths, packageRoot, testPackage);
 
             assert.deepStrictEqual(
                 result[0],
@@ -46,7 +46,7 @@ suite('Test File Generation Test Suite', () => {
                 vscode.Uri.file("/Package/Path/Sources/TargetWithPath/SubfolderA/SubfolderB/B.swift"),
             ];
             
-            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+            const result = suggestTestFiles(filePaths, packageRoot, testPackage);
 
             assert.deepStrictEqual(
                 result[0],
@@ -77,7 +77,7 @@ suite('Test File Generation Test Suite', () => {
                 vscode.Uri.file("/Package/Path/Sources/ExplicitPath/B.swift"),
             ];
             
-            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+            const result = suggestTestFiles(filePaths, packageRoot, testPackage);
 
             assert.deepStrictEqual(
                 result[0],
@@ -108,7 +108,7 @@ suite('Test File Generation Test Suite', () => {
                 vscode.Uri.file("/Package/Path/Sources/Target/B.swift"),
             ];
             
-            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+            const result = suggestTestFiles(filePaths, packageRoot, testPackage);
 
             assert.deepStrictEqual(
                 result[0],
@@ -140,7 +140,7 @@ suite('Test File Generation Test Suite', () => {
                 vscode.Uri.file("/Package/Path/Sources/C.swift"),
             ];
             
-            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+            const result = suggestTestFiles(filePaths, packageRoot, testPackage);
 
             assert.deepStrictEqual(
                 result[0],
@@ -180,7 +180,7 @@ suite('Test File Generation Test Suite', () => {
                 fileB,
             ];
             
-            const result = proposeTestFiles(filePaths, packageRoot, testPackage);
+            const result = suggestTestFiles(filePaths, packageRoot, testPackage);
 
             assert.deepStrictEqual(result[0], []);
             assert.deepStrictEqual(result[1], [
