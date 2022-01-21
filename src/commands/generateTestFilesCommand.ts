@@ -1,16 +1,17 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
+import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { suggestTestFiles } from '../testFileGeneration';
 import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
+import { InvocationContext } from '../interfaces/context';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, fileSystem: FileSystemInterface, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.TextDocument[]> {
+export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
     progress?.report({ message: "Finding Swift package..." });
 
-    const expandedFileUris = await expandSwiftFoldersInUris(fileUris, fileSystem);
+    const expandedFileUris = await expandSwiftFoldersInUris(fileUris, context.fileSystem);
     const swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
 
     if (swiftFiles.length === 0) {
@@ -19,14 +20,14 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
         return [];
     }
 
-    const needsConfirmation = await shouldRequestConfirmation(fileUris, fileSystem, confirmationMode);
+    const needsConfirmation = await shouldRequestConfirmation(fileUris, context.fileSystem, confirmationMode);
 
     const packagePaths = await Promise.all(swiftFiles.map((fileUri) => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
 
-        return findSwiftPackagePath(fileUri, fileSystem);
+        return findSwiftPackagePath(fileUri, context.fileSystem);
     }));
 
     // TODO: Handle cases where multiple package manifests where found.
@@ -51,7 +52,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     let pkg: SwiftPackageManifest;
     try {
-        pkg = await swiftPackageManifestForFile(packageManifestPath, cancellation);
+        pkg = await context.packageProvider.swiftPackageManifestForFile(packageManifestPath, cancellation);
     } catch (err) {
         vscode.window.showErrorMessage(`Error while loading package manifest @ ${packageManifestPath.fsPath}: ${err}`);
         return [];
@@ -65,12 +66,12 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     emitDiagnostics(result[1]);
 
     const testFiles = result[0];
-    const wsEdit = new vscode.WorkspaceEdit();
+    const wsEdit = context.workspace.makeWorkspaceEdit();
     const filesOpened: vscode.Uri[] = [];
 
     for (const testFile of testFiles) {
         // Ignore files that already exist
-        if (await fileSystem.fileExists(testFile.path)) {
+        if (await context.fileSystem.fileExists(testFile.path)) {
             continue;
         }
 
@@ -93,19 +94,18 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
         throw new vscode.CancellationError();
     }
 
-    await vscode.workspace.applyEdit(wsEdit);
+    await context.workspace.applyWorkspaceEdit(wsEdit);
 
     // Pre-save all files
     const documents = await Promise.all(filesOpened.map(async fileUri => {
-        const document = await vscode.workspace.openTextDocument(fileUri);
-        await document.save();
+        await context.workspace.saveOpenedDocument(fileUri);
 
-        return document;
+        return fileUri;
     }));
 
     // Move focus to first file created
     if (documents.length > 0) {
-        await vscode.window.showTextDocument(documents[0]);
+        await context.workspace.showTextDocument(documents[0]);
     }
 
     progress?.report({ message: "Done!" });

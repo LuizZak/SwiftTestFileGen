@@ -15,7 +15,7 @@ export const defaultPackageManifestFileName = "Package.swift";
  * 
  * @param packageManifestFile A file name for the package manifest to find, or `undefined`, in which case defaults to `defaultPackageManifestFileName`.
 */
-export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: FileSystemInterface, packageManifestFile?: string | undefined, cancellation?: vscode.CancellationToken | undefined): Promise<vscode.Uri | null> {
+export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: FileSystemInterface, packageManifestFile?: string, cancellation?: vscode.CancellationToken): Promise<vscode.Uri | null> {
     packageManifestFile = packageManifestFile ?? defaultPackageManifestFileName;
 
     if (vscode.workspace.workspaceFolders !== undefined) {
@@ -65,36 +65,8 @@ export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: Fil
  * 
  * @param packageManifestFile A file name for the package manifest to find, or `undefined`, in which case defaults to `defaultPackageManifestFileName`.
 */
-export async function findAllSwiftPackages(fileSystem: FileSystemInterface, packageManifestFile?: string | undefined, cancellation?: vscode.CancellationToken | undefined): Promise<vscode.Uri[]> {
+export async function findAllSwiftPackages(fileSystem: FileSystemInterface, packageManifestFile?: string, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
     packageManifestFile = packageManifestFile ?? defaultPackageManifestFileName;
 
     return await fileSystem.findFiles(`**/${packageManifestFile}`, undefined, undefined, cancellation);
-}
-
-/**
- * Returns a package manifest that `swift package` reports by executing the process within a given file's containing directory.
- */
-export async function swiftPackageManifestForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined): Promise<SwiftPackageManifest> {
-    const directory = path.dirname(fileUri.fsPath);
-
-    return new Promise<string>((resolve, reject) => {
-        const childProc = exec("swift package dump-package", { cwd: directory }, function (err, stdout, stderr) {
-            if (err !== null) {
-                throw err;
-            }
-            if (stderr !== '') {
-                reject(stderr);
-            }
-
-            resolve(stdout.trim());
-        });
-
-        cancellation?.onCancellationRequested(() => {
-            childProc.kill();
-
-            reject(new vscode.CancellationError());
-        });
-    }).then((response) => {
-        return SwiftPackageManifestParser.toSwiftPackageManifest(response);
-    });
 }
