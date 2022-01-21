@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { generateTestFilesEntry, gotoTestFileEntry } from './frontend';
+import { FileSystem } from './implementations/fileSystem';
 
 export async function activate(context: vscode.ExtensionContext) {
 	let disposable: vscode.Disposable;
 
 	disposable = vscode.commands.registerCommand('swifttestfilegen.generateTestFiles', async (_, fileUris: vscode.Uri[]) => {
-		await generateTestFilesEntry(fileUris);
+		await generateTestFilesEntry(fileUris, fileSystem());
 	});
 	context.subscriptions.push(disposable);
 
@@ -16,8 +17,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (editor.document.uri.scheme === "file") {
-			await gotoTestFileEntry(editor.document.uri);
+			await gotoTestFileEntry(editor.document.uri, fileSystem());
 		}
 	});
 	context.subscriptions.push(disposable);
+}
+
+function fileSystem(): FileSystem {
+	return new FileSystem();
 }

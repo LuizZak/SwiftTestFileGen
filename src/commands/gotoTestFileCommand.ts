@@ -1,16 +1,16 @@
 import path = require('path');
 import * as vscode from 'vscode';
 import { emitDiagnostics } from '../data/testFileDiagnosticResult';
-import { fileExists } from '../fileDiskUtils';
 import { generateTestFilesEntry } from '../frontend';
+import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { findSwiftPackagePath, swiftPackageManifestForFile } from '../swiftPackageFinder';
 import { isTestFile } from '../swiftPackageUtils';
 import { suggestTestFiles } from '../testFileGeneration';
 
-export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress: vscode.Progress<{ message?: string }> | null = null, cancellation: vscode.CancellationToken | undefined = undefined) {
+export async function gotoTestFileCommand(fileUri: vscode.Uri, fileSystem: FileSystemInterface, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken) {
     progress?.report({ message: "Finding Swift package..." });
 
-    const pkgPath = await findSwiftPackagePath(fileUri);
+    const pkgPath = await findSwiftPackagePath(fileUri, fileSystem);
     if (pkgPath === null) {
         vscode.window.showErrorMessage("Cannot find Package.swift manifest for the current workspace.");
         return;
@@ -41,7 +41,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
 
     const testFile = files[0].path;
 
-    if (await fileExists(testFile)) {
+    if (await fileSystem.fileExists(testFile)) {
         const document = await vscode.workspace.openTextDocument(files[0].path);
         await vscode.window.showTextDocument(document, { viewColumn });
     } else {
@@ -56,7 +56,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, viewColumn: vscod
         }
     
         if (response === "Yes") {
-            await generateTestFilesEntry([fileUri]);
+            await generateTestFilesEntry([fileUri], fileSystem);
         }
     }
 }

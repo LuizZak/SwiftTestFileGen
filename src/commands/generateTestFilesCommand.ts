@@ -5,12 +5,12 @@ import { suggestTestFiles } from '../testFileGeneration';
 import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
-import { isDirectoryUri } from '../fileDiskUtils';
+import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, progress: vscode.Progress<{ message?: string }> | null = null, cancellation: vscode.CancellationToken | undefined = undefined): Promise<vscode.TextDocument[]> {
+export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, fileSystem: FileSystemInterface, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.TextDocument[]> {
     progress?.report({ message: "Finding Swift package..." });
 
-    const expandedFileUris = await expandSwiftFoldersInUris(fileUris);
+    const expandedFileUris = await expandSwiftFoldersInUris(fileUris, fileSystem);
     const swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
 
     if (swiftFiles.length === 0) {
@@ -19,14 +19,14 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
         return [];
     }
 
-    const needsConfirmation = await shouldRequestConfirmation(fileUris, confirmationMode);
+    const needsConfirmation = await shouldRequestConfirmation(fileUris, fileSystem, confirmationMode);
 
     const packagePaths = await Promise.all(swiftFiles.map((fileUri) => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
 
-        return findSwiftPackagePath(fileUri);
+        return findSwiftPackagePath(fileUri, fileSystem);
     }));
 
     // TODO: Handle cases where multiple package manifests where found.
@@ -69,12 +69,9 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     const filesOpened: vscode.Uri[] = [];
 
     for (const testFile of testFiles) {
-        try {
-            await vscode.workspace.fs.stat(testFile.path);
-            // Ignore files that already exist
+        // Ignore files that already exist
+        if (await fileSystem.fileExists(testFile.path)) {
             continue;
-        } catch {
-
         }
 
         const createFileMetadata: vscode.WorkspaceEditEntryMetadata = {
@@ -116,7 +113,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     return documents;
 }
 
-async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode): Promise<boolean> {
+async function shouldRequestConfirmation(fileUris: vscode.Uri[], fileSystem: FileSystemInterface, confirmationMode: ConfirmationMode): Promise<boolean> {
     switch (confirmationMode) {
         case ConfirmationMode.always:
             return true;
@@ -130,7 +127,7 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMod
             }
 
             for (const fileUri of fileUris) {
-                if (await isDirectoryUri(fileUri)) {
+                if (await fileSystem.isDirectoryUri(fileUri)) {
                     return true;
                 }
             }
@@ -139,7 +136,7 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMod
 
         case ConfirmationMode.onlyOnDirectories:
             for (const fileUri of fileUris) {
-                if (await isDirectoryUri(fileUri)) {
+                if (await fileSystem.isDirectoryUri(fileUri)) {
                     return true;
                 }
             }
@@ -155,19 +152,17 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], confirmationMod
  * Returns a new list of of filesystem Uris by expanding folders in the input list to all .swift files
  * contained within the folders.
  */
-async function expandSwiftFoldersInUris(fileUris: vscode.Uri[]): Promise<vscode.Uri[]> {
+async function expandSwiftFoldersInUris(fileUris: vscode.Uri[], fileSystem: FileSystemInterface): Promise<vscode.Uri[]> {
     const promises = fileUris.map(async (fileUri) => {
-        const stat = await vscode.workspace.fs.stat(fileUri);
+        if (await fileSystem.fileExists(fileUri)) {
+            return [fileUri];
+        }
 
-        switch (stat.type) {
-            case vscode.FileType.File:
-                return [fileUri];
+        if (await fileSystem.isDirectoryUri(fileUri)) {
+            const pattern = new vscode.RelativePattern(fileUri, "**/*.swift");
+            const files = await fileSystem.findFiles(pattern);
 
-            case vscode.FileType.Directory:
-                const pattern = new vscode.RelativePattern(fileUri, "**/*.swift");
-                const files = await vscode.workspace.findFiles(pattern);
-
-                return files;
+            return files;
         }
 
         return [];
