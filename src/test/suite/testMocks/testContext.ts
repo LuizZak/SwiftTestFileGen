@@ -7,7 +7,7 @@ import { SwiftPackageManifest } from "../../../data/swiftPackage";
 import { InvocationContext } from "../../../interfaces/context";
 import { FileSystemInterface } from "../../../interfaces/fileSystemInterface";
 import { PackageProviderInterface } from "../../../interfaces/packageProviderInterface";
-import { VscodeWorkspaceInterface } from "../../../interfaces/vscodeWorkspaceInterface";
+import { VscodeWorkspaceEditInterface, VscodeWorkspaceInterface } from "../../../interfaces/vscodeWorkspaceInterface";
 import { VirtualDiskFile, VirtualDisk, VirtualDiskDirectory } from "./virtualFileDisk";
 
 export function makeTestContext(configuration?: Configuration): TestContext {
@@ -94,7 +94,28 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
         this.applyWorkspaceEdit_calls.push([edit]);
     }
 
-    makeWorkspaceEdit(): vscode.WorkspaceEdit {
-        return new vscode.WorkspaceEdit();
+    makeWorkspaceEdit_calls: TestVscodeWorkspaceEdit[] = [];
+    makeWorkspaceEdit(): TestVscodeWorkspaceEdit {
+        const wsEdit = new TestVscodeWorkspaceEdit();
+        this.makeWorkspaceEdit_calls.push(wsEdit);
+
+        return wsEdit;
+    }
+}
+
+export class TestVscodeWorkspaceEdit implements VscodeWorkspaceEditInterface {
+    createFile_calls: [uri: vscode.Uri, options?: { overwrite?: boolean | undefined; ignoreIfExists?: boolean | undefined; }, metadata?: vscode.WorkspaceEditEntryMetadata][] = [];
+    createFile(uri: vscode.Uri, options?: { overwrite?: boolean | undefined; ignoreIfExists?: boolean | undefined; }, metadata?: vscode.WorkspaceEditEntryMetadata): void {
+        this.createFile_calls.push([uri, options, metadata]);
+    }
+
+    replaceDocumentText_calls: [uri: vscode.Uri, newText: string, metadata?: vscode.WorkspaceEditEntryMetadata][] = [];
+    replaceDocumentText(uri: vscode.Uri, newText: string, metadata?: vscode.WorkspaceEditEntryMetadata): void {
+        this.replaceDocumentText_calls.push([uri, newText, metadata]);
+    }
+
+    applyWorkspaceEdit_calls: any[] = [];
+    async applyWorkspaceEdit(): Promise<void> {
+        this.applyWorkspaceEdit_calls.push();
     }
 }

@@ -87,14 +87,14 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
         filesOpened.push(testFile.path);
 
         wsEdit.createFile(testFile.path, { ignoreIfExists: true }, createFileMetadata);
-        wsEdit.insert(testFile.path, new vscode.Position(0, 0), testFile.contents, insertMetadata);
+        wsEdit.replaceDocumentText(testFile.path, testFile.contents, insertMetadata);
     }
 
     if (cancellation?.isCancellationRequested) {
         throw new vscode.CancellationError();
     }
 
-    await context.workspace.applyWorkspaceEdit(wsEdit);
+    await wsEdit.applyWorkspaceEdit();
 
     // Pre-save all files
     const documents = await Promise.all(filesOpened.map(async fileUri => {

@@ -18,6 +18,7 @@ export const defaultPackageManifestFileName = "Package.swift";
 export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: FileSystemInterface, packageManifestFile?: string, cancellation?: vscode.CancellationToken): Promise<vscode.Uri | null> {
     packageManifestFile = packageManifestFile ?? defaultPackageManifestFileName;
 
+    // TODO: Abstract this check away so we can test this method properly.
     if (vscode.workspace.workspaceFolders !== undefined) {
         const packages = await fileSystem.findFiles(`**/${packageManifestFile}`, undefined, undefined, cancellation);
 
@@ -46,12 +47,8 @@ export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: Fil
 
         let packagePath = vscode.Uri.file(path.join(currentDirectory, packageManifestFile));
 
-        try {
-            await fileSystem.fileExists(packagePath);
-
+        if(await fileSystem.fileExists(packagePath)) {
             return packagePath;
-        } catch {
-
         }
 
         currentDirectory = path.dirname(currentDirectory);

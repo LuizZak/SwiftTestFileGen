@@ -2,11 +2,8 @@ import * as vscode from 'vscode';
 
 /** An interface for abstracting operations that open, modify, and save files in VSCode. */
 export interface VscodeWorkspaceInterface {
-    /** Requests a new instance of `WorkspaceEdit`. */
-    makeWorkspaceEdit(): vscode.WorkspaceEdit;
-
-    /** Applies a given instance of `WorkspaceEdit`. */
-    applyWorkspaceEdit(edit: vscode.WorkspaceEdit): Promise<void>;
+    /** Requests a new instance of `VscodeWorkspaceEdit`. */
+    makeWorkspaceEdit(): VscodeWorkspaceEditInterface;
 
     /** Requests that a document with a matching Uri be saved, if unsaved changes are pending. */
     saveOpenedDocument(uri: vscode.Uri): Promise<void>;
@@ -15,7 +12,8 @@ export interface VscodeWorkspaceInterface {
     showTextDocument(uri: vscode.Uri, options?: vscode.TextDocumentShowOptions): Promise<void>;
 }
 
-export interface VscodeWorkspaceEdit {
+/** Interface that abstracts away VSCode document changes. */
+export interface VscodeWorkspaceEditInterface {
     /**
      * Create a regular file.
      *
