@@ -52,6 +52,16 @@
 		"configuration": {
 			"title": "SwiftTestFileGen",
 			"properties": {
+				"swiftTestFileGen.gotoTestFile.useFilenameHeuristics": {
+					"type": "boolean",
+					"default": "false",
+					"description": "Whether to use simple <FileName>.swift -> <FileName><Suffix>.swift heuristics to find test files, instead of querying through the package manifest for paths. If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests."
+				},
+				"swiftTestFileGen.gotoTestFile.heuristicFilenamePattern": {
+					"type": ["array", "string"],
+					"default": "(\\w+)Tests",
+					"description": "A regex pattern string or array of regex pattern strings with exactly one capture group to use to convert file names to test file names, if useFilenameHeuristics is enabled. Pattern is applied to filenames, excluding file extension. The capture group of the pattern(s) is used to insert the source file to derive the test file name out of, and is matched against all .swift files in the workspace. Matching is case-sensitive."
+				},
 				"swiftTestFileGen.fileGen.confirmation": {
 					"type": "string",
 					"default": "always",

@@ -49,12 +49,18 @@ function workspace(): VscodeWorkspaceInterface {
 }
 
 function configuration(): Configuration {
-	var config = vscode.workspace.getConfiguration('swiftTestFileGen');
+	const config = vscode.workspace.getConfiguration('swiftTestFileGen');
+	const fileGen: Configuration["fileGen"] = config.get("fileGen") ?? {
+		confirmation: ConfirmationMode.always
+	};
+	const gotoTestFile: Configuration["gotoTestFile"] = config.get("gotoTestFile") ?? {
+		useFilenameHeuristics: false,
+		heuristicFilenamePattern: "(\\w+)Tests",
+	};
 
 	return {
-		fileGen: config.get("fileGen") ?? {
-			confirmation: ConfirmationMode.always
-		}
+		fileGen,
+		gotoTestFile,
 	};
 }
 

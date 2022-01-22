@@ -26,8 +26,12 @@ export class TestContext implements InvocationContext {
         this.packageProvider = new TestPackageProvider();
         this.configuration = configuration ?? {
             fileGen: {
-                confirmation: ConfirmationMode.always
-            }
+                confirmation: ConfirmationMode.always,
+            },
+            gotoTestFile: {
+                useFilenameHeuristics: false,
+                heuristicFilenamePattern: "(\\w+)Tests",
+            },
         };
     }
 };

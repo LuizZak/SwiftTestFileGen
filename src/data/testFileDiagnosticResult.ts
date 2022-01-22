@@ -16,8 +16,17 @@ export interface TestFileDiagnosticResult {
 }
 
 export enum TestFileDiagnosticKind {
+    /** An input file was not located in a recognized Sources folder. */
     fileNotInSourcesFolder,
-    packageManifestNotFound
+
+    /** A package manifest for an input file was not found. */
+    packageManifestNotFound,
+
+    /** For Go to Test File command: Indicates that a provided heuristic pattern is incorrect. */
+    incorrectSearchPattern,
+
+    /** For Go to Test File command: Indicates that a file is already a test file. */
+    alreadyInTestFile,
 };
 
 export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
@@ -29,29 +38,14 @@ export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
         const truncateListAt = 2;
 
         const filePathTruncatedList = filePaths.slice(0, truncateListAt).join("\n");
-        
+
         let filePathList = filePathTruncatedList;
         const truncated = filePaths.length - truncateListAt;
         if (truncated > 0) {
             filePathList = filePathList.concat(`\n...and ${truncated} more`);
         }
 
-        switch (severity) {
-        case vscode.DiagnosticSeverity.Warning:
-            vscode.window.showWarningMessage(
-                `${message}\n${filePathList}`,
-            );
-
-        case vscode.DiagnosticSeverity.Error:
-            vscode.window.showErrorMessage(
-                `${message}\n${filePathList}`,
-            );
-
-        default:
-            vscode.window.showInformationMessage(
-                `${message}\n${filePathList}`,
-            );
-        }
+        _showMessage(`${message}\n${filePathList}`, severity);
     }
 
     function showDiagnosticsForKind(message: string, kind: TestFileDiagnosticKind, severity: vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Warning) {
@@ -79,8 +73,40 @@ export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
         vscode.DiagnosticSeverity.Warning
     );
 
-    // Show remaining diagnostics
+    // Show remaining diagnostics, one at a time
     for (const diagnostic of diagnostics) {
-        vscode.window.showErrorMessage(diagnostic.message);
+        const severity = _severityForDiagnosticKind(diagnostic.kind);
+
+        _showMessage(diagnostic.message, severity);
+    }
+}
+
+function _severityForDiagnosticKind(kind: TestFileDiagnosticKind): vscode.DiagnosticSeverity {
+    switch (kind) {
+        case TestFileDiagnosticKind.packageManifestNotFound:
+            return vscode.DiagnosticSeverity.Error;
+
+        case TestFileDiagnosticKind.incorrectSearchPattern:
+        case TestFileDiagnosticKind.fileNotInSourcesFolder:
+            return vscode.DiagnosticSeverity.Warning;
+
+        case TestFileDiagnosticKind.alreadyInTestFile:
+            return vscode.DiagnosticSeverity.Information;
+    }
+}
+
+async function _showMessage(message: string, severity: vscode.DiagnosticSeverity): Promise<void> {
+    switch (severity) {
+        case vscode.DiagnosticSeverity.Warning:
+            await vscode.window.showWarningMessage(message);
+            break;
+
+        case vscode.DiagnosticSeverity.Error:
+            await vscode.window.showErrorMessage(message);
+            break;
+
+        default:
+            await vscode.window.showInformationMessage(message);
+            break;
     }
 }

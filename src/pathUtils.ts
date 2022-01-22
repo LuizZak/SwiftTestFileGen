@@ -1,4 +1,5 @@
 import { assert } from "console";
+import * as minimatch from "minimatch";
 import path = require("path");
 import * as vscode from 'vscode';
 
