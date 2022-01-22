@@ -89,11 +89,6 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
         this.showTextDocument_calls.push([uri, options]);
     }
 
-    applyWorkspaceEdit_calls: [edit: vscode.WorkspaceEdit][] = [];
-    async applyWorkspaceEdit(edit: vscode.WorkspaceEdit): Promise<void> {
-        this.applyWorkspaceEdit_calls.push([edit]);
-    }
-
     makeWorkspaceEdit_calls: TestVscodeWorkspaceEdit[] = [];
     makeWorkspaceEdit(): TestVscodeWorkspaceEdit {
         const wsEdit = new TestVscodeWorkspaceEdit();
