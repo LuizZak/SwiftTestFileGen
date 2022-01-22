@@ -16,7 +16,6 @@ export const defaultPackageManifestFileName = "Package.swift";
 export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: FileSystemInterface, packageManifestFile?: string, cancellation?: vscode.CancellationToken): Promise<vscode.Uri | null> {
     packageManifestFile = packageManifestFile ?? defaultPackageManifestFileName;
 
-    // TODO: Abstract this check away so we can test this method properly.
     const packages = await fileSystem.findFiles(`**/${packageManifestFile}`, undefined, undefined, cancellation);
     if (packages.length > 0) {
         for (const pkgUri of packages) {

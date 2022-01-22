@@ -44,7 +44,7 @@ suite('gotoTestFileCommand Test Suite', () => {
         });
 
         it('should do nothing for files in test folders', async () => {
-            const files = fileUris(
+            const file = fileUri(
                 "/home/Tests/TargetTests/B.swift",
             );
             const pkg = stubPackage();
@@ -54,7 +54,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/Tests/TargetTests/B.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await gotoTestFileCommand(file, context);
 
             assertNoActions(context);
         });
