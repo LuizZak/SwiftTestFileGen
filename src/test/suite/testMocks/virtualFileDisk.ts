@@ -177,7 +177,7 @@ export class VirtualDisk {
         if (fullPath instanceof vscode.Uri) {
             expandedPath = fullPath.fsPath;
         } else {
-            expandedPath = fullPath;
+            expandedPath = vscode.Uri.file(fullPath).fsPath;
         }
         
         return expandedPath.split(this.pathSeparator());
