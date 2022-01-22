@@ -25,4 +25,11 @@ export class FileSystem implements FileSystemInterface {
             return false;
         }
     }
+
+    /**
+     * Requests that a uri representation be joined.
+     */
+    joinPathUri(uri: vscode.Uri, ...components: string[]): vscode.Uri {
+        return vscode.Uri.joinPath(uri, ...components);
+    }
 }

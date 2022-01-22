@@ -104,7 +104,7 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
         throw new vscode.CancellationError();
     }
 
-    const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
+    const pkgRoot = context.fileSystem.joinPathUri(pkgPath, "..");
 
     if (isTestFile(fileUri, pkgRoot, pkg)) {
         return [[], [{

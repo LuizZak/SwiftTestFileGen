@@ -40,7 +40,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     const diagnostics: TestFileDiagnosticResult[] = [];
 
     for (const [packageManifestPath, packageFiles] of packagesMap) {
-        const packagePath = vscode.Uri.joinPath(packageManifestPath, "..");
+        const packagePath = context.fileSystem.joinPathUri(packageManifestPath, "..");
 
         let pkg: SwiftPackageManifest;
         try {

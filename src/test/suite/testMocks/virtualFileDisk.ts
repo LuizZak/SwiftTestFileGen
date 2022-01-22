@@ -29,11 +29,12 @@ export class VirtualDisk {
      */
     createEntries(filePathList: (string | vscode.Uri)[]) {
         for (const file of filePathList) {
+            const normalizedPath = file instanceof vscode.Uri ? file : vscode.Uri.file(file);
             // Detect directory paths by a trailing slash
             if (typeof file === "string" && file.endsWith("/")) {
-                this.createDirectory(file.slice(0, file.length - 1));
+                this.createDirectory(normalizedPath);
             } else {
-                this.createFile(file);
+                this.createFile(normalizedPath);
             }
         }
     }
