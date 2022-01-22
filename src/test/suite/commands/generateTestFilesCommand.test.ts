@@ -87,6 +87,32 @@ class BTests: XCTestCase {
             ]);
         });
 
+        it('should create target test folders if none exist', async () => {
+            const files = fileUris(
+                "/home/Sources/Target/A.swift",
+            );
+            const pkg = stubPackage();
+            const context = setupTest([
+                "/home/Package.swift",
+                "/home/Sources/Target/A.swift",
+            ], undefined, pkg);
+
+            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+
+            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
+            assert.notStrictEqual(wsEdit, undefined);
+            assertWorkspaceEditMatchesUnordered(wsEdit, [
+                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
+
+@testable import Target
+
+class ATests: XCTestCase {
+
+}
+`],
+            ]);
+        });
+
         it('should do nothing for files not in recognized sources folder', async () => {
             const files = fileUris(
                 "/home/A.swift",
