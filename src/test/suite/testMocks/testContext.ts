@@ -114,6 +114,25 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
 
         return wsEdit;
     }
+
+    showInformationMessage_calls: [message: string, ...items: string[]][] = [];
+    showInformationMessage_stub?: (message: string, ...items: string[]) => Promise<string | undefined>;
+    async showInformationMessage(message: string, ...items: string[]): Promise<string | undefined> {
+        this.showInformationMessage_calls.push([message, ...items]);
+
+        return this.showInformationMessage_stub?.(message, ...items);
+    }
+
+    async withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }>, token: vscode.CancellationToken) => Thenable<R>): Promise<R> {
+        const progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }> = {
+            report(_value: { message?: string | undefined; increment?: number | undefined; }) {
+                
+            }
+        };
+        const token = new vscode.CancellationTokenSource();
+        
+        return await task(progress, token.token);
+    }
 }
 
 export class TestVscodeWorkspaceEdit implements VscodeWorkspaceEditInterface {

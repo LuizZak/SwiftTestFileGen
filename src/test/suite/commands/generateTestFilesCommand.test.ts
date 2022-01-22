@@ -153,11 +153,11 @@ class ATests: XCTestCase {
 
 }
 `],
-                [fileUri("/home/Packages/AnotherPackage/Sources/Target/A.swift"), `import XCTest
+                [fileUri("/home/Packages/AnotherPackage/Tests/TargetTests/ATests.swift"), `import XCTest
 
 @testable import Target
 
-class BTests: XCTestCase {
+class ATests: XCTestCase {
 
 }
 `],

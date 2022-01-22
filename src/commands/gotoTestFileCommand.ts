@@ -44,7 +44,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, context: Invocati
     if (await context.fileSystem.fileExists(testFile)) {
         await context.workspace.showTextDocument(files[0].path, { viewColumn });
     } else {
-        const response = await vscode.window.showInformationMessage(
+        const response = await context.workspace.showInformationMessage(
             `Test file for ${path.basename(fileUri.fsPath)} not found. Would you like to generate a test file now?`,
             "Yes",
             "No"

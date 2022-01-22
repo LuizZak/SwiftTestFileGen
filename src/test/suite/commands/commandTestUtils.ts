@@ -74,7 +74,7 @@ export function assertShownFiles(context: TestContext, ...expected: ShowFileArgu
     );
 }
 
-export function assertWorkspaceEditMatchesUnordered(wsEdit: TestVscodeWorkspaceEdit, expectedFiles: [uri: vscode.Uri, fileContents: string][]) {
+export function assertWorkspaceEditMatchesUnordered(wsEdit: TestVscodeWorkspaceEdit, expectedFiles: [uri: vscode.Uri | string, fileContents: string][]) {
     const filesCreated = wsEdit.createFile_calls;
     const textReplaced = wsEdit.replaceDocumentText_calls;
 
@@ -87,22 +87,37 @@ export function assertWorkspaceEditMatchesUnordered(wsEdit: TestVscodeWorkspaceE
         return;
     }
 
-    for (const [expectedFile, expectedContents] of expectedFiles) {
-        const index = filesCreated.findIndex(f => f[0].fsPath === expectedFile.fsPath);
-        if (index === -1) {
-            continue;
+    for (let index = expectedFiles.length - 1; index >= 0; index--) {
+        const [expectedFile, expectedContents] = expectedFiles[index];
+
+        const expectedFilePath = expectedFile instanceof vscode.Uri ? expectedFile.fsPath : expectedFile;
+        const filesCreatedIndex = filesCreated.findIndex(f => f[0].fsPath === expectedFilePath);
+        if (filesCreatedIndex === -1) {
+            assert.fail(
+                `Expected to find file created at path ${expectedFile} but found none!`
+            );
         }
-        const [fileCreated,] = filesCreated[index];
+        const [fileCreated,] = filesCreated[filesCreatedIndex];
+        filesCreated.splice(filesCreatedIndex, 1);
 
         const fileReplaces = textReplaceByFileUri.get(fileCreated);
         if (!fileReplaces || fileReplaces.length === 0) {
             assert.fail(
-                `Expected to find text replace entry for file ${fileUri} with contents: ${expectedContents} but found none.`
+                `Expected to find text replace entry for file ${expectedFile} with contents: ${expectedContents} but found none.`
             );
         }
 
         const fileReplace = fileReplaces[fileReplaces.length - 1];
 
         assert.strictEqual(fileReplace[1], expectedContents);
+    }
+
+    // Assert on unaccounted files
+    if (filesCreated.length > 0) {
+        const uris = filesCreated.map((file) => file[0]);
+
+        assert.fail(
+            `Found ${filesCreated.length} file(s) unaccounted for: ${uris}`
+        );
     }
 }

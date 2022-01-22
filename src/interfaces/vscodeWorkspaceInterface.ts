@@ -10,6 +10,12 @@ export interface VscodeWorkspaceInterface {
 
     /** Requests that a text document pointing to a given file Uri be displayed. */
     showTextDocument(uri: vscode.Uri, options?: vscode.TextDocumentShowOptions): Promise<void>;
+
+    /** Shows an information dialog with a set of options, returning a promise that resolves to the option the user picked. */
+    showInformationMessage(message: string, ...items: string[]): Promise<string | undefined>;
+
+    /** Presents a progress dialog for an operation. */
+    withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Thenable<R>): Thenable<R>;
 }
 
 /** Interface that abstracts away VSCode document changes. */

@@ -23,6 +23,14 @@ export class VscodeWorkspace implements VscodeWorkspaceInterface {
     async showTextDocument(uri: vscode.Uri, options?: vscode.TextDocumentShowOptions): Promise<void> {
         vscode.window.showTextDocument(uri, options);
     }
+
+    async showInformationMessage(message: string, ...items: string[]): Promise<string | undefined> {
+        return vscode.window.showInformationMessage(message, ...items);
+    }
+
+    withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }>, token: vscode.CancellationToken) => Thenable<R>): Thenable<R> {
+        return vscode.window.withProgress(options, task);
+    }
 }
 
 export class VscodeWorkspaceEdit implements VscodeWorkspaceEditInterface {
