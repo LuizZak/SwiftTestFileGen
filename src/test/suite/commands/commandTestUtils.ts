@@ -8,17 +8,7 @@ import { groupBy } from '../../../groupBy';
 export function setupTest(fileList: (string | vscode.Uri)[], configuration?: Configuration, stubPackage?: SwiftPackageManifest): TestContext {
     const context = makeTestContext(configuration);
     context.packageProvider.stubPackage = stubPackage;
-
-    for (const file of fileList) {
-        const normalizedPath = file instanceof vscode.Uri ? file : vscode.Uri.file(file);
-
-        // Detect directory paths by a trailing slash
-        if (typeof file === "string" && file.endsWith("/")) {
-            context.fileSystem.virtualFileDisk.createDirectory(normalizedPath);
-        } else {
-            context.fileSystem.virtualFileDisk.createFile(normalizedPath);
-        }
-    }
+    context.fileSystem.virtualFileDisk.createEntries(fileList);
 
     return context;
 }

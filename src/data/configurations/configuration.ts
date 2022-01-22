@@ -5,4 +5,8 @@ export interface Configuration {
     fileGen: {
         confirmation: ConfirmationMode;
     }
+    gotoTestFile: {
+        useFilenameHeuristics: boolean;
+        heuristicFilenamePattern: string | string[];
+    }
 }

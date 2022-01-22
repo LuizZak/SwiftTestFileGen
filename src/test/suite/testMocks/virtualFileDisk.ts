@@ -6,9 +6,10 @@ export type VirtualDiskObject = VirtualDiskRoot | VirtualDiskDirectory | Virtual
 
 export interface VirtualDiskEntryContainer {
     contents: VirtualDiskEntry[];
+    parent?: VirtualDiskEntryContainer;
 
     fullPath(separator: string): string;
-    partialPath(upTo: VirtualDiskEntryContainer, separator: string): string;
+    partialPath(upTo: VirtualDiskEntryContainer | undefined, separator: string): string;
 }
 
 /** A virtual file disk for testing */
@@ -17,6 +18,25 @@ export class VirtualDisk {
 
     findEntry(filePath: string | vscode.Uri): VirtualDiskObject | undefined {
         return this.findPath(filePath);
+    }
+
+    /**
+     * Requests that a set of file/directory entries be created.
+     * 
+     * Path strings that end in '/' are recognized as folder entries, and all other entries are recognized as files.
+     * 
+     * Supports deep paths, creating all directories in between in the process.
+     */
+    createEntries(filePathList: (string | vscode.Uri)[]) {
+        for (const file of filePathList) {
+            const normalizedPath = file instanceof vscode.Uri ? file : vscode.Uri.file(file);
+            // Detect directory paths by a trailing slash
+            if (typeof file === "string" && file.endsWith("/")) {
+                this.createDirectory(normalizedPath);
+            } else {
+                this.createFile(normalizedPath);
+            }
+        }
     }
 
     createFile(filePath: string | vscode.Uri): VirtualDiskFile {
@@ -82,16 +102,27 @@ export class VirtualDisk {
         const matchInclude = new minimatch.Minimatch(partialGlob.pattern);
 
         return files.filter(file => {
-            const partialPath = file.partialPath(container, this.pathSeparator());
+            let partialPath: string;
+            if (container === this.root) {
+                partialPath = file.fullPath(this.pathSeparator());
+            } else {
+                partialPath = file.partialPath(container, this.pathSeparator());
+            }
+
             return matchInclude.match(partialPath);
         });
     }
 
     private ensureDirectoryExists(directoryPath: string | vscode.Uri): VirtualDiskEntryContainer {
-        let currentPath = this.splitPathComponents(directoryPath);
+        let currentPath = this.splitPathComponents(directoryPath).slice(1);
         let currentDirectory = this.root;
 
         while (currentPath.length > 0) {
+            // Trailing empty space: We've reached the end of a directory tree.
+            if (currentPath[0].length === 0) {
+                break;
+            }
+
             const nextPath = currentPath[0];
             const nextEntry = this.entryWithName(nextPath, currentDirectory);
 
@@ -113,11 +144,16 @@ export class VirtualDisk {
     }
 
     private findPath(pathString: string | vscode.Uri): VirtualDiskObject | undefined {
-        let currentPath = this.splitPathComponents(pathString);
+        let currentPath = this.splitPathComponents(pathString).slice(1);
         let currentObject: VirtualDiskObject = this.root;
 
         while (currentPath.length > 0) {
             if (currentObject instanceof VirtualDiskDirectory || currentObject instanceof VirtualDiskRoot) {
+                // Trailing empty space: return current directory.
+                if (currentPath[0] === "") {
+                    break;
+                }
+                
                 const nextPath = currentPath[0];
                 const nextEntry = this.entryWithName(nextPath, currentObject);
 
@@ -141,7 +177,7 @@ export class VirtualDisk {
         if (fullPath instanceof vscode.Uri) {
             expandedPath = fullPath.fsPath;
         } else {
-            expandedPath = fullPath;
+            expandedPath = vscode.Uri.file(fullPath).fsPath;
         }
         
         return expandedPath.split(this.pathSeparator());
@@ -183,9 +219,15 @@ export class VirtualDisk {
 }
 
 export class VirtualDiskRoot implements VirtualDiskEntryContainer {
-    contents: VirtualDiskEntry[] = [];
+    constructor(public contents: VirtualDiskEntry[] = []) {
 
-    partialPath(_upTo: VirtualDiskEntryContainer, _separator: string): string {
+    }
+
+    partialPath(upTo: VirtualDiskEntryContainer | undefined, _separator: string): string {
+        if (upTo === undefined) {
+            return "/";
+        }
+
         return "";
     }
 
@@ -195,14 +237,11 @@ export class VirtualDiskRoot implements VirtualDiskEntryContainer {
 }
 
 export class VirtualDiskEntry {
-    parent: VirtualDiskEntryContainer | undefined;
-    name: string;
-
-    constructor(name: string) {
-        this.name = name;
+    constructor(public name: string, public parent?: VirtualDiskEntryContainer) {
+        
     }
 
-    partialPath(upTo: VirtualDiskEntryContainer, separator: string): string {
+    partialPath(upTo: VirtualDiskEntryContainer | undefined, separator: string): string {
         if (this.parent === undefined) {
             return this.name;
         }
@@ -223,16 +262,10 @@ export class VirtualDiskEntry {
 }
 
 export class VirtualDiskDirectory extends VirtualDiskEntry implements VirtualDiskEntryContainer {
-    contents: VirtualDiskEntry[];
-
-    constructor(name: string, contents: VirtualDiskEntry[] = []) {
-        super(name);
+    constructor(name: string, public contents: VirtualDiskEntry[] = [], public parent?: VirtualDiskEntryContainer) {
+        super(name, parent);
 
         this.contents = contents;
-    }
-
-    glob(pattern: string): VirtualDiskFile[] {
-        return [];
     }
 }
 

@@ -14,26 +14,35 @@ From a set of .swift files selected, right click and choose 'Generate Test File(
 
 With a file opened on an active editor, execute the command `> SwiftTestFileGen: Go to test file...` to navigate to a test with a matching file name, or create a new test if none is found.
 
+##### Simple heuristic search
+
+If `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern`
+
 ## Requirements
 
 A Swift 5.4 or later installation.
 
 ## Extension Settings
 
-This extension contributes the following settings:
+This extension contributes the following configurations:
 
 | `swiftTestFileGen.fileGen.confirmation` | When to trigger a confirmation of the operation through a Refactor Preview window |
 |---|---|
-| Configuration | Description |
+| Value | Description |
 | `always` | Always requests confirmation of changes |
 | `onlyIfMultiFile` | Only requests confirmation if more than one file is selected, or if the selected item is a directory |
 | `onlyOnDirectories` | Only requests confirmation if the selection contains one or more directories |
 | `never` | Never requests confirmation; always create test files straight away |
 
+| Configuration | Description | Default Value | 
+|--|--|--|
+| `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` | Whether to use simple `<FileName>.swift` -> `<FileName><Suffix>.swift` heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths.</br></br>If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests. | `false` |
+| `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` | A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files.</br></br>Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive.</br></br>Ignored if `useFilenameHeuristics` is false. | `"$1Tests.swift"` |
+
 ## Known Issues
 
 - A Package.swift is required on the workspace for the extension to find source and test files properly;
-- "Go to Test File..." can be slow at times.
+- ~~"Go to Test File..." can be slow at times.~~ Addressed with `gotoTestFile.useFilenameHeuristics`.
 
 ## TODO
 
@@ -41,6 +50,6 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
-### 0.0.1
+### 0.2.0
 
-Initial release
+- Added `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` and `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` configurations that enable a simple file search pattern to be used for finding test files.

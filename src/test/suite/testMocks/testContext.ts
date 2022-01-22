@@ -24,10 +24,15 @@ export class TestContext implements InvocationContext {
         this.fileSystem = new TestFileSystem();
         this.workspace = new TestVscodeWorkspace();
         this.packageProvider = new TestPackageProvider();
+
         this.configuration = configuration ?? {
             fileGen: {
-                confirmation: ConfirmationMode.always
-            }
+                confirmation: ConfirmationMode.always,
+            },
+            gotoTestFile: {
+                useFilenameHeuristics: false,
+                heuristicFilenamePattern: "(\\w+)Tests",
+            },
         };
     }
 };
