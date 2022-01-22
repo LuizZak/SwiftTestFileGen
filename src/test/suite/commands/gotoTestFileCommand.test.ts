@@ -7,7 +7,7 @@ import { assertNoActions, assertShownFiles, fileUri, fileUris, setupTest, stubPa
 
 suite('gotoTestFileCommand Test Suite', () => {
     describe('gotoTestFileCommand', () => {
-        // TODO: Test create test file prompt path.
+        // TODO: Test 'create test file' prompt path.
 
         it('should open existing test files', async () => {
             const file = fileUri(

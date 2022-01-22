@@ -2,7 +2,6 @@ import path = require('path');
 import * as vscode from 'vscode';
 import { isSubdirectory } from './pathUtils';
 import { FileSystemInterface } from './interfaces/fileSystemInterface';
-import { mappedGroupBy } from './groupBy';
 
 /**
  * The default package manifest file name: `Package.swift`.
