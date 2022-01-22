@@ -3,6 +3,8 @@ import { describe, it } from 'mocha';
 import { gotoTestFileCommand } from '../../../commands/gotoTestFileCommand';
 import { assertNoActions, assertShownFiles, assertWorkspaceEditMatchesUnordered, fileUri, setupTest, stubPackage } from './commandTestUtils';
 import assert = require('assert');
+import { Configuration } from '../../../data/configurations/configuration';
+import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
 
 suite('gotoTestFileCommand Test Suite', () => {
     describe('gotoTestFileCommand', () => {
@@ -114,6 +116,79 @@ class ATests: XCTestCase {
             await gotoTestFileCommand(file, context);
 
             assertNoActions(context);
+        });
+
+        describe("with heuristics enabled", () => {
+            it('should use a provided pattern', async () => {
+                const configuration: Configuration = {
+                    fileGen: {
+                        confirmation: ConfirmationMode.always,
+                    },
+                    gotoTestFile: {
+                        useFilenameHeuristics: true,
+                        heuristicFilenamePattern: "$1TestFile.swift",
+                    }
+                };
+
+                const file = fileUri(
+                    "/home/Sources/Target/A.swift"
+                );
+                const pkg = stubPackage();
+                const context = setupTest([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/ATestFile.swift",
+                ], configuration, pkg);
+    
+                await gotoTestFileCommand(file, context);
+                
+                assertShownFiles(context,
+                    ["/home/Tests/TargetTests/ATestFile.swift", {viewColumn: vscode.ViewColumn.Active}],
+                );
+            });
+
+            it('should attempt patterns in order of appearance until one matches', async () => {
+                const configuration: Configuration = {
+                    fileGen: {
+                        confirmation: ConfirmationMode.always,
+                    },
+                    gotoTestFile: {
+                        useFilenameHeuristics: true,
+                        heuristicFilenamePattern: [
+                            "$1TestFile.swift",
+                            "$1Spec.swift",
+                            "$1Tests.swift",
+                        ],
+                    }
+                };
+
+                const pkg = stubPackage();
+                const context = setupTest([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Sources/Target/B.swift",
+                    "/home/Sources/Target/C.swift",
+                    "/home/Tests/TargetTests/ATestFile.swift",
+                    "/home/Tests/TargetTests/BSpec.swift",
+                    "/home/Tests/TargetTests/CTests.swift",
+                ], configuration, pkg);
+    
+                await gotoTestFileCommand(fileUri(
+                    "/home/Sources/Target/A.swift"
+                ), context);
+                await gotoTestFileCommand(fileUri(
+                    "/home/Sources/Target/B.swift"
+                ), context);
+                await gotoTestFileCommand(fileUri(
+                    "/home/Sources/Target/C.swift"
+                ), context);
+                
+                assertShownFiles(context,
+                    ["/home/Tests/TargetTests/ATestFile.swift", {viewColumn: vscode.ViewColumn.Active}],
+                    ["/home/Tests/TargetTests/BSpec.swift", {viewColumn: vscode.ViewColumn.Active}],
+                    ["/home/Tests/TargetTests/CTests.swift", {viewColumn: vscode.ViewColumn.Active}],
+                );
+            });
         });
     });
 });

@@ -45,11 +45,11 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
     if (context.configuration.gotoTestFile.useFilenameHeuristics) {
         const heuristicPattern = context.configuration.gotoTestFile.heuristicFilenamePattern;
 
-        let patterns: RegExp[];
+        let patterns: string[];
         if (typeof heuristicPattern === "string") {
-            patterns = [RegExp(heuristicPattern)];
+            patterns = [heuristicPattern];
         } else {
-            patterns = heuristicPattern.map(RegExp);
+            patterns = heuristicPattern;
         }
 
         if (patterns.length === 0) {
@@ -58,19 +58,29 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
         }
 
         let results: [vscode.Uri[], TestFileDiagnosticResult[]] = [[], []];
+        
+        const swiftExt = ".swift";
+        const baseName = path.basename(fileUri.fsPath, swiftExt);
+        
+        const placeholder = "$1";
 
-        const baseName = path.basename(fileUri.fsPath, ".swift");
         for (const pattern of patterns) {
-            const targetFile = pattern.exec(baseName);
-            if (!targetFile || targetFile.length !== 2) {
+            if (pattern.indexOf(placeholder) === -1) {
                 results[1].push({
-                    message: `Found regex pattern for heuristicFilenamePattern that does not contain a capture group: ${pattern.source}`,
+                    message: `Found pattern for heuristicFilenamePattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
                     kind: TestFileDiagnosticKind.incorrectSearchPattern,
                 });
                 continue;
             }
+
+            let fileName = pattern.replace(placeholder, baseName);
             
-            const matches = await context.fileSystem.findFiles(`**/${targetFile[0]}.swift`);
+            // Correct patterns with an extra .swift extension
+            if (fileName.endsWith(swiftExt)) {
+                fileName = fileName.substring(0, fileName.length - swiftExt.length);
+            }
+            
+            const matches = await context.fileSystem.findFiles(`**/${fileName}${swiftExt}`);
             results[0] = results[0].concat(matches);
         }
         
