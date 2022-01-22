@@ -50,6 +50,10 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
+### 0.2.2
+
+- Fixing warnings being displayed despite no actual issues.
+
 ### 0.2.0
 
 - Added `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` and `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` configurations that enable a simple file search pattern to be used for finding test files.

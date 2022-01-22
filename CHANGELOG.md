@@ -2,6 +2,10 @@
 
 All notable changes to the "SwiftTestFileGen" extension will be documented in this file.
 
+## [0.2.2]
+
+- Fixing warnings being displayed despite no actual issues.
+
 ## [0.2.0]
 
 - Added `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` and `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` configurations that enable a simple file search pattern to be used for finding test files.
