@@ -16,8 +16,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     const swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
 
     if (swiftFiles.length === 0) {
-        vscode.window.showWarningMessage("No .swift files found in selection");
-
+        context.workspace.showWarningMessage("No .swift files found in selection");
         return [];
     }
 
@@ -30,7 +29,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     }
 
     if (packagesMap.size === 0 && nonPackaged.length > 0) {
-        vscode.window.showWarningMessage('Did not find a Package.swift manifest to derive test paths from for the selected files!');
+        context.workspace.showWarningMessage('Did not find a Package.swift manifest to derive test paths from for the selected files!');
         return [];
     }
 
@@ -62,7 +61,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     progress?.report({ message: "Generating test files..." });
 
     // Emit diagnostics
-    emitDiagnostics(diagnostics);
+    emitDiagnostics(diagnostics, context.workspace);
 
     const filesOpened: vscode.Uri[] = [];
 

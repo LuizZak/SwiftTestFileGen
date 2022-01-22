@@ -28,6 +28,14 @@ export class VscodeWorkspace implements VscodeWorkspaceInterface {
         return vscode.window.showInformationMessage(message, ...items);
     }
 
+    async showWarningMessage(message: string, ...items: string[]): Promise<string | undefined> {
+        return vscode.window.showWarningMessage(message, ...items);
+    }
+
+    async showErrorMessage(message: string, ...items: string[]): Promise<string | undefined> {
+        return vscode.window.showErrorMessage(message, ...items);
+    }
+
     withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }>, token: vscode.CancellationToken) => Thenable<R>): Thenable<R> {
         return vscode.window.withProgress(options, task);
     }

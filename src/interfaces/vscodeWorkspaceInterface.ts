@@ -14,6 +14,12 @@ export interface VscodeWorkspaceInterface {
     /** Shows an information dialog with a set of options, returning a promise that resolves to the option the user picked. */
     showInformationMessage(message: string, ...items: string[]): Promise<string | undefined>;
 
+    /** Shows a warning dialog with a set of options, returning a promise that resolves to the option the user picked. */
+    showWarningMessage(message: string, ...items: string[]): Promise<string | undefined>;
+
+    /** Shows an error dialog with a set of options, returning a promise that resolves to the option the user picked. */
+    showErrorMessage(message: string, ...items: string[]): Promise<string | undefined>;
+
     /** Presents a progress dialog for an operation. */
     withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => Thenable<R>): Thenable<R>;
 }

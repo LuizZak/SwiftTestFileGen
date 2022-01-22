@@ -11,7 +11,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, context: Invocati
     const [files, diagnostics] = await performFileSearch(fileUri, context, progress, cancellation);
 
     // Emit diagnostics
-    emitDiagnostics(diagnostics);
+    emitDiagnostics(diagnostics, context.workspace);
 
     if (files.length === 0) {
         // TODO: Print a diagnostic for this case

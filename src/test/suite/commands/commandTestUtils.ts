@@ -66,6 +66,16 @@ export function assertShownFiles(context: TestContext, ...expected: ShowFileArgu
     );
 }
 
+export function assertNoMessageDialogs(context: TestContext) {
+    assert.deepStrictEqual(context.workspace.showInformationMessage_calls, []);
+    assertNoWarningsOrErrors(context);
+}
+
+export function assertNoWarningsOrErrors(context: TestContext) {
+    assert.deepStrictEqual(context.workspace.showErrorMessage_calls, []);
+    assert.deepStrictEqual(context.workspace.showWarningMessage_calls, []);
+}
+
 export function assertWorkspaceEditMatchesUnordered(wsEdit: TestVscodeWorkspaceEdit, expectedFiles: [uri: vscode.Uri | string, fileContents: string][]) {
     const filesCreated = wsEdit.createFile_calls;
     const textReplaced = wsEdit.replaceDocumentText_calls;

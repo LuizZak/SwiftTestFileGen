@@ -134,6 +134,22 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
         return this.showInformationMessage_stub?.(message, ...items);
     }
 
+    showWarningMessage_calls: [message: string, ...items: string[]][] = [];
+    showWarningMessage_stub?: (message: string, ...items: string[]) => Promise<string | undefined>;
+    async showWarningMessage(message: string, ...items: string[]): Promise<string | undefined> {
+        this.showWarningMessage_calls.push([message, ...items]);
+
+        return this.showWarningMessage_stub?.(message, ...items);
+    }
+
+    showErrorMessage_calls: [message: string, ...items: string[]][] = [];
+    showErrorMessage_stub?: (message: string, ...items: string[]) => Promise<string | undefined>;
+    async showErrorMessage(message: string, ...items: string[]): Promise<string | undefined> {
+        this.showErrorMessage_calls.push([message, ...items]);
+
+        return this.showErrorMessage_stub?.(message, ...items);
+    }
+
     async withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }>, token: vscode.CancellationToken) => Thenable<R>): Promise<R> {
         const progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }> = {
             report(_value: { message?: string | undefined; increment?: number | undefined; }) {
@@ -144,7 +160,7 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
         
         return await task(progress, token.token);
     }
-}
+};
 
 export class TestVscodeWorkspaceEdit implements VscodeWorkspaceEditInterface {
     createFile_calls: [uri: vscode.Uri, options?: { overwrite?: boolean | undefined; ignoreIfExists?: boolean | undefined; }, metadata?: vscode.WorkspaceEditEntryMetadata][] = [];

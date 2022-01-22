@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { describe, it } from 'mocha';
 import { gotoTestFileCommand } from '../../../commands/gotoTestFileCommand';
-import { assertNoActions, assertShownFiles, assertWorkspaceEditMatchesUnordered, fileUri, setupTest, stubPackage } from './commandTestUtils';
+import { assertNoActions, assertNoMessageDialogs, assertShownFiles, assertWorkspaceEditMatchesUnordered, fileUri, setupTest, stubPackage } from './commandTestUtils';
 import assert = require('assert');
 import { Configuration } from '../../../data/configurations/configuration';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
@@ -133,12 +133,10 @@ class ATests: XCTestCase {
                 const file = fileUri(
                     "/home/Sources/Target/A.swift"
                 );
-                const pkg = stubPackage();
                 const context = setupTest([
-                    "/home/Package.swift",
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
-                ], configuration, pkg);
+                ], configuration);
     
                 await gotoTestFileCommand(file, context);
                 
@@ -147,20 +145,32 @@ class ATests: XCTestCase {
                 );
             });
 
+            it('should not issue any messages for files that are found', async () => {
+                const file = fileUri(
+                    "/home/Sources/Target/A.swift"
+                );
+                const context = setupTest([
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/ATestFile.swift",
+                ], configuration);
+    
+                await gotoTestFileCommand(file, context);
+                
+                assertNoMessageDialogs(context);
+            });
+
             it('should not query for a package if a heuristic finds a hit', async () => {
                 const file = fileUri(
                     "/home/Sources/Target/A.swift"
                 );
-                const pkg = stubPackage();
                 const context = setupTest([
-                    "/home/Package.swift",
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
-                ], configuration, pkg);
+                ], configuration);
     
                 await gotoTestFileCommand(file, context);
                 
-                assert.strictEqual(context.packageProvider.swiftPackageManifestForFile_calls.length, 0);
+                assert.deepStrictEqual(context.packageProvider.swiftPackageManifestForFile_calls, []);
             });
 
             it('should attempt patterns in order of appearance until one matches', async () => {
@@ -170,16 +180,14 @@ class ATests: XCTestCase {
                     "$1Tests.swift",
                 ];
 
-                const pkg = stubPackage();
                 const context = setupTest([
-                    "/home/Package.swift",
                     "/home/Sources/Target/A.swift",
                     "/home/Sources/Target/B.swift",
                     "/home/Sources/Target/C.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                     "/home/Tests/TargetTests/BSpec.swift",
                     "/home/Tests/TargetTests/CTests.swift",
-                ], configuration, pkg);
+                ], configuration);
     
                 await gotoTestFileCommand(fileUri(
                     "/home/Sources/Target/A.swift"
