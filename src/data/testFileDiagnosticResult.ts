@@ -9,31 +9,21 @@ export interface TestFileDiagnosticResult {
     message: string;
 
     /** File path that triggered diagnostic message, if any. */
-    sourceFile: vscode.Uri | null;
+    sourceFile?: vscode.Uri;
 
     /** Identifier for diagnostic kind. */
     kind: TestFileDiagnosticKind
 }
 
 export enum TestFileDiagnosticKind {
-    fileNotInSourcesFolder
+    fileNotInSourcesFolder,
+    packageManifestNotFound
 };
 
 export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
-    // Collapse diagnostic for files not in Sources/ directory
-    const filesNotInSources = diagnostics.filter(diagnostic => {
-        return diagnostic.kind === TestFileDiagnosticKind.fileNotInSourcesFolder;
-    });
-
-    if (filesNotInSources.length > 0) {
-        const filePaths = filesNotInSources.flatMap((file) => {
-            if (typeof file.sourceFile?.fsPath === "string") {
-                return [
-                    path.basename(file.sourceFile.fsPath)
-                ];
-            }
-
-            return [];
+    function showDiagnosticsForFiles(message: string, files: vscode.Uri[], severity: vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Warning) {
+        const filePaths = files.map((file) => {
+            return path.basename(file.fsPath);
         });
 
         const truncateListAt = 2;
@@ -46,8 +36,51 @@ export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[]) {
             filePathList = filePathList.concat(`\n...and ${truncated} more`);
         }
 
-        vscode.window.showWarningMessage(
-            `One or more files where not contained within a recognized Sources/ folder:\n${filePathList}`,
+        switch (severity) {
+        case vscode.DiagnosticSeverity.Warning:
+            vscode.window.showWarningMessage(
+                `${message}\n${filePathList}`,
+            );
+
+        case vscode.DiagnosticSeverity.Error:
+            vscode.window.showErrorMessage(
+                `${message}\n${filePathList}`,
+            );
+
+        default:
+            vscode.window.showInformationMessage(
+                `${message}\n${filePathList}`,
+            );
+        }
+    }
+
+    function showDiagnosticsForKind(message: string, kind: TestFileDiagnosticKind, severity: vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Warning) {
+        const filtered = diagnostics.filter(diagnostic => diagnostic.kind === kind);
+        diagnostics = diagnostics.filter(diagnostic => diagnostic.kind !== kind);
+
+        const filePaths = filtered.flatMap((file) => {
+            if (file.sourceFile) {
+                return [file.sourceFile];
+            }
+
+            return [];
+        });
+
+        showDiagnosticsForFiles(
+            message,
+            filePaths,
+            severity
         );
+    }
+
+    showDiagnosticsForKind(
+        `One or more files where not contained within a recognized Sources/ folder:`,
+        TestFileDiagnosticKind.fileNotInSourcesFolder,
+        vscode.DiagnosticSeverity.Warning
+    );
+
+    // Show remaining diagnostics
+    for (const diagnostic of diagnostics) {
+        vscode.window.showErrorMessage(diagnostic.message);
     }
 }
