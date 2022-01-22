@@ -119,5 +119,49 @@ class BTests: XCTestCase {
 
             assertNoActions(context);
         });
+
+        it('should respect multiple Package.swift manifests in project tree', async () => {
+            const files = fileUris(
+                "/home/Sources/Target/A.swift",
+                "/home/Packages/AnotherPackage/Sources/Target/A.swift",
+            );
+            const pkg = stubPackage();
+            const context = setupTest([
+                "/home/Package.swift",
+                "/home/Sources/Target/A.swift",
+                "/home/Tests/TargetTests/",
+                // Sub package
+                "/home/Packages/AnotherPackage/Package.swift",
+                "/home/Packages/AnotherPackage/Sources/Target/A.swift",
+                "/home/Packages/AnotherPackage/Tests/TargetTests/",
+            ], undefined, pkg);
+            context.packageProvider.stubPackageList = [
+                ["/home/Package.swift", pkg],
+                ["/home/Packages/AnotherPackage/Package.swift", pkg],
+            ];
+
+            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+
+            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
+            assert.notStrictEqual(wsEdit, undefined);
+            assertWorkspaceEditMatchesUnordered(wsEdit, [
+                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
+
+@testable import Target
+
+class ATests: XCTestCase {
+
+}
+`],
+                [fileUri("/home/Packages/AnotherPackage/Sources/Target/A.swift"), `import XCTest
+
+@testable import Target
+
+class BTests: XCTestCase {
+
+}
+`],
+            ]);
+        });
     });
 });

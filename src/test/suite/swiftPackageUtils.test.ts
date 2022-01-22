@@ -5,7 +5,6 @@ import * as vscode from 'vscode';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
 import { isSourceFile, isTestFile } from '../../swiftPackageUtils';
 
-
 suite('swiftPackageUtils Test Suite', () => {
     describe('isSourceFile', () => {
         test('returns true for files in Sources/', () => {

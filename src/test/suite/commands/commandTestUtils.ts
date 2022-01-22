@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { Configuration } from '../../../data/configurations/configuration';
 import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from '../testMocks/testContext';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../../data/swiftPackage';
+import { groupBy } from '../../../groupBy';
 
 export function setupTest(fileList: (string | vscode.Uri)[], configuration?: Configuration, stubPackage?: SwiftPackageManifest): TestContext {
     const context = makeTestContext(configuration);
@@ -104,19 +105,4 @@ export function assertWorkspaceEditMatchesUnordered(wsEdit: TestVscodeWorkspaceE
 
         assert.strictEqual(fileReplace[1], expectedContents);
     }
-}
-
-export function groupBy<K, V>(array: V[], key: (item: V) => K): Map<K, V[]> {
-    return array.reduce((prev, item) => {
-        const k = key(item);
-
-        const existing = prev.get(k);
-        if (!existing) {
-            prev.set(k, [item]);
-        } else {
-            existing.push(item);
-        }
-
-        return prev;
-    }, new Map());
 }

@@ -1,12 +1,13 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { findSwiftPackagePath } from '../swiftPackageFinder';
+import { mapPathsToSwiftPackages } from '../swiftPackageFinder';
 import { suggestTestFiles } from '../testFileGeneration';
-import { emitDiagnostics } from '../data/testFileDiagnosticResult';
+import { emitDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
+import { SwiftTestFile } from '../data/swiftTestFile';
 
 export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
     progress?.report({ message: "Finding Swift package..." });
@@ -22,54 +23,50 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     const needsConfirmation = await shouldRequestConfirmation(fileUris, context.fileSystem, confirmationMode);
 
-    const packagePaths = await Promise.all(swiftFiles.map((fileUri) => {
-        if (cancellation?.isCancellationRequested) {
-            throw new vscode.CancellationError();
-        }
-
-        return findSwiftPackagePath(fileUri, context.fileSystem);
-    }));
-
-    // TODO: Handle cases where multiple package manifests where found.
-    const filteredPackagePaths = packagePaths.flatMap(path => {
-        if (path === null) {
-            return [];
-        }
-        return [path];
-    });
+    const [packagesMap, nonPackaged] = await mapPathsToSwiftPackages(swiftFiles, context.fileSystem, cancellation);
 
     if (cancellation?.isCancellationRequested) {
         throw new vscode.CancellationError();
     }
 
-    if (filteredPackagePaths.length === 0) {
+    if (packagesMap.size === 0 && nonPackaged.length > 0) {
         vscode.window.showWarningMessage('Did not find a Package.swift manifest to derive test paths from for the selected files!');
         return [];
     }
 
-    const packageManifestPath = filteredPackagePaths[0];
-    const packagePath = vscode.Uri.joinPath(packageManifestPath, "..");
+    const wsEdit = context.workspace.makeWorkspaceEdit();
+    const documents: vscode.Uri[] = [];
+    const filesToCreate:  SwiftTestFile[] = [];
+    const diagnostics: TestFileDiagnosticResult[] = [];
 
-    let pkg: SwiftPackageManifest;
-    try {
-        pkg = await context.packageProvider.swiftPackageManifestForFile(packageManifestPath, cancellation);
-    } catch (err) {
-        vscode.window.showErrorMessage(`Error while loading package manifest @ ${packageManifestPath.fsPath}: ${err}`);
-        return [];
+    for (const [packageManifestPath, packageFiles] of packagesMap) {
+        const packagePath = vscode.Uri.joinPath(packageManifestPath, "..");
+
+        let pkg: SwiftPackageManifest;
+        try {
+            pkg = await context.packageProvider.swiftPackageManifestForFile(packageManifestPath, cancellation);
+        } catch (err) {
+            diagnostics.push({
+                message: `Could not find package manifest @ ${packageManifestPath.fsPath}: ${err}`,
+                kind: TestFileDiagnosticKind.packageManifestNotFound
+            });
+
+            continue;
+        }
+
+        const result = suggestTestFiles(packageFiles, packagePath, pkg);
+        filesToCreate.splice(0, 0, ...result[0]);
+        diagnostics.splice(0, 0, ...result[1]);
     }
 
     progress?.report({ message: "Generating test files..." });
 
-    const result = suggestTestFiles(swiftFiles, packagePath, pkg);
-
     // Emit diagnostics
-    emitDiagnostics(result[1]);
+    emitDiagnostics(diagnostics);
 
-    const testFiles = result[0];
-    const wsEdit = context.workspace.makeWorkspaceEdit();
     const filesOpened: vscode.Uri[] = [];
 
-    for (const testFile of testFiles) {
+    for (const testFile of filesToCreate) {
         // Ignore files that already exist
         if (await context.fileSystem.fileExists(testFile.path)) {
             continue;
@@ -97,19 +94,20 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     await wsEdit.applyWorkspaceEdit();
 
     // Pre-save all files
-    const documents = await Promise.all(filesOpened.map(async fileUri => {
+    const newDocuments = await Promise.all(filesOpened.map(async fileUri => {
         await context.workspace.saveOpenedDocument(fileUri);
 
         return fileUri;
     }));
+    documents.splice(0, 0, ...newDocuments);
+    
+    progress?.report({ message: "Done!" });
 
     // Move focus to first file created
     if (documents.length > 0) {
         await context.workspace.showTextDocument(documents[0]);
     }
-
-    progress?.report({ message: "Done!" });
-
+    
     return documents;
 }
 

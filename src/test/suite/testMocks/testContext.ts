@@ -33,12 +33,30 @@ export class TestContext implements InvocationContext {
 };
 
 export class TestPackageProvider implements PackageProviderInterface {
+    /** Stubs package on a per-directory basis, retuning the package manifest that is closest to a Package.swift uri. */
+    stubPackageList?: [packageSwiftUri: vscode.Uri | string, pkg: SwiftPackageManifest][];
+
+    /** Single stubbed package that is always returned, if no package in `this.stubPackageList` was matched. */
     stubPackage?: SwiftPackageManifest;
 
     swiftPackageManifestForFile_calls: [fileUri: vscode.Uri, cancellation?: vscode.CancellationToken][] = [];
     async swiftPackageManifestForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackageManifest> {
         this.swiftPackageManifestForFile_calls.push([fileUri, cancellation]);
 
+        if (this.stubPackageList) {
+            // Do a recursive search up the paths, stopping on the first Package.swift found in the hierarchy
+            let currentDirectory = vscode.Uri.joinPath(fileUri, "..");
+            const rootPath = vscode.Uri.file("/").fsPath;
+
+            while (currentDirectory.fsPath !== rootPath) {
+                for (const stub of this.stubPackageList) {
+                    const stubPath = stub[0] instanceof vscode.Uri ? stub[0].fsPath : stub[0];
+                    if (vscode.Uri.joinPath(currentDirectory, "Package.swift").fsPath === stubPath) {
+                        return stub[1];
+                    }
+                }
+            }
+        }
         if (this.stubPackage) {
             return this.stubPackage;
         }
