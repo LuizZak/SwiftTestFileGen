@@ -119,17 +119,17 @@ class ATests: XCTestCase {
         });
 
         describe("with heuristics enabled", () => {
-            it('should use a provided pattern', async () => {
-                const configuration: Configuration = {
-                    fileGen: {
-                        confirmation: ConfirmationMode.always,
-                    },
-                    gotoTestFile: {
-                        useFilenameHeuristics: true,
-                        heuristicFilenamePattern: "$1TestFile.swift",
-                    }
-                };
+            const configuration: Configuration = {
+                fileGen: {
+                    confirmation: ConfirmationMode.always,
+                },
+                gotoTestFile: {
+                    useFilenameHeuristics: true,
+                    heuristicFilenamePattern: "$1TestFile.swift",
+                }
+            };
 
+            it('should use a provided pattern', async () => {
                 const file = fileUri(
                     "/home/Sources/Target/A.swift"
                 );
@@ -147,20 +147,28 @@ class ATests: XCTestCase {
                 );
             });
 
+            it('should not query for a package if a heuristic finds a hit', async () => {
+                const file = fileUri(
+                    "/home/Sources/Target/A.swift"
+                );
+                const pkg = stubPackage();
+                const context = setupTest([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/ATestFile.swift",
+                ], configuration, pkg);
+    
+                await gotoTestFileCommand(file, context);
+                
+                assert.strictEqual(context.packageProvider.swiftPackageManifestForFile_calls.length, 0);
+            });
+
             it('should attempt patterns in order of appearance until one matches', async () => {
-                const configuration: Configuration = {
-                    fileGen: {
-                        confirmation: ConfirmationMode.always,
-                    },
-                    gotoTestFile: {
-                        useFilenameHeuristics: true,
-                        heuristicFilenamePattern: [
-                            "$1TestFile.swift",
-                            "$1Spec.swift",
-                            "$1Tests.swift",
-                        ],
-                    }
-                };
+                configuration.gotoTestFile.heuristicFilenamePattern = [
+                    "$1TestFile.swift",
+                    "$1Spec.swift",
+                    "$1Tests.swift",
+                ];
 
                 const pkg = stubPackage();
                 const context = setupTest([
