@@ -84,7 +84,9 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
             results[0] = results[0].concat(matches);
         }
         
-        return results;
+        if (results[0].length > 0 || results[1].length > 0) {
+            return results;
+        }
     }
 
     progress?.report({ message: "Finding Swift package..." });

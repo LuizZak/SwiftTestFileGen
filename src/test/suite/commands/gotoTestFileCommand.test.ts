@@ -205,6 +205,66 @@ class ATests: XCTestCase {
                     ["/home/Tests/TargetTests/CTests.swift", {viewColumn: vscode.ViewColumn.Active}],
                 );
             });
+
+            it('should present the option of creating a test file, if none is found, with a default pattern name.', async () => {
+                const file = fileUri(
+                    "/home/Sources/Target/A.swift",
+                );
+                const pkg = stubPackage();
+                const context = setupTest([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/",
+                ], configuration, pkg);
+                context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+                    assert.deepStrictEqual(items, [
+                        "Yes",
+                        "No"
+                    ]);
+    
+                    return "Yes";
+                };
+    
+                await gotoTestFileCommand(file, context);
+    
+                const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
+                assert.notStrictEqual(wsEdit, undefined);
+                assertWorkspaceEditMatchesUnordered(wsEdit, [
+                    ["/home/Tests/TargetTests/ATests.swift", `import XCTest
+
+@testable import Target
+
+class ATests: XCTestCase {
+
+}
+`]
+                ]);
+                assertShownFiles(context, ['/home/Tests/TargetTests/ATests.swift']);
+            });
+
+            it('should not create a file when none is found, if the user chooses not to.', async () => {
+                const file = fileUri(
+                    "/home/Sources/Target/A.swift",
+                );
+                const pkg = stubPackage();
+                const context = setupTest([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/",
+                ], configuration, pkg);
+                context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+                    assert.deepStrictEqual(items, [
+                        "Yes",
+                        "No"
+                    ]);
+    
+                    return "No";
+                };
+    
+                await gotoTestFileCommand(file, context);
+
+                assertNoActions(context);
+            });
         });
     });
 });
