@@ -10,11 +10,13 @@ export function setupTest(fileList: (string | vscode.Uri)[], configuration?: Con
     context.packageProvider.stubPackage = stubPackage;
 
     for (const file of fileList) {
+        const normalizedPath = file instanceof vscode.Uri ? file : vscode.Uri.file(file);
+
         // Detect directory paths by a trailing slash
         if (typeof file === "string" && file.endsWith("/")) {
-            context.fileSystem.virtualFileDisk.createDirectory(file);
+            context.fileSystem.virtualFileDisk.createDirectory(normalizedPath);
         } else {
-            context.fileSystem.virtualFileDisk.createFile(file);
+            context.fileSystem.virtualFileDisk.createFile(normalizedPath);
         }
     }
 
@@ -60,7 +62,7 @@ export function assertShownFiles(context: TestContext, ...expected: ShowFileArgu
     // Map down to avoid comparing vscode.Uri by reference
     function _map(entry: ShowFileArguments): [filePath: string, options?: vscode.TextDocumentShowOptions] {
         if (typeof entry[0] === "string") {
-            return [entry[0], entry[1]];
+            return [vscode.Uri.file(entry[0]).fsPath, entry[1]];
         }
 
         return [entry[0].fsPath, entry[1]];
@@ -90,8 +92,8 @@ export function assertWorkspaceEditMatchesUnordered(wsEdit: TestVscodeWorkspaceE
     for (let index = expectedFiles.length - 1; index >= 0; index--) {
         const [expectedFile, expectedContents] = expectedFiles[index];
 
-        const expectedFilePath = expectedFile instanceof vscode.Uri ? expectedFile.fsPath : expectedFile;
-        const filesCreatedIndex = filesCreated.findIndex(f => f[0].fsPath === expectedFilePath);
+        const expectedFilePath = expectedFile instanceof vscode.Uri ? expectedFile : vscode.Uri.file(expectedFile);
+        const filesCreatedIndex = filesCreated.findIndex(f => f[0].fsPath === expectedFilePath.fsPath);
         if (filesCreatedIndex === -1) {
             assert.fail(
                 `Expected to find file created at path ${expectedFile} but found none!`

@@ -20,4 +20,9 @@ export interface FileSystemInterface {
      * Returns `false` if path exists but is not a file, or on IO error.
      */
     isDirectoryUri(uri: vscode.Uri): Promise<boolean>;
+
+    /**
+     * Requests that a uri representation be joined.
+     */
+    joinPathUri(uri: vscode.Uri, ...components: string[]): vscode.Uri
 }

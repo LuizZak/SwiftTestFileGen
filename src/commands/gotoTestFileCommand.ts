@@ -22,7 +22,7 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, context: Invocati
         throw new vscode.CancellationError();
     }
 
-    const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
+    const pkgRoot = context.fileSystem.joinPathUri(pkgPath, "..");
 
     if (isTestFile(fileUri, pkgRoot, pkg)) {
         vscode.window.showInformationMessage("Already in a test file!");

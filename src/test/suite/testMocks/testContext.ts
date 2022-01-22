@@ -55,6 +55,8 @@ export class TestPackageProvider implements PackageProviderInterface {
                         return stub[1];
                     }
                 }
+
+                currentDirectory = vscode.Uri.joinPath(currentDirectory, "..");
             }
         }
         if (this.stubPackage) {
@@ -93,6 +95,10 @@ export class TestFileSystem implements FileSystemInterface {
         return results.map(result => {
             return vscode.Uri.file(result.fullPath(path.sep));
         });
+    }
+
+    joinPathUri(uri: vscode.Uri, ...components: string[]): vscode.Uri {
+        return vscode.Uri.joinPath(uri, ...components);
     }
 };
 
