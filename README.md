@@ -32,7 +32,8 @@ This extension contributes the following settings:
 
 ## Known Issues
 
-A Package.swift is required on the workspace for the extension to find source and test files properly.
+- A Package.swift is required on the workspace for the extension to find source and test files properly;
+- "Go to Test File..." can be slow at times.
 
 ## TODO
 
