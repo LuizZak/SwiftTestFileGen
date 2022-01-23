@@ -17,12 +17,14 @@ export interface FileSystemInterface {
     /**
      * Returns `true` if a given Uri points to a directory on disk.
      * 
-     * Returns `false` if path exists but is not a file, or on IO error.
+     * Returns `false` if path exists but is not a directory, or on IO error.
      */
     isDirectoryUri(uri: vscode.Uri): Promise<boolean>;
 
     /**
      * Requests that a uri representation be joined.
+     * 
+     * @deprecated Use `vscode.Uri.joinPath` instead.
      */
     joinPathUri(uri: vscode.Uri, ...components: string[]): vscode.Uri
 }

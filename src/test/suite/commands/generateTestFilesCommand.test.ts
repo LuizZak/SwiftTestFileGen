@@ -21,9 +21,9 @@ suite('generateTestFilesCommand Test Suite', () => {
             ], undefined, pkg);
 
             await generateTestFilesCommand(files, ConfirmationMode.always, context);
-
+            
             const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.notStrictEqual(wsEdit, undefined);
+            assert.ok(wsEdit);
             assertWorkspaceEditMatchesUnordered(wsEdit, [
                 [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
 
@@ -66,7 +66,7 @@ class BTests: XCTestCase {
             await generateTestFilesCommand(files, ConfirmationMode.always, context);
 
             const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.notStrictEqual(wsEdit, undefined);
+            assert.ok(wsEdit);
             assertWorkspaceEditMatchesUnordered(wsEdit, [
                 [fileUri("/home/Tests/TargetATests/ATests.swift"), `import XCTest
 
@@ -100,7 +100,7 @@ class BTests: XCTestCase {
             await generateTestFilesCommand(files, ConfirmationMode.always, context);
 
             const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.notStrictEqual(wsEdit, undefined);
+            assert.ok(wsEdit);
             assertWorkspaceEditMatchesUnordered(wsEdit, [
                 [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
 
@@ -169,7 +169,7 @@ class ATests: XCTestCase {
             await generateTestFilesCommand(files, ConfirmationMode.always, context);
 
             const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.notStrictEqual(wsEdit, undefined);
+            assert.ok(wsEdit);
             assertWorkspaceEditMatchesUnordered(wsEdit, [
                 [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
 

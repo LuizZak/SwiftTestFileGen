@@ -10,6 +10,29 @@ export function setupTest(fileList: (string | vscode.Uri)[], configuration?: Con
     context.packageProvider.stubPackage = stubPackage;
     context.fileSystem.virtualFileDisk.createEntries(fileList);
 
+    // Automatically try to stub package paths
+    if (stubPackage) {
+        for (const path of fileList) {
+            let normalizedPath: string;
+            if (path instanceof vscode.Uri) {
+                normalizedPath = path.fsPath;
+            } else {
+                normalizedPath = path;
+            }
+
+            if (normalizedPath.endsWith("/Package.swift")) {
+                let existingList = context.packageProvider.stubPackageList;
+                if (!existingList) {
+                    existingList = [[normalizedPath, stubPackage]];
+                } else {
+                    existingList.push([normalizedPath, stubPackage]);
+                }
+
+                context.packageProvider.stubPackageList = existingList;
+            }
+        }
+    }
+
     return context;
 }
 

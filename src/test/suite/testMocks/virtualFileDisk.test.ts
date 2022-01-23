@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { describe, it, beforeEach } from 'mocha';
 import assert = require('assert');
-import { VirtualDisk, VirtualDiskDirectory, VirtualDiskEntry, VirtualDiskEntryContainer, VirtualDiskFile, VirtualDiskRoot } from './virtualFileDisk';
+import { VirtualDisk, VirtualDiskDirectory, VirtualDiskEntry, VirtualDiskEntryContainer, VirtualDiskEntryType, VirtualDiskFile, VirtualDiskRoot } from './virtualFileDisk';
+import { fileUri } from '../commands/commandTestUtils';
 
 suite('virtualFileDisk Test Suite', () => {
     let sut: VirtualDisk;
@@ -53,6 +54,34 @@ suite('virtualFileDisk Test Suite', () => {
                             new VirtualDiskFile("file")
                         ])
                     ])
+                )
+            );
+        });
+    });
+
+    describe('createEntriesWithKind', () => {
+        it("should respect the file kinds, irrespective of path kind or termination", () => {
+            sut.createEntriesWithKind([
+                ['/file.ext', VirtualDiskEntryType.file],
+                ['/other.ext/', VirtualDiskEntryType.file],
+                ['/dir', VirtualDiskEntryType.directory],
+                ['/dir/dir', VirtualDiskEntryType.directory],
+                [fileUri('/sub/file.ext'), VirtualDiskEntryType.file],
+                [fileUri('/sub/sub'), VirtualDiskEntryType.directory],
+            ]);
+
+            assert.deepStrictEqual(
+                sut.root,
+                createTestDisk(
+                    new VirtualDiskFile("file.ext"),
+                    new VirtualDiskFile("other.ext"),
+                    new VirtualDiskDirectory("dir", [
+                        new VirtualDiskDirectory("dir"),
+                    ]),
+                    new VirtualDiskDirectory("sub", [
+                        new VirtualDiskFile("file.ext"),
+                        new VirtualDiskDirectory("sub"),
+                    ]),
                 )
             );
         });

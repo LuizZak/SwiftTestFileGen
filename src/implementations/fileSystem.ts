@@ -28,6 +28,8 @@ export class FileSystem implements FileSystemInterface {
 
     /**
      * Requests that a uri representation be joined.
+     * 
+     * @deprecated Use `vscode.Uri.joinPath` instead.
      */
     joinPathUri(uri: vscode.Uri, ...components: string[]): vscode.Uri {
         return vscode.Uri.joinPath(uri, ...components);

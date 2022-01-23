@@ -12,6 +12,14 @@ export interface VirtualDiskEntryContainer {
     partialPath(upTo: VirtualDiskEntryContainer | undefined, separator: string): string;
 }
 
+/** Used to specify explicitly the kind of entries to create with `VirtualDisk.createEntries`. */
+export enum VirtualDiskEntryType {
+    file,
+    directory,
+    /** Alias for 'directory' */
+    folder = directory
+};
+
 /** A virtual file disk for testing */
 export class VirtualDisk {
     root: VirtualDiskRoot = new VirtualDiskRoot();
@@ -28,13 +36,43 @@ export class VirtualDisk {
      * Supports deep paths, creating all directories in between in the process.
      */
     createEntries(filePathList: (string | vscode.Uri)[]) {
-        for (const file of filePathList) {
-            const normalizedPath = file instanceof vscode.Uri ? file : vscode.Uri.file(file);
-            // Detect directory paths by a trailing slash
-            if (typeof file === "string" && file.endsWith("/")) {
-                this.createDirectory(normalizedPath);
+        const entries: [string | vscode.Uri, VirtualDiskEntryType][] = filePathList.map(entry => {
+            if (entry instanceof vscode.Uri) {
+                return [entry, VirtualDiskEntryType.file];
+            }
+
+            if (entry.endsWith("/")) {
+                return [entry, VirtualDiskEntryType.folder];
             } else {
+                return [entry, VirtualDiskEntryType.file];
+            }
+        });
+
+        this.createEntriesWithKind(entries);
+    }
+
+    /**
+     * Requests that a set of file/directory entries be created.
+     * 
+     * Supports deep paths, creating all directories in between in the process.
+     */
+    createEntriesWithKind(filePathList: [string | vscode.Uri, VirtualDiskEntryType][]) {
+        for (const [file, kind] of filePathList) {
+            let normalizedPath: vscode.Uri;
+            if (file instanceof vscode.Uri) {
+                normalizedPath = file;
+            } else {
+                normalizedPath = vscode.Uri.file(file);
+            }
+
+            // Detect directory paths by a trailing slash
+            switch (kind) {
+            case VirtualDiskEntryType.file:
                 this.createFile(normalizedPath);
+                break;
+            case VirtualDiskEntryType.folder:
+                this.createDirectory(normalizedPath);
+                break;
             }
         }
     }

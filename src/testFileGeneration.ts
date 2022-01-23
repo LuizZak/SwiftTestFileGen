@@ -1,39 +1,28 @@
 import path = require('path');
 import * as vscode from 'vscode';
 import { TestFileDiagnosticKind, TestFileDiagnosticResult } from './data/testFileDiagnosticResult';
-import { SwiftPackageManifest, SwiftTarget, TargetType } from './data/swiftPackage';
 import { SwiftTestFile } from './data/swiftTestFile';
-import { isSubdirectory, rootDirectoryOfRelativePath } from './pathUtils';
+import { PackageProviderInterface } from './interfaces/packageProviderInterface';
 
 /**
  * Returns a set of suggested test files for a list of .swift file paths.
  * 
  * @param filePaths File paths to generate test files out of
- * @param packageRoot Path to the root of the Swift package, aka the folder containing its Package.swift.
- * @param pkg An optional package that can be used to derive qualified paths for the test file generation step.
+ * @param packageProvider A package provider for computing package for file Uris.
+ * @param cancellation A cancellation token to stop the operation.
  * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
  */
-export function suggestTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Uri, pkg: SwiftPackageManifest): [SwiftTestFile[], TestFileDiagnosticResult[]] {
-    // For computing potential test target paths
-    // TODO: Delegate this path hardcoding to SwiftPM somehow.
-    const sourcesPath = vscode.Uri.joinPath(packageRoot, "Sources");
-    const testsPath = vscode.Uri.joinPath(packageRoot, "Tests");
+export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider: PackageProviderInterface, cancellation?: vscode.CancellationToken): Promise<[SwiftTestFile[], TestFileDiagnosticResult[]]> {
+    const operations = filePaths.map(async (filePath): Promise<[SwiftTestFile[], TestFileDiagnosticResult[]]> => {
+        const pkg = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
 
-    const targetMap = makeTargetPathMap(packageRoot, pkg);
-
-    let results: SwiftTestFile[] = [];
-    let diagnostics: TestFileDiagnosticResult[] = [];
-    
-    filePaths.forEach(filePath => {
         // Ignore files that are not within the sources root directory
-        if (!isSubdirectory(sourcesPath, filePath)) {
-            diagnostics.push({
+        if (!await pkg.isSourceFile(filePath)) {
+            return [[], [{
                 message: "File is not contained within a recognized Sources/ folder",
                 sourceFile: filePath,
                 kind: TestFileDiagnosticKind.fileNotInSourcesFolder
-            });
-
-            return;
+            }]];
         }
 
         // Compute file / test class names
@@ -41,26 +30,63 @@ export function suggestTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Ur
         const testClassName = `${fileNameWithoutExt}Tests`;
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
-        const target = targetForFilePath(filePath, targetMap);
-        const targetName = target?.name ?? targetNameFromFilePath(filePath, sourcesPath);
-        const testTarget = testTargetForTarget(target, pkg);
+        const target = await pkg.targetForFilePath(filePath);
+        const targetName = target?.name ?? await pkg.targetNameFromFilePath(filePath);
+        const testTarget = pkg.testTargetForTarget(target);
+        const testsPath = await pkg.availableTestsPath();
 
         // Compute relative paths to maintain directory substructure in tests folder
         let fileRelativeDirPath: string;
         const fileDir = path.dirname(filePath.fsPath);
         if (typeof target?.path === "string") {
-            fileRelativeDirPath = path.relative(path.join(packageRoot.fsPath, target.path), fileDir);
-        } else if(typeof targetName === "string") {
-            fileRelativeDirPath = path.relative(path.join(sourcesPath.fsPath, targetName), fileDir);
+            fileRelativeDirPath = path.relative(path.join(pkg.packageRoot.fsPath, target.path), fileDir);
+        } else if(target) {
+            const targetPath = await pkg.pathForTarget(target);
+
+            fileRelativeDirPath = path.relative(targetPath.fsPath, fileDir);
+        } else if (typeof targetName === "string") {
+            const sourcesPath = await pkg.availableSourcesPath();
+            if (sourcesPath === null) {
+                return [[], [{
+                    message: "Cannot find folder that contains a source file!",
+                    kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
+                    sourceFile: filePath
+                }]];
+            }
+            
+            const targetPath = vscode.Uri.joinPath(sourcesPath, targetName);
+
+            fileRelativeDirPath = path.relative(targetPath.fsPath, fileDir);
         } else {
+            const sourcesPath = await pkg.availableSourcesPath();
+            if (sourcesPath === null) {
+                return [[], [{
+                    message: "Cannot find folder that contains a source file!",
+                    kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
+                    sourceFile: filePath
+                }]];
+            }
+
             fileRelativeDirPath = path.relative(sourcesPath.fsPath, fileDir);
         }
         
         // Compute full test file path
         let fullTestFilePath: vscode.Uri;
         if (typeof testTarget?.path === "string") {
-            fullTestFilePath = vscode.Uri.joinPath(packageRoot, testTarget.path, fileRelativeDirPath, testFileName);
+            fullTestFilePath = vscode.Uri.joinPath(pkg.packageRoot, testTarget.path, fileRelativeDirPath, testFileName);
+        } else if (testTarget) {
+            const testTargetPath = await pkg.pathForTarget(testTarget);
+
+            fullTestFilePath = vscode.Uri.joinPath(testTargetPath, fileRelativeDirPath, testFileName);
         } else if (typeof targetName === "string") {
+            if (!testsPath) {
+                return [[], [{
+                    message: "Could not locate tests folder for a file's package",
+                    kind: TestFileDiagnosticKind.testsFolderNotFound,
+                    sourceFile: filePath
+                }]];
+            }
+
             // Replace <TargetName>/ with <TargetName>Tests/
             let testTargetName = `${targetName}Tests`;
 
@@ -72,6 +98,14 @@ export function suggestTestFiles(filePaths: vscode.Uri[], packageRoot: vscode.Ur
                     testFileName
                 );
         } else {
+            if (!testsPath) {
+                return [[], [{
+                    message: "Could not locate tests folder for a file's package",
+                    kind: TestFileDiagnosticKind.testsFolderNotFound,
+                    sourceFile: filePath
+                }]];
+            }
+            
             fullTestFilePath =
                 vscode.Uri.joinPath(
                     testsPath,
@@ -102,66 +136,10 @@ class ${testClassName}: XCTestCase {
 `
         };
 
-        results.push(result);
+        return [[result], []];
     });
 
-    return [results, diagnostics];
-}
-
-type TargetPathMap = Map<vscode.Uri, SwiftTarget>;
-
-function makeTargetPathMap(packageRoot: vscode.Uri, pkg: SwiftPackageManifest): TargetPathMap {
-    let targetPathMap: TargetPathMap = new Map();
-
-    pkg.targets.forEach(target => {
-        const path = pathForTarget(packageRoot, target);
-
-        targetPathMap.set(path, target);
+    return (await Promise.all(operations)).reduce((prev, next) => {
+        return [prev[0].concat(next[0]), prev[1].concat(next[1])];
     });
-
-    return targetPathMap;
-}
-
-function pathForTarget(packageRoot: vscode.Uri, target: SwiftTarget): vscode.Uri {
-    if (typeof target.path === "string") {
-        return vscode.Uri.joinPath(packageRoot, target.path);
-    }
-
-    return vscode.Uri.joinPath(packageRoot, "Sources", target.name);
-}
-
-function targetForFilePath(filePath: vscode.Uri, targetMap: TargetPathMap): SwiftTarget | null {
-    for (const entry of targetMap.entries()) {
-        if (isSubdirectory(entry[0], filePath)) {
-            return entry[1];
-        }
-    }
-    
-    return null;
-}
-
-function targetNameFromFilePath(filePath: vscode.Uri, sourcesRoot: vscode.Uri): string | null {
-    const dirName = path.dirname(filePath.fsPath);
-    const relativeTargetPath = path.relative(sourcesRoot.fsPath, dirName);
-
-    if (relativeTargetPath.length === 0) {
-        return null;
-    }
-
-    return rootDirectoryOfRelativePath(relativeTargetPath);
-}
-
-function testTargetForTarget(target: SwiftTarget | null, pkg: SwiftPackageManifest): SwiftTarget | null {
-    if (target === null) {
-        return null;
-    }
-
-    for (const t of pkg.targets) {
-        // TODO: Allow customizing test target search patterns
-        if (t.type === TargetType.Test && t.name === `${target.name}Tests`) {
-            return t;
-        }
-    }
-
-    return null;
 }

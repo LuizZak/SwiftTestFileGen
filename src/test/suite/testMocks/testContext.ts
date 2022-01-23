@@ -8,7 +8,8 @@ import { InvocationContext } from "../../../interfaces/context";
 import { FileSystemInterface } from "../../../interfaces/fileSystemInterface";
 import { PackageProviderInterface } from "../../../interfaces/packageProviderInterface";
 import { VscodeWorkspaceEditInterface, VscodeWorkspaceInterface } from "../../../interfaces/vscodeWorkspaceInterface";
-import { VirtualDiskFile, VirtualDisk, VirtualDiskDirectory } from "./virtualFileDisk";
+import { SwiftPackagePathsManager } from "../../../swiftPackagePathsManager";
+import { VirtualDiskFile, VirtualDisk, VirtualDiskDirectory, VirtualDiskEntryType } from "./virtualFileDisk";
 
 export function makeTestContext(configuration?: Configuration): TestContext {
     return new TestContext(configuration);
@@ -23,7 +24,7 @@ export class TestContext implements InvocationContext {
     constructor(configuration?: Configuration) {
         this.fileSystem = new TestFileSystem();
         this.workspace = new TestVscodeWorkspace();
-        this.packageProvider = new TestPackageProvider();
+        this.packageProvider = new TestPackageProvider(this.fileSystem);
 
         this.configuration = configuration ?? {
             fileGen: {
@@ -44,24 +45,18 @@ export class TestPackageProvider implements PackageProviderInterface {
     /** Single stubbed package that is always returned, if no package in `this.stubPackageList` was matched. */
     stubPackage?: SwiftPackageManifest;
 
+    constructor(public fileSystem: FileSystemInterface) {
+
+    }
+
     swiftPackageManifestForFile_calls: [fileUri: vscode.Uri, cancellation?: vscode.CancellationToken][] = [];
     async swiftPackageManifestForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackageManifest> {
         this.swiftPackageManifestForFile_calls.push([fileUri, cancellation]);
 
         if (this.stubPackageList) {
-            // Do a recursive search up the paths, stopping on the first Package.swift found in the hierarchy
-            let currentDirectory = vscode.Uri.joinPath(fileUri, "..");
-            const rootPath = vscode.Uri.file("/").fsPath;
-
-            while (currentDirectory.fsPath !== rootPath) {
-                for (const stub of this.stubPackageList) {
-                    const stubPath = stub[0] instanceof vscode.Uri ? stub[0].fsPath : stub[0];
-                    if (vscode.Uri.joinPath(currentDirectory, "Package.swift").fsPath === stubPath) {
-                        return stub[1];
-                    }
-                }
-
-                currentDirectory = vscode.Uri.joinPath(currentDirectory, "..");
+            const stubbed = this.closesPackageToPath(fileUri);
+            if (stubbed) {
+                return stubbed[1];
             }
         }
         if (this.stubPackage) {
@@ -70,10 +65,72 @@ export class TestPackageProvider implements PackageProviderInterface {
 
         throw new Error("No stubbed package provided!");
     }
+
+    swiftPackagePathManagerForFile_calls: [fileUri: vscode.Uri, cancellation?: vscode.CancellationToken][] = [];
+    async swiftPackagePathManagerForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackagePathsManager> {
+        this.swiftPackagePathManagerForFile_calls.push([fileUri, cancellation]);
+
+        const stubbed = this.closesPackageToPath(fileUri);
+        if (!stubbed) {
+            throw new Error("No stubbed package found!");
+        }
+
+        const pkgPath = vscode.Uri.joinPath(stubbed[0], "..");
+        
+        return new SwiftPackagePathsManager(pkgPath, stubbed[1], this.fileSystem);
+    }
+
+    private closesPackageToPath(fileUri: vscode.Uri): [vscode.Uri, SwiftPackageManifest] | null {
+        if (!this.stubPackageList) {
+            throw new Error("No stubbed package provided!");
+        }
+
+        // Do a recursive search up the paths, stopping on the first Package.swift found in the hierarchy
+        let currentDirectory = vscode.Uri.joinPath(fileUri, "..");
+        const rootPath = vscode.Uri.file("/").fsPath;
+
+        while (currentDirectory.fsPath !== rootPath) {
+            for (const stub of this.stubPackageList) {
+                const stubPath = stub[0] instanceof vscode.Uri ? stub[0].fsPath : stub[0];
+                const packageFile = vscode.Uri.joinPath(currentDirectory, "Package.swift");
+                if (packageFile.fsPath === stubPath) {
+                    return [packageFile, stub[1]];
+                }
+            }
+
+            currentDirectory = vscode.Uri.joinPath(currentDirectory, "..");
+        }
+
+        return null;
+    }
 };
 
 export class TestFileSystem implements FileSystemInterface {
     virtualFileDisk: VirtualDisk = new VirtualDisk();
+
+    /**
+     * Requests that a set of file/directory entries be created.
+     * 
+     * Path strings that end in '/' are recognized as folder entries, and all other entries are recognized as files.
+     * 
+     * Supports deep paths, creating all directories in between in the process.
+     * 
+     * Alias for `this.virtualFileDisk.createEntries(filePathList)`.
+     */
+    createEntries(...filePathList: (string | vscode.Uri)[]) {
+        this.virtualFileDisk.createEntries(filePathList);
+    }
+
+    /**
+     * Requests that a set of file/directory entries be created.
+     * 
+     * Supports deep paths, creating all directories in between in the process.
+     * 
+     * Alias for `this.virtualFileDisk.createEntriesWithKind(filePathList)`.
+     */
+     createEntriesWithKind(...filePathList: [string | vscode.Uri, VirtualDiskEntryType][])  {
+        this.virtualFileDisk.createEntriesWithKind(filePathList);
+    }
 
     async fileExists(uri: vscode.Uri): Promise<boolean> {
         try {
@@ -102,6 +159,9 @@ export class TestFileSystem implements FileSystemInterface {
         });
     }
 
+    /**
+     * @deprecated Use `vscode.Uri.joinPath` instead.
+     */
     joinPathUri(uri: vscode.Uri, ...components: string[]): vscode.Uri {
         return vscode.Uri.joinPath(uri, ...components);
     }

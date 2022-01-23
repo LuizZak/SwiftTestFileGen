@@ -2,8 +2,7 @@ import path = require('path');
 import * as vscode from 'vscode';
 import { mapPathsToSwiftPackages } from '../swiftPackageFinder';
 import { suggestTestFiles } from '../testFileGeneration';
-import { emitDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
-import { SwiftPackageManifest } from '../data/swiftPackage';
+import { emitDiagnostics, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
@@ -38,22 +37,8 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     const filesToCreate:  SwiftTestFile[] = [];
     const diagnostics: TestFileDiagnosticResult[] = [];
 
-    for (const [packageManifestPath, packageFiles] of packagesMap) {
-        const packagePath = context.fileSystem.joinPathUri(packageManifestPath, "..");
-
-        let pkg: SwiftPackageManifest;
-        try {
-            pkg = await context.packageProvider.swiftPackageManifestForFile(packageManifestPath, cancellation);
-        } catch (err) {
-            diagnostics.push({
-                message: `Could not find package manifest @ ${packageManifestPath.fsPath}: ${err}`,
-                kind: TestFileDiagnosticKind.packageManifestNotFound
-            });
-
-            continue;
-        }
-
-        const result = suggestTestFiles(packageFiles, packagePath, pkg);
+    for (const [_, packageFiles] of packagesMap) {
+        const result = await suggestTestFiles(packageFiles, context.packageProvider, cancellation);
         filesToCreate.splice(0, 0, ...result[0]);
         diagnostics.splice(0, 0, ...result[1]);
     }
