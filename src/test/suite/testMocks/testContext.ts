@@ -91,9 +91,9 @@ export class TestPackageProvider implements PackageProviderInterface {
 
         while (currentDirectory.fsPath !== rootPath) {
             for (const stub of this.stubPackageList) {
-                const stubPath = stub[0] instanceof vscode.Uri ? stub[0].fsPath : stub[0];
+                const stubPath = stub[0] instanceof vscode.Uri ? stub[0] : vscode.Uri.file(stub[0]);
                 const packageFile = vscode.Uri.joinPath(currentDirectory, "Package.swift");
-                if (packageFile.fsPath === stubPath) {
+                if (packageFile.fsPath === stubPath.fsPath) {
                     return [packageFile, stub[1]];
                 }
             }
