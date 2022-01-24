@@ -20,9 +20,9 @@ suite('gotoTestFileCommand Test Suite', () => {
             ], undefined, pkg);
 
             await gotoTestFileCommand(file, fixture.context);
-            
+
             fixture.assertShownFiles(
-                ["/home/Tests/TargetTests/ATests.swift", {viewColumn: vscode.ViewColumn.Active}],
+                ["/home/Tests/TargetTests/ATests.swift", { viewColumn: vscode.ViewColumn.Active }],
             );
         });
 
@@ -133,11 +133,11 @@ suite('gotoTestFileCommand Test Suite', () => {
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                 ], configuration);
-    
+
                 await gotoTestFileCommand(file, fixture.context);
-                
+
                 fixture.assertShownFiles(
-                    ["/home/Tests/TargetTests/ATestFile.swift", {viewColumn: vscode.ViewColumn.Active}],
+                    ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
                 );
             });
 
@@ -149,9 +149,9 @@ suite('gotoTestFileCommand Test Suite', () => {
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                 ], configuration);
-    
+
                 await gotoTestFileCommand(file, fixture.context);
-                
+
                 fixture.assertNoMessageDialogs();
             });
 
@@ -163,9 +163,9 @@ suite('gotoTestFileCommand Test Suite', () => {
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                 ], configuration);
-    
+
                 await gotoTestFileCommand(file, fixture.context);
-                
+
                 fixture.assertNoPackageManifestQueries();
             });
 
@@ -184,7 +184,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                     "/home/Tests/TargetTests/BSpec.swift",
                     "/home/Tests/TargetTests/CTests.swift",
                 ], configuration);
-    
+
                 await gotoTestFileCommand(fileUri(
                     "/home/Sources/Target/A.swift"
                 ), fixture.context);
@@ -194,11 +194,11 @@ suite('gotoTestFileCommand Test Suite', () => {
                 await gotoTestFileCommand(fileUri(
                     "/home/Sources/Target/C.swift"
                 ), fixture.context);
-                
+
                 fixture.assertShownFiles(
-                    ["/home/Tests/TargetTests/ATestFile.swift", {viewColumn: vscode.ViewColumn.Active}],
-                    ["/home/Tests/TargetTests/BSpec.swift", {viewColumn: vscode.ViewColumn.Active}],
-                    ["/home/Tests/TargetTests/CTests.swift", {viewColumn: vscode.ViewColumn.Active}],
+                    ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    ["/home/Tests/TargetTests/BSpec.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    ["/home/Tests/TargetTests/CTests.swift", { viewColumn: vscode.ViewColumn.Active }],
                 );
             });
 
@@ -217,12 +217,12 @@ suite('gotoTestFileCommand Test Suite', () => {
                         "Yes",
                         "No"
                     ]);
-    
+
                     return "Yes";
                 };
-    
+
                 await gotoTestFileCommand(file, fixture.context);
-    
+
                 const wsEdit = fixture.context.workspace.makeWorkspaceEdit_calls[0];
                 assert.notStrictEqual(wsEdit, undefined);
                 fixture.assertWorkspaceEditsMatchUnordered([
@@ -249,10 +249,10 @@ suite('gotoTestFileCommand Test Suite', () => {
                         "Yes",
                         "No"
                     ]);
-    
+
                     return "No";
                 };
-    
+
                 await gotoTestFileCommand(file, fixture.context);
 
                 fixture.assertNoActions();

@@ -3,14 +3,15 @@ import * as vscode from 'vscode';
 import { Configuration } from '../../../data/configurations/configuration';
 import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from '../testMocks/testContext';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../../data/swiftPackage';
-import { groupBy } from '../../../groupBy';
+import { groupBy } from '../../../algorithms/groupBy';
 import path = require('path');
 
 export type ShowFileArguments = [fileUri: vscode.Uri | string, options?: vscode.TextDocumentShowOptions];
 
 export interface WorkspaceExpectedFileArguments {
     uri: vscode.Uri | string
-    fileContents: string
+    fileContents?: string
+    needsConfirmation?: boolean
 };
 
 /**
@@ -151,7 +152,11 @@ export class FullTestFixture {
         }
 
         for (let index = expectedFiles.length - 1; index >= 0; index--) {
-            const { uri: expectedFile, fileContents: expectedContents } = expectedFiles[index];
+            const {
+                uri: expectedFile,
+                fileContents: expectedContents,
+                needsConfirmation
+            } = expectedFiles[index];
 
             const expectedFilePath = expectedFile instanceof vscode.Uri ? expectedFile : vscode.Uri.file(expectedFile);
             const filesCreatedIndex = filesCreated.findIndex(f => f[0].fsPath === expectedFilePath.fsPath);
@@ -160,19 +165,29 @@ export class FullTestFixture {
                     `Expected to find file created at path ${expectedFile} but found none!`
                 );
             }
-            const [fileCreated,] = filesCreated[filesCreatedIndex];
+            const [fileCreated, _, metadata] = filesCreated[filesCreatedIndex];
             filesCreated.splice(filesCreatedIndex, 1);
 
-            const fileReplaces = textReplaceByFileUri.get(fileCreated);
-            if (!fileReplaces || fileReplaces.length === 0) {
-                assert.fail(
-                    `Expected to find text replace entry for file ${expectedFile} with contents: ${expectedContents} but found none.`
+            if (needsConfirmation !== undefined) {
+                assert.strictEqual(
+                    metadata?.needsConfirmation,
+                    needsConfirmation,
+                    `Expected needsConfirmation of ${needsConfirmation} does not match actual value of ${metadata?.needsConfirmation} for file ${fileCreated.fsPath}!`
                 );
             }
 
-            const fileReplace = fileReplaces[fileReplaces.length - 1];
+            if (expectedContents) {
+                const fileReplaces = textReplaceByFileUri.get(fileCreated);
+                if (!fileReplaces || fileReplaces.length === 0) {
+                    assert.fail(
+                        `Expected to find text replace entry for file ${expectedFile} with contents: ${expectedContents} but found none.`
+                    );
+                }
 
-            assert.strictEqual(fileReplace[1], expectedContents);
+                const fileReplace = fileReplaces[fileReplaces.length - 1];
+    
+                assert.strictEqual(fileReplace[1], expectedContents);
+            }
         }
 
         // Assert on unaccounted files
