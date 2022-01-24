@@ -24,6 +24,9 @@ export enum TestFileDiagnosticKind {
     /** A package manifest for an input file was not found. */
     packageManifestNotFound,
 
+    /** A folder for the tests of a package was not found. */
+    testsFolderNotFound,
+
     /** For Go to Test File command: Indicates that a provided heuristic pattern is incorrect. */
     incorrectSearchPattern,
 
@@ -94,6 +97,7 @@ function _severityForDiagnosticKind(kind: TestFileDiagnosticKind): vscode.Diagno
 
         case TestFileDiagnosticKind.incorrectSearchPattern:
         case TestFileDiagnosticKind.fileNotInSourcesFolder:
+        case TestFileDiagnosticKind.testsFolderNotFound:
             return vscode.DiagnosticSeverity.Warning;
 
         case TestFileDiagnosticKind.alreadyInTestFile:

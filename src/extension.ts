@@ -32,10 +32,12 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 function makeContext(): InvocationContext {
+	const fs = fileSystem();
+
 	return {
-		fileSystem: fileSystem(),
+		fileSystem: fs,
 		workspace: workspace(),
-		packageProvider: packageProvider(),
+		packageProvider: packageProvider(fs),
 		configuration: configuration()
 	};
 }
@@ -64,6 +66,6 @@ function configuration(): Configuration {
 	};
 }
 
-function packageProvider(): PackageProviderInterface {
-	return new FileDiskPackageProvider();
+function packageProvider(fileSystem: FileSystemInterface): PackageProviderInterface {
+	return new FileDiskPackageProvider(fileSystem);
 }

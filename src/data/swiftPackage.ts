@@ -25,6 +25,9 @@ export enum TargetType {
     Executable = "executable",
     Regular = "regular",
     Test = "test",
+    System = "system",
+    Binary = "binary",
+    Plugin = "plugin",
 }
 
 export interface ToolsVersion {
@@ -180,14 +183,17 @@ const typeMap: any = {
     "SwiftTarget": o([
         { json: "name", js: "name", typ: "" },
         { json: "path", js: "path", typ: u(undefined, u(null, "")) },
-        { json: "type", js: "type", typ: r("Type") },
+        { json: "type", js: "type", typ: r("TargetType") },
     ], false),
     "ToolsVersion": o([
         { json: "_version", js: "_version", typ: "" },
     ], false),
-    "Type": [
+    "TargetType": [
         "executable",
         "regular",
         "test",
+        "system",
+        "binary",
+        "plugin",
     ],
 };

@@ -4,11 +4,35 @@ import { Configuration } from '../../../data/configurations/configuration';
 import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from '../testMocks/testContext';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../../data/swiftPackage';
 import { groupBy } from '../../../groupBy';
+import path = require('path');
 
 export function setupTest(fileList: (string | vscode.Uri)[], configuration?: Configuration, stubPackage?: SwiftPackageManifest): TestContext {
     const context = makeTestContext(configuration);
     context.packageProvider.stubPackage = stubPackage;
     context.fileSystem.virtualFileDisk.createEntries(fileList);
+
+    // Automatically try to stub package paths
+    if (stubPackage) {
+        for (const file of fileList) {
+            let normalizedPath: string;
+            if (file instanceof vscode.Uri) {
+                normalizedPath = file.fsPath;
+            } else {
+                normalizedPath = vscode.Uri.file(file).fsPath;
+            }
+
+            if (normalizedPath.endsWith(`${path.sep}Package.swift`)) {
+                let existingList = context.packageProvider.stubPackageList;
+                if (!existingList) {
+                    existingList = [[normalizedPath, stubPackage]];
+                } else {
+                    existingList.push([normalizedPath, stubPackage]);
+                }
+
+                context.packageProvider.stubPackageList = existingList;
+            }
+        }
+    }
 
     return context;
 }

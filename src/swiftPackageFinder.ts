@@ -9,14 +9,29 @@ import { FileSystemInterface } from './interfaces/fileSystemInterface';
 export const defaultPackageManifestFileName = "Package.swift";
 
 /**
- * Returns a Uri for a Package.swift that contains a given file path, or `null`, if no Package.swift exists within the file path's hierarchy.
+ * Returns a Uri for a Package.swift that contains a given file path, or `null`,
+ * if no Package.swift exists within the file path's hierarchy.
  * 
- * @param packageManifestFile A file name for the package manifest to find, or `undefined`, in which case defaults to `defaultPackageManifestFileName`.
+ * @param packageManifestFile A file name for the package manifest to find, or
+ * `undefined`, in which case defaults to `defaultPackageManifestFileName`.
 */
-export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: FileSystemInterface, packageManifestFile?: string, cancellation?: vscode.CancellationToken): Promise<vscode.Uri | null> {
+export async function findSwiftPackagePath(
+    filePath: vscode.Uri,
+    fileSystem: FileSystemInterface,
+    packageManifestFile?: string,
+    cancellation?: vscode.CancellationToken
+): Promise<vscode.Uri | null> {
+
     packageManifestFile = packageManifestFile ?? defaultPackageManifestFileName;
 
-    const packages = await fileSystem.findFiles(`**/${packageManifestFile}`, undefined, undefined, cancellation);
+    const packages =
+        await fileSystem.findFiles(
+            `**/${packageManifestFile}`,
+            undefined,
+            undefined,
+            cancellation
+        );
+
     if (packages.length > 0) {
         for (const pkgUri of packages) {
             if (cancellation?.isCancellationRequested) {
@@ -41,7 +56,7 @@ export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: Fil
 
         let packagePath = vscode.Uri.file(path.join(currentDirectory, packageManifestFile));
 
-        if(await fileSystem.fileExists(packagePath)) {
+        if (await fileSystem.fileExists(packagePath)) {
             return packagePath;
         }
 
@@ -54,33 +69,47 @@ export async function findSwiftPackagePath(filePath: vscode.Uri, fileSystem: Fil
 /**
  * Finds all Package.swift manifest files within all workspace folders.
  * 
- * @param packageManifestFile A file name for the package manifest to find, or `undefined`, in which case defaults to `defaultPackageManifestFileName`.
+ * @param packageManifestFile A file name for the package manifest to find, or
+ * `undefined`, in which case defaults to `defaultPackageManifestFileName`.
 */
-export async function findAllSwiftPackages(fileSystem: FileSystemInterface, packageManifestFile?: string, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
+export async function findAllSwiftPackages(
+    fileSystem: FileSystemInterface,
+    packageManifestFile?: string,
+    cancellation?: vscode.CancellationToken
+): Promise<vscode.Uri[]> {
+
     packageManifestFile = packageManifestFile ?? defaultPackageManifestFileName;
 
     return await fileSystem.findFiles(`**/${packageManifestFile}`, undefined, undefined, cancellation);
 }
 
 /**
- * From a set of file or directory Uris, find all Package.swift manifests that contain the file, by invoking a `swift package` command on its location, returning a map of
- * which files belong to which Package.swift manifests.
+ * From a set of file or directory Uris, find all Package.swift manifests that
+ * contain the file, by invoking a `swift package` command on its location,
+ * returning a map of which files belong to which Package.swift manifests.
  * 
- * A separate list of values is used to indicate files that could not be pinned to a package manifest.
+ * A separate list of values is used to indicate files that could not be pinned
+ * to a package manifest.
  */
-export async function mapPathsToSwiftPackages(fileUris: vscode.Uri[], fileSystem: FileSystemInterface, cancellation?: vscode.CancellationToken): Promise<[packageMap: Map<vscode.Uri, vscode.Uri[]>, notInPackage: vscode.Uri[]]> {
-    const packagePathPairs = await Promise.all(fileUris.map(async (fileUri): Promise<[vscode.Uri | null, vscode.Uri]> => {
-        if (cancellation?.isCancellationRequested) {
-            throw new vscode.CancellationError();
-        }
+export async function mapPathsToSwiftPackages(
+    fileUris: vscode.Uri[],
+    fileSystem: FileSystemInterface,
+    cancellation?: vscode.CancellationToken
+): Promise<[packageMap: Map<string, vscode.Uri[]>, notInPackage: vscode.Uri[]]> {
 
-        return [await findSwiftPackagePath(fileUri, fileSystem), fileUri];
-    }));
+    const packagePathPairs: [vscode.Uri | null, vscode.Uri][] =
+        await Promise.all(fileUris.map(async fileUri => {
+            if (cancellation?.isCancellationRequested) {
+                throw new vscode.CancellationError();
+            }
 
-   const packageMap = new Map<vscode.Uri, vscode.Uri[]>();
-   const nonPackage: vscode.Uri[] = [];
+            return [await findSwiftPackagePath(fileUri, fileSystem), fileUri];
+        }));
 
-   for (const packagePathPair of packagePathPairs) {
+    const packageMap = new Map<string, vscode.Uri[]>();
+    const nonPackage: vscode.Uri[] = [];
+
+    for (const packagePathPair of packagePathPairs) {
         const packagePath = packagePathPair[0];
         const filePath = packagePathPair[1];
         if (packagePath === null) {
@@ -88,9 +117,9 @@ export async function mapPathsToSwiftPackages(fileUris: vscode.Uri[], fileSystem
             continue;
         }
 
-        const existing = packageMap.get(filePath);
+        const existing = packageMap.get(packagePath.fsPath);
         if (!existing) {
-            packageMap.set(packagePath, [filePath]);
+            packageMap.set(packagePath.fsPath, [filePath]);
         } else {
             existing.push(filePath);
         }

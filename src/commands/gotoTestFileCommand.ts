@@ -4,7 +4,7 @@ import { emitDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } fro
 import { generateTestFilesEntry } from '../frontend';
 import { InvocationContext } from '../interfaces/context';
 import { findSwiftPackagePath } from '../swiftPackageFinder';
-import { isTestFile } from '../swiftPackageUtils';
+import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../testFileGeneration';
 
 export async function gotoTestFileCommand(fileUri: vscode.Uri, context: InvocationContext, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<void> {
@@ -107,8 +107,9 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
     }
 
     const pkgRoot = context.fileSystem.joinPathUri(pkgPath, "..");
+    const pathManager = new SwiftPackagePathsManager(pkgRoot, pkg, context.fileSystem);
 
-    if (isTestFile(fileUri, pkgRoot, pkg)) {
+    if (await pathManager.isTestFile(fileUri)) {
         return [[], [{
             message: "Already in a test file!",
             kind: TestFileDiagnosticKind.alreadyInTestFile,
@@ -116,7 +117,7 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
         }]];
     }
 
-    const [files, diagnostics] = suggestTestFiles([fileUri], pkgRoot, pkg);
+    const [files, diagnostics] = await suggestTestFiles([fileUri], context.packageProvider, cancellation);
 
     return [files.map(f => f.path), diagnostics];
 }
