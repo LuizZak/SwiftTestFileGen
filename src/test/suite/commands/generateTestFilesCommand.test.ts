@@ -161,10 +161,6 @@ class ATests: XCTestCase {
                 "/home/Packages/AnotherPackage/Sources/Target/A.swift",
                 "/home/Packages/AnotherPackage/Tests/TargetTests/",
             ], undefined, pkg);
-            context.packageProvider.stubPackageList = [
-                ["/home/Package.swift", pkg],
-                ["/home/Packages/AnotherPackage/Package.swift", pkg],
-            ];
 
             await generateTestFilesCommand(files, ConfirmationMode.always, context);
 
