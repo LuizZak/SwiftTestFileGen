@@ -2,7 +2,7 @@
 
 All notable changes to the "SwiftTestFileGen" extension will be documented in this file.
 
-## [Unreleased]
+## [0.3.0]
 
 - Fixing system, binary, and plugin targets not being recognized and resulting in Package.swift parse errors.
 - Fixing package finding when creating test files for multiple files at once.
