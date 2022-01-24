@@ -14,4 +14,6 @@
     "cSpell.words": [
         "swifttestfilegen"
     ],
+
+    "commentAnchors.workspace.excludeFiles": "**/{node_modules,.git,.idea,target,out,build,dist,vendor,.vscode-test}/**/*"
 }

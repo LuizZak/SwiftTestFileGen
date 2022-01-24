@@ -4,13 +4,13 @@ import { describe } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
 import { suggestTestFiles } from '../../testFileGeneration';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
-import { fileUris, setupTest, stubPackage } from './commands/commandTestUtils';
+import { fileUris, FullTestFixture, makeExpectedTestFileContentString } from './commands/fullTestFixture';
 
 suite('Test File Generation Test Suite', () => {
     describe('suggestTestFiles', () => {
         test('with target rooted in Sources/', async () => {
             const testPackage = makeSingleTargetTestPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/Package/Path/Package.swift",
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/B.swift",
@@ -22,7 +22,7 @@ suite('Test File Generation Test Suite', () => {
                 "/Package/Path/Sources/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result[0],
@@ -30,13 +30,13 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
-                        contents: makeExpectedTestString("Target", "ATests"),
+                        contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
-                        contents: makeExpectedTestString("Target", "BTests"),
+                        contents: makeExpectedTestFileContentString("Target", "BTests"),
                         originalFile: filePaths[1]
                     },
                 ]
@@ -46,7 +46,7 @@ suite('Test File Generation Test Suite', () => {
         test('with file in nested folder', async () => {
             const testPackage = makeMultiTargetTestPackage();
 
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/Package/Path/Package.swift",
                 "/Package/Path/Sources/Target/SubfolderA/A.swift",
                 "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
@@ -58,7 +58,7 @@ suite('Test File Generation Test Suite', () => {
                 "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result[0],
@@ -66,13 +66,13 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
-                        contents: makeExpectedTestString("Target", "ATests"),
+                        contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
-                        contents: makeExpectedTestString("TargetWithPath", "BTests"),
+                        contents: makeExpectedTestFileContentString("TargetWithPath", "BTests"),
                         originalFile: filePaths[1]
                     },
                 ]
@@ -83,7 +83,7 @@ suite('Test File Generation Test Suite', () => {
         test('with target with explicit path', async () => {
             const testPackage = makeMultiTargetTestPackage();
 
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/Package/Path/Package.swift",
                 "/Package/Path/Sources/ExplicitPath/A.swift",
                 "/Package/Path/Sources/ExplicitPath/B.swift",
@@ -95,7 +95,7 @@ suite('Test File Generation Test Suite', () => {
                 "/Package/Path/Sources/ExplicitPath/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result[0],
@@ -103,13 +103,13 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
-                        contents: makeExpectedTestString("TargetWithPath", "ATests"),
+                        contents: makeExpectedTestFileContentString("TargetWithPath", "ATests"),
                         originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
-                        contents: makeExpectedTestString("TargetWithPath", "BTests"),
+                        contents: makeExpectedTestFileContentString("TargetWithPath", "BTests"),
                         originalFile: filePaths[1]
                     },
                 ]
@@ -120,7 +120,7 @@ suite('Test File Generation Test Suite', () => {
         test('with test target with explicit path', async () => {
             const testPackage = makeExplicitTestTargetPathTestPackage();
 
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/Package/Path/Package.swift",
                 "/Package/Path/Sources/Target/A.swift",
                 "/Package/Path/Sources/Target/B.swift",
@@ -132,7 +132,7 @@ suite('Test File Generation Test Suite', () => {
                 "/Package/Path/Sources/Target/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result[0],
@@ -140,13 +140,13 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
-                        contents: makeExpectedTestString("Target", "ATests"),
+                        contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
-                        contents: makeExpectedTestString("Target", "BTests"),
+                        contents: makeExpectedTestFileContentString("Target", "BTests"),
                         originalFile: filePaths[1]
                     },
                 ]
@@ -157,7 +157,7 @@ suite('Test File Generation Test Suite', () => {
         test('with unknown targets', async () => {
             const testPackage = makeEmptyTestPackage();
 
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/Package/Path/Package.swift",
                 "/Package/Path/Sources/TargetA/A.swift",
                 "/Package/Path/Sources/TargetB/B.swift",
@@ -171,7 +171,7 @@ suite('Test File Generation Test Suite', () => {
                 "/Package/Path/Sources/C.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result[0],
@@ -179,19 +179,19 @@ suite('Test File Generation Test Suite', () => {
                     {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
-                        contents: makeExpectedTestString("TargetA", "ATests"),
+                        contents: makeExpectedTestFileContentString("TargetA", "ATests"),
                         originalFile: filePaths[0]
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
-                        contents: makeExpectedTestString("TargetB", "BTests"),
+                        contents: makeExpectedTestFileContentString("TargetB", "BTests"),
                         originalFile: filePaths[1]
                     },
                     {
                         name: "CTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
-                        contents: makeExpectedTestString("<#TargetName#>", "CTests"),
+                        contents: makeExpectedTestFileContentString("<#TargetName#>", "CTests"),
                         originalFile: filePaths[2]
                     },
                 ]
@@ -205,7 +205,7 @@ suite('Test File Generation Test Suite', () => {
             const fileA = vscode.Uri.file("/Package/Path/Tests/TargetTests/ATests.swift");
             const fileB = vscode.Uri.file("/Package/Path/Tests/ExplicitPathTests/Subdirectory/BTests.swift");
 
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/Package/Path/Package.swift",
                 fileA,
                 fileB,
@@ -218,7 +218,7 @@ suite('Test File Generation Test Suite', () => {
                 fileB,
             ];
             
-            const result = await suggestTestFiles(filePaths, context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(result[0], []);
             assert.deepStrictEqual(result[1], [
@@ -316,15 +316,4 @@ function makeEmptyTestPackage(): SwiftPackageManifest {
             _version: "5.5.0",
         },
     };
-}
-
-function makeExpectedTestString(targetName: string, testName: string): string {
-    return `import XCTest
-
-@testable import ${targetName}
-
-class ${testName}: XCTestCase {
-
-}
-`;
 }

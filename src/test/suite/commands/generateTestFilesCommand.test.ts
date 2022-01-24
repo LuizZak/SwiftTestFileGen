@@ -3,7 +3,7 @@ import { describe, it } from 'mocha';
 import { generateTestFilesCommand } from '../../../commands/generateTestFilesCommand';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
 import { TargetType } from '../../../data/swiftPackage';
-import { assertNoActions, assertWorkspaceEditMatchesUnordered, fileUri, fileUris, setupTest, stubPackage } from './commandTestUtils';
+import { fileUri, fileUris, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from './fullTestFixture';
 
 suite('generateTestFilesCommand Test Suite', () => {
     describe('generateTestFilesCommand', () => {
@@ -13,34 +13,24 @@ suite('generateTestFilesCommand Test Suite', () => {
                 "/home/Sources/Target/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Sources/Target/B.swift",
                 "/home/Tests/TargetTests/",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
-            
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
-                [fileUri("/home/Tests/TargetTests/BTests.swift"), `import XCTest
-
-@testable import Target
-
-class BTests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
+                {
+                    uri: fileUri("/home/Tests/TargetTests/BTests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "BTests")
+                },
             ]);
         });
 
@@ -50,12 +40,12 @@ class BTests: XCTestCase {
                 "/home/Sources/TargetB/B.swift",
             );
             const pkg = stubPackage([
-                {name: "TargetA", type: TargetType.Regular},
-                {name: "TargetB", type: TargetType.Regular},
-                {name: "TargetATests", type: TargetType.Test},
-                {name: "TargetBTests", type: TargetType.Test},
+                { name: "TargetA", type: TargetType.Regular },
+                { name: "TargetB", type: TargetType.Regular },
+                { name: "TargetATests", type: TargetType.Test },
+                { name: "TargetBTests", type: TargetType.Test },
             ]);
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/TargetA/A.swift",
                 "/home/Sources/TargetB/B.swift",
@@ -63,27 +53,15 @@ class BTests: XCTestCase {
                 "/home/Tests/TargetBTests/",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetATests/ATests.swift"), `import XCTest
-
-@testable import TargetA
-
-class ATests: XCTestCase {
-
-}
-`],
-                [fileUri("/home/Tests/TargetBTests/BTests.swift"), `import XCTest
-
-@testable import TargetB
-
-class BTests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetATests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("TargetA", "ATests")},
+                {
+                    uri: fileUri("/home/Tests/TargetBTests/BTests.swift"),
+                    fileContents: makeExpectedTestFileContentString("TargetB", "BTests")},
             ]);
         });
 
@@ -92,24 +70,18 @@ class BTests: XCTestCase {
                 "/home/Sources/Target/A.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
             ]);
         });
 
@@ -119,15 +91,15 @@ class ATests: XCTestCase {
                 "/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/A.swift",
                 "/B.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         it('should do nothing for files in test folders', async () => {
@@ -135,15 +107,15 @@ class ATests: XCTestCase {
                 "/home/Tests/TargetTests/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/B.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         it('should respect multiple Package.swift manifests in project tree', async () => {
@@ -152,7 +124,7 @@ class ATests: XCTestCase {
                 "/home/Packages/AnotherPackage/Sources/Target/A.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/",
@@ -162,28 +134,34 @@ class ATests: XCTestCase {
                 "/home/Packages/AnotherPackage/Tests/TargetTests/",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
-                [fileUri("/home/Packages/AnotherPackage/Tests/TargetTests/ATests.swift"), `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")},
+                {
+                    uri: fileUri("/home/Packages/AnotherPackage/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")},
             ]);
+        });
+
+        describe('confirmation behavior', () => {
+            it("should request confirmation of all changes if Configuration.fileGen.confirmation is 'always'", () => {
+                const files = fileUris(
+                    "/home/Sources/Target/A.swift",
+                );
+                const pkg = stubPackage();
+                const fixture = new FullTestFixture([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/",
+                ], undefined, pkg);
+
+                fixture.context.configuration.fileGen.confirmation = ConfirmationMode.always;
+
+
+            });
         });
     });
 });
