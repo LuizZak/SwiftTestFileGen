@@ -251,8 +251,12 @@ async function _computePathForTarget(target: SwiftTarget, packageRoot: vscode.Ur
     switch (target.type) {
     case TargetType.Executable:
     case TargetType.Regular:
+    case TargetType.Plugin:
+    case TargetType.System:
+    case TargetType.Binary:
         pathsToSearch = predefinedSourceSearchPaths;
         break;
+
     case TargetType.Test:
         pathsToSearch = predefinedTestSearchPaths;
         break;
