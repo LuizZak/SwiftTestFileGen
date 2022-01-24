@@ -50,6 +50,11 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
+### 0.3.0
+
+- Fixing system, binary, and plugin targets not being recognized and resulting in Package.swift parse errors.
+- Fixing package finding when creating test files for multiple files at once.
+
 ### 0.2.2
 
 - Fixing warnings being displayed despite no actual issues.
