@@ -13,7 +13,6 @@ export function groupBy<K, V>(array: V[], key: (item: V) => K): Map<K, V[]> {
     }, new Map<K, V[]>());
 }
 
-
 export function mappedGroupBy<K, V, U>(array: V[], key: (item: V) => K, map: (item: V) => U): Map<K, U[]> {
     return array.reduce((prev, item) => {
         const k = key(item);

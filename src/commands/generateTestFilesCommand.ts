@@ -7,12 +7,16 @@ import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
 import { SwiftTestFile } from '../data/swiftTestFile';
+import { deduplicateStable } from '../algorithms/dedupe';
 
 export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
     progress?.report({ message: "Finding Swift package..." });
 
     const expandedFileUris = await expandSwiftFoldersInUris(fileUris, context.fileSystem);
-    const swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
+    let swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
+
+    // Deduplicate input files
+    swiftFiles = deduplicateStable(swiftFiles, file => file.fsPath);
 
     if (swiftFiles.length === 0) {
         context.workspace.showWarningMessage("No .swift files found in selection");

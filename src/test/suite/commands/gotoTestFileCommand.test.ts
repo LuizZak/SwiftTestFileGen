@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { describe, it } from 'mocha';
 import { gotoTestFileCommand } from '../../../commands/gotoTestFileCommand';
-import { assertNoActions, assertNoMessageDialogs, assertShownFiles, assertWorkspaceEditMatchesUnordered, fileUri, setupTest, stubPackage } from './commandTestUtils';
+import { fileUri, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from './fullTestFixture';
 import assert = require('assert');
 import { Configuration } from '../../../data/configurations/configuration';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
@@ -13,16 +13,16 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/Sources/Target/A.swift"
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/ATests.swift",
             ], undefined, pkg);
 
-            await gotoTestFileCommand(file, context);
-            
-            assertShownFiles(context,
-                ["/home/Tests/TargetTests/ATests.swift", {viewColumn: vscode.ViewColumn.Active}],
+            await gotoTestFileCommand(file, fixture.context);
+
+            fixture.assertShownFiles(
+                ["/home/Tests/TargetTests/ATests.swift", { viewColumn: vscode.ViewColumn.Active }],
             );
         });
 
@@ -31,15 +31,15 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/A.swift"
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/A.swift",
                 "/B.swift",
             ], undefined, pkg);
 
-            await gotoTestFileCommand(file, context);
+            await gotoTestFileCommand(file, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         it('should do nothing for files in test folders', async () => {
@@ -47,15 +47,15 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/Tests/TargetTests/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/B.swift",
             ], undefined, pkg);
 
-            await gotoTestFileCommand(file, context);
+            await gotoTestFileCommand(file, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         it('should present the option of creating a test file, if none is found.', async () => {
@@ -63,12 +63,12 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/Sources/Target/A.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/",
             ], undefined, pkg);
-            context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+            fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
                 assert.deepStrictEqual(items, [
                     "Yes",
                     "No"
@@ -77,21 +77,17 @@ suite('gotoTestFileCommand Test Suite', () => {
                 return "Yes";
             };
 
-            await gotoTestFileCommand(file, context);
+            await gotoTestFileCommand(file, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
+            const wsEdit = fixture.context.workspace.makeWorkspaceEdit_calls[0];
             assert.notStrictEqual(wsEdit, undefined);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                ["/home/Tests/TargetTests/ATests.swift", `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`]
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: "/home/Tests/TargetTests/ATests.swift",
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
             ]);
-            assertShownFiles(context, ['/home/Tests/TargetTests/ATests.swift']);
+            fixture.assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
         });
 
         it('should not create a file when none is found, if the user chooses not to.', async () => {
@@ -99,12 +95,12 @@ class ATests: XCTestCase {
                 "/home/Sources/Target/A.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/",
             ], undefined, pkg);
-            context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+            fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
                 assert.deepStrictEqual(items, [
                     "Yes",
                     "No"
@@ -113,9 +109,9 @@ class ATests: XCTestCase {
                 return "No";
             };
 
-            await gotoTestFileCommand(file, context);
+            await gotoTestFileCommand(file, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         describe("with heuristics enabled", () => {
@@ -133,15 +129,15 @@ class ATests: XCTestCase {
                 const file = fileUri(
                     "/home/Sources/Target/A.swift"
                 );
-                const context = setupTest([
+                const fixture = new FullTestFixture([
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                 ], configuration);
-    
-                await gotoTestFileCommand(file, context);
-                
-                assertShownFiles(context,
-                    ["/home/Tests/TargetTests/ATestFile.swift", {viewColumn: vscode.ViewColumn.Active}],
+
+                await gotoTestFileCommand(file, fixture.context);
+
+                fixture.assertShownFiles(
+                    ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
                 );
             });
 
@@ -149,28 +145,28 @@ class ATests: XCTestCase {
                 const file = fileUri(
                     "/home/Sources/Target/A.swift"
                 );
-                const context = setupTest([
+                const fixture = new FullTestFixture([
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                 ], configuration);
-    
-                await gotoTestFileCommand(file, context);
-                
-                assertNoMessageDialogs(context);
+
+                await gotoTestFileCommand(file, fixture.context);
+
+                fixture.assertNoMessageDialogs();
             });
 
             it('should not query for a package if a heuristic finds a hit', async () => {
                 const file = fileUri(
                     "/home/Sources/Target/A.swift"
                 );
-                const context = setupTest([
+                const fixture = new FullTestFixture([
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/ATestFile.swift",
                 ], configuration);
-    
-                await gotoTestFileCommand(file, context);
-                
-                assert.deepStrictEqual(context.packageProvider.swiftPackageManifestForFile_calls, []);
+
+                await gotoTestFileCommand(file, fixture.context);
+
+                fixture.assertNoPackageManifestQueries();
             });
 
             it('should attempt patterns in order of appearance until one matches', async () => {
@@ -180,7 +176,7 @@ class ATests: XCTestCase {
                     "$1Tests.swift",
                 ];
 
-                const context = setupTest([
+                const fixture = new FullTestFixture([
                     "/home/Sources/Target/A.swift",
                     "/home/Sources/Target/B.swift",
                     "/home/Sources/Target/C.swift",
@@ -188,21 +184,21 @@ class ATests: XCTestCase {
                     "/home/Tests/TargetTests/BSpec.swift",
                     "/home/Tests/TargetTests/CTests.swift",
                 ], configuration);
-    
+
                 await gotoTestFileCommand(fileUri(
                     "/home/Sources/Target/A.swift"
-                ), context);
+                ), fixture.context);
                 await gotoTestFileCommand(fileUri(
                     "/home/Sources/Target/B.swift"
-                ), context);
+                ), fixture.context);
                 await gotoTestFileCommand(fileUri(
                     "/home/Sources/Target/C.swift"
-                ), context);
-                
-                assertShownFiles(context,
-                    ["/home/Tests/TargetTests/ATestFile.swift", {viewColumn: vscode.ViewColumn.Active}],
-                    ["/home/Tests/TargetTests/BSpec.swift", {viewColumn: vscode.ViewColumn.Active}],
-                    ["/home/Tests/TargetTests/CTests.swift", {viewColumn: vscode.ViewColumn.Active}],
+                ), fixture.context);
+
+                fixture.assertShownFiles(
+                    ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    ["/home/Tests/TargetTests/BSpec.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    ["/home/Tests/TargetTests/CTests.swift", { viewColumn: vscode.ViewColumn.Active }],
                 );
             });
 
@@ -211,35 +207,31 @@ class ATests: XCTestCase {
                     "/home/Sources/Target/A.swift",
                 );
                 const pkg = stubPackage();
-                const context = setupTest([
+                const fixture = new FullTestFixture([
                     "/home/Package.swift",
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/",
                 ], configuration, pkg);
-                context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+                fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
                     assert.deepStrictEqual(items, [
                         "Yes",
                         "No"
                     ]);
-    
+
                     return "Yes";
                 };
-    
-                await gotoTestFileCommand(file, context);
-    
-                const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
+
+                await gotoTestFileCommand(file, fixture.context);
+
+                const wsEdit = fixture.context.workspace.makeWorkspaceEdit_calls[0];
                 assert.notStrictEqual(wsEdit, undefined);
-                assertWorkspaceEditMatchesUnordered(wsEdit, [
-                    ["/home/Tests/TargetTests/ATests.swift", `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`]
+                fixture.assertWorkspaceEditsMatchUnordered([
+                    {
+                        uri: "/home/Tests/TargetTests/ATests.swift",
+                        fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                    },
                 ]);
-                assertShownFiles(context, ['/home/Tests/TargetTests/ATests.swift']);
+                fixture.assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
             });
 
             it('should not create a file when none is found, if the user chooses not to.', async () => {
@@ -247,23 +239,23 @@ class ATests: XCTestCase {
                     "/home/Sources/Target/A.swift",
                 );
                 const pkg = stubPackage();
-                const context = setupTest([
+                const fixture = new FullTestFixture([
                     "/home/Package.swift",
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/",
                 ], configuration, pkg);
-                context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+                fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
                     assert.deepStrictEqual(items, [
                         "Yes",
                         "No"
                     ]);
-    
+
                     return "No";
                 };
-    
-                await gotoTestFileCommand(file, context);
 
-                assertNoActions(context);
+                await gotoTestFileCommand(file, fixture.context);
+
+                fixture.assertNoActions();
             });
         });
     });

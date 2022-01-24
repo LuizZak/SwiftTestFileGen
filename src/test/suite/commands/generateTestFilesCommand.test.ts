@@ -1,9 +1,9 @@
-import * as assert from 'assert';
-import { describe, it } from 'mocha';
+import * as vscode from 'vscode';
+import { describe, it, beforeEach } from 'mocha';
 import { generateTestFilesCommand } from '../../../commands/generateTestFilesCommand';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
-import { TargetType } from '../../../data/swiftPackage';
-import { assertNoActions, assertWorkspaceEditMatchesUnordered, fileUri, fileUris, setupTest, stubPackage } from './commandTestUtils';
+import { SwiftPackageManifest, TargetType } from '../../../data/swiftPackage';
+import { fileUri, fileUris, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from './fullTestFixture';
 
 suite('generateTestFilesCommand Test Suite', () => {
     describe('generateTestFilesCommand', () => {
@@ -13,34 +13,68 @@ suite('generateTestFilesCommand Test Suite', () => {
                 "/home/Sources/Target/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Sources/Target/B.swift",
                 "/home/Tests/TargetTests/",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
-            
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-@testable import Target
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
+                {
+                    uri: fileUri("/home/Tests/TargetTests/BTests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "BTests")
+                },
+            ]);
+        });
 
-class ATests: XCTestCase {
+        it('must de-duplicate file uris before generating test files', async () => {
+            const files = fileUris(
+                "/home/Sources/Target/A.swift",
+                "/home/Sources/Target/A.swift",
+            );
+            const pkg = stubPackage();
+            const fixture = new FullTestFixture([
+                "/home/Package.swift",
+                "/home/Sources/Target/A.swift",
+                "/home/Tests/TargetTests/",
+            ], undefined, pkg);
 
-}
-`],
-                [fileUri("/home/Tests/TargetTests/BTests.swift"), `import XCTest
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-@testable import Target
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
+            ]);
+        });
 
-class BTests: XCTestCase {
+        it('must de-duplicate file uris and directories that expand to file uris before generating test files', async () => {
+            const files = fileUris(
+                "/home/Sources/Target",
+                "/home/Sources/Target/A.swift",
+            );
+            const pkg = stubPackage();
+            const fixture = new FullTestFixture([
+                "/home/Package.swift",
+                "/home/Sources/Target/A.swift",
+                "/home/Tests/TargetTests/",
+            ], undefined, pkg);
 
-}
-`],
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
+
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
             ]);
         });
 
@@ -50,12 +84,12 @@ class BTests: XCTestCase {
                 "/home/Sources/TargetB/B.swift",
             );
             const pkg = stubPackage([
-                {name: "TargetA", type: TargetType.Regular},
-                {name: "TargetB", type: TargetType.Regular},
-                {name: "TargetATests", type: TargetType.Test},
-                {name: "TargetBTests", type: TargetType.Test},
+                { name: "TargetA", type: TargetType.Regular },
+                { name: "TargetB", type: TargetType.Regular },
+                { name: "TargetATests", type: TargetType.Test },
+                { name: "TargetBTests", type: TargetType.Test },
             ]);
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/TargetA/A.swift",
                 "/home/Sources/TargetB/B.swift",
@@ -63,27 +97,17 @@ class BTests: XCTestCase {
                 "/home/Tests/TargetBTests/",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetATests/ATests.swift"), `import XCTest
-
-@testable import TargetA
-
-class ATests: XCTestCase {
-
-}
-`],
-                [fileUri("/home/Tests/TargetBTests/BTests.swift"), `import XCTest
-
-@testable import TargetB
-
-class BTests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetATests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("TargetA", "ATests")
+                },
+                {
+                    uri: fileUri("/home/Tests/TargetBTests/BTests.swift"),
+                    fileContents: makeExpectedTestFileContentString("TargetB", "BTests")
+                },
             ]);
         });
 
@@ -92,24 +116,18 @@ class BTests: XCTestCase {
                 "/home/Sources/Target/A.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
             ]);
         });
 
@@ -119,15 +137,15 @@ class ATests: XCTestCase {
                 "/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/A.swift",
                 "/B.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         it('should do nothing for files in test folders', async () => {
@@ -135,15 +153,15 @@ class ATests: XCTestCase {
                 "/home/Tests/TargetTests/B.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/B.swift",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            assertNoActions(context);
+            fixture.assertNoActions();
         });
 
         it('should respect multiple Package.swift manifests in project tree', async () => {
@@ -152,7 +170,7 @@ class ATests: XCTestCase {
                 "/home/Packages/AnotherPackage/Sources/Target/A.swift",
             );
             const pkg = stubPackage();
-            const context = setupTest([
+            const fixture = new FullTestFixture([
                 "/home/Package.swift",
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/",
@@ -162,28 +180,134 @@ class ATests: XCTestCase {
                 "/home/Packages/AnotherPackage/Tests/TargetTests/",
             ], undefined, pkg);
 
-            await generateTestFilesCommand(files, ConfirmationMode.always, context);
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
-            const wsEdit = context.workspace.makeWorkspaceEdit_calls[0];
-            assert.ok(wsEdit);
-            assertWorkspaceEditMatchesUnordered(wsEdit, [
-                [fileUri("/home/Tests/TargetTests/ATests.swift"), `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
-                [fileUri("/home/Packages/AnotherPackage/Tests/TargetTests/ATests.swift"), `import XCTest
-
-@testable import Target
-
-class ATests: XCTestCase {
-
-}
-`],
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
+                {
+                    uri: fileUri("/home/Packages/AnotherPackage/Tests/TargetTests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
             ]);
+        });
+
+        describe('needsConfirmation of result', () => {
+            let pkg: SwiftPackageManifest;
+            let fixture: FullTestFixture;
+
+            beforeEach(() => {
+                pkg = stubPackage();
+                fixture = new FullTestFixture([
+                    "/home/Package.swift",
+                    "/home/Sources/Target/A.swift",
+                    "/home/Sources/Target/B.swift",
+                    "/home/Tests/TargetTests/",
+                ], undefined, pkg);
+            });
+
+            async function runTest(inputPaths: vscode.Uri[], confirmationMode: ConfirmationMode, expectedResult: boolean): Promise<void> {
+                const results = await generateTestFilesCommand(inputPaths, confirmationMode, fixture.context);
+
+                fixture.assertWorkspaceEditsMatchUnordered(results.map(uri => {
+                    return {
+                        uri: uri,
+                        needsConfirmation: expectedResult
+                    };
+                }));
+            }
+
+            describe('for single file inputs', () => {
+                const input = fileUris(
+                    "/home/Sources/Target/A.swift",
+                );
+                
+                it("must be true if confirmationMode is 'always'", async () => {
+                    await runTest(input, ConfirmationMode.always, true);
+                });
+                
+                it("must be false if confirmationMode is 'onlyIfMultiFile'", async () => {
+                    await runTest(input, ConfirmationMode.onlyIfMultiFile, false);
+                });
+                
+                it("must be false if confirmationMode is 'onlyOnDirectories'", async () => {
+                    await runTest(input, ConfirmationMode.onlyOnDirectories, false);
+                });
+                
+                it("must be false if confirmationMode is 'never'", async () => {
+                    await runTest(input, ConfirmationMode.never, false);
+                });
+            });
+
+            describe('for multi-file inputs', () => {
+                const input = fileUris(
+                    "/home/Sources/Target/A.swift",
+                    "/home/Sources/Target/B.swift",
+                );
+                
+                it("must be true if confirmationMode is 'always'", async () => {
+                    await runTest(input, ConfirmationMode.always, true);
+                });
+                
+                it("must be true if confirmationMode is 'onlyIfMultiFile'", async () => {
+                    await runTest(input, ConfirmationMode.onlyIfMultiFile, true);
+                });
+                
+                it("must be false if confirmationMode is 'onlyOnDirectories'", async () => {
+                    await runTest(input, ConfirmationMode.onlyOnDirectories, false);
+                });
+                
+                it("must be false if confirmationMode is 'never'", async () => {
+                    await runTest(input, ConfirmationMode.never, false);
+                });
+            });
+
+            describe('for directory inputs', () => {
+                const input = fileUris(
+                    "/home/Sources/Target",
+                );
+                
+                it("must be true if confirmationMode is 'always'", async () => {
+                    await runTest(input, ConfirmationMode.always, true);
+                });
+                
+                it("must be true if confirmationMode is 'onlyIfMultiFile'", async () => {
+                    await runTest(input, ConfirmationMode.onlyIfMultiFile, true);
+                });
+                
+                it("must be true if confirmationMode is 'onlyOnDirectories'", async () => {
+                    await runTest(input, ConfirmationMode.onlyOnDirectories, true);
+                });
+                
+                it("must be false if confirmationMode is 'never'", async () => {
+                    await runTest(input, ConfirmationMode.never, false);
+                });
+            });
+
+            describe('for mixed file-directory inputs', () => {
+                const input = fileUris(
+                    "/home/Sources/Target",
+                    "/home/Sources/Target/A.swift",
+                );
+                
+                it("must be true if confirmationMode is 'always'", async () => {
+                    await runTest(input, ConfirmationMode.always, true);
+                });
+                
+                it("must be true if confirmationMode is 'onlyIfMultiFile'", async () => {
+                    await runTest(input, ConfirmationMode.onlyIfMultiFile, true);
+                });
+                
+                it("must be true if confirmationMode is 'onlyOnDirectories'", async () => {
+                    await runTest(input, ConfirmationMode.onlyOnDirectories, true);
+                });
+                
+                it("must be false if confirmationMode is 'never'", async () => {
+                    await runTest(input, ConfirmationMode.never, false);
+                });
+            });
         });
     });
 });
