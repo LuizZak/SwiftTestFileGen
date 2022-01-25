@@ -24,31 +24,35 @@ export class FullTestFixture {
 
     constructor(fileList: (string | vscode.Uri)[], configuration?: Configuration, stubPackage?: SwiftPackageManifest) {
         const context = makeTestContext(configuration);
-        context.packageProvider.stubPackage = stubPackage;
-        context.fileSystem.virtualFileDisk.createEntries(fileList);
-
-        // Automatically try to stub package paths
-        if (stubPackage) {
-            for (const file of context.fileSystem.virtualFileDisk.allFilesRecursiveRoot()) {
-                if (file.name !== "Package.swift") {
-                    continue;
-                }
-
-                const fullPath = file.fullPath(context.fileSystem.virtualFileDisk.pathSeparator());
-                let existingList = context.packageProvider.stubPackageList;
-                if (!existingList) {
-                    existingList = [[fullPath, stubPackage]];
-                } else {
-                    existingList.push([fullPath, stubPackage]);
-                }
-
-                context.packageProvider.stubPackageList = existingList;
-            }
-        }
+        this.context = context;
 
         // -
 
-        this.context = context;
+        this.context.packageProvider.stubPackage = stubPackage;
+        this.context.fileSystem.virtualFileDisk.createEntries(fileList);
+
+        // Automatically try to stub the provided initial package path
+        if (stubPackage) {
+            const virtualDisk = context.fileSystem.virtualFileDisk;
+
+            const firstPackageFile = virtualDisk
+                .allFilesRecursiveRoot()
+                .find(f => f.name === "Package.swift");
+
+            if (firstPackageFile) {
+                const fullPath = firstPackageFile.fullPath(virtualDisk.pathSeparator());
+
+                this.setStubPackageList({
+                    packageSwiftUri: fullPath,
+                    pkg: stubPackage
+                });
+            }
+        }
+    }
+
+    /** Replaces the stubbed package list with a given stub list. */
+    setStubPackageList(...packageList: {packageSwiftUri: vscode.Uri | string, pkg: SwiftPackageManifest}[]) {
+        this.context.packageProvider.stubPackageList = packageList;
     }
 
     /** Asserts that no mutating actions have been performed on a given test context. */
@@ -142,11 +146,6 @@ export class FullTestFixture {
             return file[0];
         });
 
-        assert.strictEqual(filesCreated.length, expectedFiles.length);
-        if (filesCreated.length !== expectedFiles.length) {
-            return this;
-        }
-
         for (let index = expectedFiles.length - 1; index >= 0; index--) {
             const {
                 uri: expectedFile,
@@ -181,7 +180,7 @@ export class FullTestFixture {
                 }
 
                 const fileReplace = fileReplaces[fileReplaces.length - 1];
-    
+
                 assert.strictEqual(fileReplace[1], expectedContents);
             }
         }

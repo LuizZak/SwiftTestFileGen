@@ -179,6 +179,16 @@ suite('generateTestFilesCommand Test Suite', () => {
                 "/home/Packages/AnotherPackage/Sources/Target/A.swift",
                 "/home/Packages/AnotherPackage/Tests/TargetTests/",
             ], undefined, pkg);
+            fixture.setStubPackageList(
+                {
+                    packageSwiftUri: "/home/Package.swift",
+                    pkg: pkg
+                },
+                {
+                    packageSwiftUri: "/home/Packages/AnotherPackage/Package.swift",
+                    pkg: pkg
+                },
+            );
 
             await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
 
@@ -190,6 +200,63 @@ suite('generateTestFilesCommand Test Suite', () => {
                 {
                     uri: fileUri("/home/Packages/AnotherPackage/Tests/TargetTests/ATests.swift"),
                     fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                },
+            ]);
+        });
+
+        it('should query the appropriate Package.swift manifest to derive target information', async () => {
+            const files = fileUris(
+                "/home/Sources/TargetA/A.swift",
+                "/home/Packages/AnotherPackage/Sources/TargetB/B.swift",
+            );
+            const fixture = new FullTestFixture([
+                "/home/Package.swift",
+                "/home/Sources/TargetA/A.swift",
+                "/home/Tests/TargetATests/",
+                // Sub package
+                "/home/Packages/AnotherPackage/Package.swift",
+                "/home/Packages/AnotherPackage/Sources/TargetB/B.swift",
+                "/home/Packages/AnotherPackage/Tests/TargetBTests/",
+            ]);
+            fixture.setStubPackageList(
+                {
+                    packageSwiftUri: "/home/Package.swift",
+                    pkg: stubPackage([
+                        {
+                            name: "TargetA",
+                            type: TargetType.Regular,
+                        },
+                        {
+                            name: "TargetATests",
+                            type: TargetType.Test,
+                        },
+                    ]),
+                },
+                {
+                    packageSwiftUri: "/home/Packages/AnotherPackage/Package.swift",
+                    pkg: stubPackage([
+                        {
+                            name: "TargetB",
+                            type: TargetType.Regular,
+                        },
+                        {
+                            name: "TargetBTests",
+                            type: TargetType.Test,
+                        },
+                    ]),
+                },
+            );
+
+            await generateTestFilesCommand(files, ConfirmationMode.always, fixture.context);
+
+            fixture.assertWorkspaceEditsMatchUnordered([
+                {
+                    uri: fileUri("/home/Tests/TargetATests/ATests.swift"),
+                    fileContents: makeExpectedTestFileContentString("TargetA", "ATests")
+                },
+                {
+                    uri: fileUri("/home/Packages/AnotherPackage/Tests/TargetBTests/BTests.swift"),
+                    fileContents: makeExpectedTestFileContentString("TargetB", "BTests")
                 },
             ]);
         });
