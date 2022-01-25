@@ -98,6 +98,22 @@ export class VirtualDisk {
         return this.ensureDirectoryExists(fullPath);
     }
 
+    /**
+     * Returns a list of all files in this virtual disk, starting from the root
+     * of the disk.
+     * 
+     * Order of resulting file list is not defined.
+     */
+    allFilesRecursiveRoot(): VirtualDiskFile[] {
+        return this.allFilesRecursive(this.root);
+    }
+
+    /**
+     * Returns a list of all files in this virtual disk, starting from a given
+     * virtual disk container.
+     * 
+     * Order of resulting file list is not defined.
+     */
     allFilesRecursive(container: VirtualDiskEntryContainer): VirtualDiskFile[] {
         let result: VirtualDiskEntry[] = [];
 

@@ -29,24 +29,20 @@ export class FullTestFixture {
 
         // Automatically try to stub package paths
         if (stubPackage) {
-            for (const file of fileList) {
-                let normalizedPath: string;
-                if (file instanceof vscode.Uri) {
-                    normalizedPath = file.fsPath;
+            for (const file of context.fileSystem.virtualFileDisk.allFilesRecursiveRoot()) {
+                if (file.name !== "Package.swift") {
+                    continue;
+                }
+
+                const fullPath = file.fullPath(context.fileSystem.virtualFileDisk.pathSeparator());
+                let existingList = context.packageProvider.stubPackageList;
+                if (!existingList) {
+                    existingList = [[fullPath, stubPackage]];
                 } else {
-                    normalizedPath = vscode.Uri.file(file).fsPath;
+                    existingList.push([fullPath, stubPackage]);
                 }
 
-                if (normalizedPath.endsWith(`${path.sep}Package.swift`)) {
-                    let existingList = context.packageProvider.stubPackageList;
-                    if (!existingList) {
-                        existingList = [[normalizedPath, stubPackage]];
-                    } else {
-                        existingList.push([normalizedPath, stubPackage]);
-                    }
-
-                    context.packageProvider.stubPackageList = existingList;
-                }
+                context.packageProvider.stubPackageList = existingList;
             }
         }
 
