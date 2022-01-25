@@ -68,7 +68,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/",
             ], undefined, pkg);
-            fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+            fixture.context.workspace.showInformationMessage_stub = async (_message, items) => {
                 assert.deepStrictEqual(items, [
                     "Yes",
                     "No"
@@ -81,13 +81,14 @@ suite('gotoTestFileCommand Test Suite', () => {
 
             const wsEdit = fixture.context.workspace.makeWorkspaceEdit_calls[0];
             assert.notStrictEqual(wsEdit, undefined);
-            fixture.assertWorkspaceEditsMatchUnordered([
-                {
-                    uri: "/home/Tests/TargetTests/ATests.swift",
-                    fileContents: makeExpectedTestFileContentString("Target", "ATests")
-                },
-            ]);
-            fixture.assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
+            fixture
+                .assertWorkspaceEditsMatchUnordered([
+                    {
+                        uri: "/home/Tests/TargetTests/ATests.swift",
+                        fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                    },
+                ])
+                .assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
         });
 
         it('should not create a file when none is found, if the user chooses not to.', async () => {
@@ -100,7 +101,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                 "/home/Sources/Target/A.swift",
                 "/home/Tests/TargetTests/",
             ], undefined, pkg);
-            fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+            fixture.context.workspace.showInformationMessage_stub = async (_message, items) => {
                 assert.deepStrictEqual(items, [
                     "Yes",
                     "No"
@@ -212,7 +213,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/",
                 ], configuration, pkg);
-                fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+                fixture.context.workspace.showInformationMessage_stub = async (_message, items) => {
                     assert.deepStrictEqual(items, [
                         "Yes",
                         "No"
@@ -225,13 +226,14 @@ suite('gotoTestFileCommand Test Suite', () => {
 
                 const wsEdit = fixture.context.workspace.makeWorkspaceEdit_calls[0];
                 assert.notStrictEqual(wsEdit, undefined);
-                fixture.assertWorkspaceEditsMatchUnordered([
-                    {
-                        uri: "/home/Tests/TargetTests/ATests.swift",
-                        fileContents: makeExpectedTestFileContentString("Target", "ATests")
-                    },
-                ]);
-                fixture.assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
+                fixture
+                    .assertWorkspaceEditsMatchUnordered([
+                        {
+                            uri: "/home/Tests/TargetTests/ATests.swift",
+                            fileContents: makeExpectedTestFileContentString("Target", "ATests")
+                        },
+                    ])
+                    .assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
             });
 
             it('should not create a file when none is found, if the user chooses not to.', async () => {
@@ -244,7 +246,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                     "/home/Sources/Target/A.swift",
                     "/home/Tests/TargetTests/",
                 ], configuration, pkg);
-                fixture.context.workspace.showInformationMessage_stub = async (_message, ...items) => {
+                fixture.context.workspace.showInformationMessage_stub = async (_message, items) => {
                     assert.deepStrictEqual(items, [
                         "Yes",
                         "No"
@@ -256,6 +258,26 @@ suite('gotoTestFileCommand Test Suite', () => {
                 await gotoTestFileCommand(file, fixture.context);
 
                 fixture.assertNoActions();
+            });
+
+            it('should remove special characters from the path after expanding placeholders and issue an error', async () => {
+                configuration.gotoTestFile.heuristicFilenamePattern = "/../$1TestFile.swift";
+
+                const file = fileUri(
+                    "/home/Sources/Target/A.swift"
+                );
+                const fixture = new FullTestFixture([
+                    "/home/Sources/Target/A.swift",
+                    "/home/Tests/TargetTests/ATestFile.swift",
+                ], configuration);
+
+                await gotoTestFileCommand(file, fixture.context);
+
+                fixture
+                    .assertShownFiles(
+                        ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    )
+                    .assertShownError();
             });
         });
     });

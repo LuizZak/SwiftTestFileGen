@@ -36,6 +36,12 @@ export function rootDirectoryOfRelativePath(relativePath: string): string {
     return currentDirectory;
 }
 
+/** Attempts to perform sanitization of special characters in a filename. */
+export function sanitizeFilename(fileName: string): string {
+    const parsed = path.parse(fileName);
+    return parsed.base;
+}
+
 function fsPath(value: vscode.Uri | string): string {
     if (typeof value === "string") {
         return value;

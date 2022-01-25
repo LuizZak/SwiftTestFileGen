@@ -32,6 +32,9 @@ export enum TestFileDiagnosticKind {
     /** For Go to Test File command: Indicates that a provided heuristic pattern is incorrect. */
     incorrectSearchPattern,
 
+    /** For Go to Test File command: Indicates that a provided heuristic pattern contains special characters that are not allowed. */
+    specialCharactersInSearchPattern,
+
     /** For Go to Test File command: Indicates that a file is already a test file. */
     alreadyInTestFile,
 };
@@ -95,6 +98,7 @@ export function emitDiagnostics(diagnostics: TestFileDiagnosticResult[], workspa
 function _severityForDiagnosticKind(kind: TestFileDiagnosticKind): vscode.DiagnosticSeverity {
     switch (kind) {
         case TestFileDiagnosticKind.packageManifestNotFound:
+        case TestFileDiagnosticKind.specialCharactersInSearchPattern:
             return vscode.DiagnosticSeverity.Error;
 
         case TestFileDiagnosticKind.incorrectSearchPattern:

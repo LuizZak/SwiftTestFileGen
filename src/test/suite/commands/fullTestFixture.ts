@@ -96,6 +96,51 @@ export class FullTestFixture {
         return this;
     }
 
+    /**
+     * Asserts that an error dialog has been shown, optionally specifying the
+     * message and/or items that it contained.
+     * 
+     * When asserting for specific message/items, if more than one error message
+     * dialog has been shown, this method queries all shown messages to find one
+     * that matches.
+     */
+    assertShownError(message?: string, items?: string[]): FullTestFixture {
+        const errorMsgs = this.context.workspace.showErrorMessage_calls;
+
+        assert.notStrictEqual(errorMsgs.length, 0);
+
+        if (message || items) {
+            let foundMsg = false;
+
+            for (const errorMsg of errorMsgs) {
+                if (message && errorMsg[0] !== message) {
+                    continue;
+                }
+                if (items) {
+                    if (items.length !== errorMsg[1].length) {
+                        continue;
+                    }
+                    if (!errorMsg[1].every((v, i) => v === items[i])) {
+                        continue;
+                    }
+                }
+
+                foundMsg = true;
+                break;
+            }
+
+            if (!foundMsg) {
+                assert.fail(
+                    `Failed to find expected error message ${message ?? "<none>"} with items ${items ?? "<none>"}.\n` +
+                    `Found these messages instead:\n` +
+                    `${errorMsgs}`
+                );
+            }
+        }
+
+        return this;
+    }
+
     /** 
      * Asserts no information, warning or error dialogs have been displayed on
      * this test fixture's context.

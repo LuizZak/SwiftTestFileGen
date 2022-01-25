@@ -6,6 +6,7 @@ import { InvocationContext } from '../interfaces/context';
 import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../suggestTestFiles';
+import { sanitizeFilename } from '../pathUtils';
 
 export async function gotoTestFileCommand(fileUri: vscode.Uri, context: InvocationContext, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<void> {
     const { fileUris, diagnostics } = await performFileSearch(fileUri, context, progress, cancellation);
@@ -72,13 +73,22 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
         for (const pattern of patterns) {
             if (pattern.indexOf(placeholder) === -1) {
                 results.diagnostics.push({
-                    message: `Found pattern for heuristicFilenamePattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
+                    message: `Found  test file search pattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
                     kind: TestFileDiagnosticKind.incorrectSearchPattern,
                 });
                 continue;
             }
 
             let fileName = pattern.replace(placeholder, baseName);
+
+            if (fileName !== sanitizeFilename(fileName)) {
+                fileName = sanitizeFilename(fileName);
+
+                results.diagnostics.push({
+                    message: `Found test file search pattern that does not resolve to a simple filename (i.e. contains special characters not allowed in file names): ${pattern}`,
+                    kind: TestFileDiagnosticKind.specialCharactersInSearchPattern,
+                });
+            }
 
             // Correct patterns with an extra .swift extension
             if (fileName.endsWith(swiftExt)) {

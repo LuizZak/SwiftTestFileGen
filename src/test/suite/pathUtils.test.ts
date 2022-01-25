@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { describe } from 'mocha';
 import path = require('path');
-import { isSubdirectory, rootDirectoryOfRelativePath } from '../../pathUtils';
+import { isSubdirectory, rootDirectoryOfRelativePath, sanitizeFilename } from '../../pathUtils';
 
 suite('pathUtils Test Suite', () => {
     describe('isSubdirectory', () => {
@@ -45,5 +45,17 @@ suite('pathUtils Test Suite', () => {
 
             assert.strictEqual(rootDirectoryOfRelativePath(input), "directory");
         });
+    });
+
+    test('sanitizeFilename', () => {
+        assert.strictEqual(sanitizeFilename('filename.ext'), 'filename.ext');
+        assert.strictEqual(sanitizeFilename('filename'), 'filename');
+        assert.strictEqual(sanitizeFilename('file.name.ext'), 'file.name.ext');
+        assert.strictEqual(sanitizeFilename('/file.name.ext'), 'file.name.ext');
+        assert.strictEqual(sanitizeFilename('/../file.name.ext'), 'file.name.ext');
+        assert.strictEqual(sanitizeFilename('..file.name.ext'), '..file.name.ext');
+        assert.strictEqual(sanitizeFilename('..dir/file.name.ext'), 'file.name.ext');
+        assert.strictEqual(sanitizeFilename('..dir/file.name.ext/'), 'file.name.ext');
+        assert.strictEqual(sanitizeFilename('../dir/file.name.ext/'), 'file.name.ext');
     });
 });

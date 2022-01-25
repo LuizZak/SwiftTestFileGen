@@ -186,28 +186,28 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
         return wsEdit;
     }
 
-    showInformationMessage_calls: [message: string, ...items: string[]][] = [];
-    showInformationMessage_stub?: (message: string, ...items: string[]) => Promise<string | undefined>;
+    showInformationMessage_calls: [message: string, items: string[]][] = [];
+    showInformationMessage_stub?: (message: string, items: string[]) => Promise<string | undefined>;
     async showInformationMessage(message: string, ...items: string[]): Promise<string | undefined> {
-        this.showInformationMessage_calls.push([message, ...items]);
+        this.showInformationMessage_calls.push([message, items]);
 
-        return this.showInformationMessage_stub?.(message, ...items);
+        return this.showInformationMessage_stub?.(message, items);
     }
 
-    showWarningMessage_calls: [message: string, ...items: string[]][] = [];
-    showWarningMessage_stub?: (message: string, ...items: string[]) => Promise<string | undefined>;
+    showWarningMessage_calls: [message: string, items: string[]][] = [];
+    showWarningMessage_stub?: (message: string, items: string[]) => Promise<string | undefined>;
     async showWarningMessage(message: string, ...items: string[]): Promise<string | undefined> {
-        this.showWarningMessage_calls.push([message, ...items]);
+        this.showWarningMessage_calls.push([message, items]);
 
-        return this.showWarningMessage_stub?.(message, ...items);
+        return this.showWarningMessage_stub?.(message, items);
     }
 
-    showErrorMessage_calls: [message: string, ...items: string[]][] = [];
-    showErrorMessage_stub?: (message: string, ...items: string[]) => Promise<string | undefined>;
+    showErrorMessage_calls: [message: string, items: string[]][] = [];
+    showErrorMessage_stub?: (message: string, items: string[]) => Promise<string | undefined>;
     async showErrorMessage(message: string, ...items: string[]): Promise<string | undefined> {
-        this.showErrorMessage_calls.push([message, ...items]);
+        this.showErrorMessage_calls.push([message, items]);
 
-        return this.showErrorMessage_stub?.(message, ...items);
+        return this.showErrorMessage_stub?.(message, items);
     }
 
     async withProgress<R>(options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined; }>, token: vscode.CancellationToken) => Thenable<R>): Promise<R> {
