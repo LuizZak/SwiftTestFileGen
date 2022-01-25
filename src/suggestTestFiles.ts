@@ -1,6 +1,6 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { OperationWithDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from './data/testFileDiagnosticResult';
+import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFileDiagnosticResult';
 import { SwiftTestFile } from './data/swiftTestFile';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
 

@@ -2,11 +2,10 @@ import path = require('path');
 import * as vscode from 'vscode';
 import { mapPathsToSwiftPackages } from '../swiftPackageFinder';
 import { joinSuggestedTestFileResults, suggestTestFiles, SuggestTestFilesResult } from '../suggestTestFiles';
-import { emitDiagnostics, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
+import { emitDiagnostics } from '../data/testFileDiagnosticResult';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
-import { SwiftTestFile } from '../data/swiftTestFile';
 import { deduplicateStable } from '../algorithms/dedupe';
 
 export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { describe, it } from 'mocha';
-import { SwiftPackageManifest, SwiftPackageManifestParser, TargetType } from '../../../data/swiftPackage';
+import { SwiftPackageManifestParser } from '../../../data/swiftPackage';
 
 suite('swiftPackage Test Suite', () => {
     describe('SwiftPackageManifestParser', () => {
