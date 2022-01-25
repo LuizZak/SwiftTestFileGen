@@ -2,11 +2,11 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { describe } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
-import { suggestTestFiles } from '../../testFileGeneration';
+import { suggestTestFiles } from '../../suggestTestFiles';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
 import { fileUris, FullTestFixture, makeExpectedTestFileContentString } from './commands/fullTestFixture';
 
-suite('Test File Generation Test Suite', () => {
+suite('suggestTestFiles Test Suite', () => {
     describe('suggestTestFiles', () => {
         test('with target rooted in Sources/', async () => {
             const testPackage = makeSingleTargetTestPackage();
