@@ -25,7 +25,7 @@ suite('suggestTestFiles Test Suite', () => {
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
-                result[0],
+                result.testFiles,
                 [
                     {
                         name: "ATests.swift",
@@ -61,7 +61,7 @@ suite('suggestTestFiles Test Suite', () => {
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
-                result[0],
+                result.testFiles,
                 [
                     {
                         name: "ATests.swift",
@@ -77,7 +77,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                 ]
             );
-            assert.deepStrictEqual(result[1], []);
+            assert.deepStrictEqual(result.diagnostics, []);
         });
 
         test('with target with explicit path', async () => {
@@ -98,7 +98,7 @@ suite('suggestTestFiles Test Suite', () => {
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
-                result[0],
+                result.testFiles,
                 [
                     {
                         name: "ATests.swift",
@@ -114,7 +114,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                 ]
             );
-            assert.deepStrictEqual(result[1], []);
+            assert.deepStrictEqual(result.diagnostics, []);
         });
 
         test('with test target with explicit path', async () => {
@@ -135,7 +135,7 @@ suite('suggestTestFiles Test Suite', () => {
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
-                result[0],
+                result.testFiles,
                 [
                     {
                         name: "ATests.swift",
@@ -151,7 +151,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                 ]
             );
-            assert.deepStrictEqual(result[1], []);
+            assert.deepStrictEqual(result.diagnostics, []);
         });
 
         test('with unknown targets', async () => {
@@ -174,7 +174,7 @@ suite('suggestTestFiles Test Suite', () => {
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
-                result[0],
+                result.testFiles,
                 [
                     {
                         name: "ATests.swift",
@@ -196,7 +196,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                 ]
             );
-            assert.deepStrictEqual(result[1], []);
+            assert.deepStrictEqual(result.diagnostics, []);
         });
         
         test('with files in tests folder', async () => {
@@ -220,8 +220,8 @@ suite('suggestTestFiles Test Suite', () => {
             
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
-            assert.deepStrictEqual(result[0], []);
-            assert.deepStrictEqual(result[1], [
+            assert.deepStrictEqual(result.testFiles, []);
+            assert.deepStrictEqual(result.diagnostics, [
                 {
                     message: "File is not contained within a recognized Sources/ folder",
                     sourceFile: fileA,

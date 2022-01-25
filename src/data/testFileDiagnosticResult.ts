@@ -1,6 +1,5 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { VscodeWorkspace } from '../implementations/vscodeWorkspace';
 import { VscodeWorkspaceInterface } from '../interfaces/vscodeWorkspaceInterface';
 
 /**
@@ -16,6 +15,9 @@ export interface TestFileDiagnosticResult {
     /** Identifier for diagnostic kind. */
     kind: TestFileDiagnosticKind
 }
+
+/** Describes a type that contains a list of diagnostics attached to it. */
+export type OperationWithDiagnostics<T> = T & { diagnostics: TestFileDiagnosticResult[] };
 
 export enum TestFileDiagnosticKind {
     /** An input file was not located in a recognized Sources folder. */

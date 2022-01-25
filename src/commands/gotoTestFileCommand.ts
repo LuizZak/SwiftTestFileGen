@@ -1,24 +1,24 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { emitDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
+import { emitDiagnostics, OperationWithDiagnostics, TestFileDiagnosticKind } from '../data/testFileDiagnosticResult';
 import { generateTestFilesEntry } from '../frontend';
 import { InvocationContext } from '../interfaces/context';
 import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
-import { suggestTestFiles } from '../testFileGeneration';
+import { suggestTestFiles } from '../suggestTestFiles';
 
 export async function gotoTestFileCommand(fileUri: vscode.Uri, context: InvocationContext, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<void> {
-    const [files, diagnostics] = await performFileSearch(fileUri, context, progress, cancellation);
+    const { fileUris, diagnostics } = await performFileSearch(fileUri, context, progress, cancellation);
 
     // Emit diagnostics
     emitDiagnostics(diagnostics, context.workspace);
 
-    if (files.length === 0) {
+    if (fileUris.length === 0) {
         // TODO: Print a diagnostic for this case
         return;
     }
 
-    const testFile = files[0];
+    const testFile = fileUris[0];
 
     if (await context.fileSystem.fileExists(testFile)) {
         await context.workspace.showTextDocument(testFile, { viewColumn });
@@ -32,14 +32,16 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, context: Invocati
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
-    
+
         if (response === "Yes") {
             await generateTestFilesEntry([fileUri], context);
         }
     }
 }
 
-async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<[vscode.Uri[], TestFileDiagnosticResult[]]> {
+type TestFileSearchResult = OperationWithDiagnostics<{ fileUris: vscode.Uri[] }>;
+
+async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<TestFileSearchResult> {
     // Perform simple filename heuristic search, if enabled.
     outer:
     if (context.configuration.gotoTestFile.useFilenameHeuristics) {
@@ -57,16 +59,19 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
             break outer;
         }
 
-        let results: [vscode.Uri[], TestFileDiagnosticResult[]] = [[], []];
-        
+        let results: TestFileSearchResult = {
+            fileUris: [],
+            diagnostics: []
+        };
+
         const swiftExt = ".swift";
         const baseName = path.basename(fileUri.fsPath, swiftExt);
-        
+
         const placeholder = "$1";
 
         for (const pattern of patterns) {
             if (pattern.indexOf(placeholder) === -1) {
-                results[1].push({
+                results.diagnostics.push({
                     message: `Found pattern for heuristicFilenamePattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
                     kind: TestFileDiagnosticKind.incorrectSearchPattern,
                 });
@@ -74,17 +79,17 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
             }
 
             let fileName = pattern.replace(placeholder, baseName);
-            
+
             // Correct patterns with an extra .swift extension
             if (fileName.endsWith(swiftExt)) {
                 fileName = fileName.substring(0, fileName.length - swiftExt.length);
             }
-            
+
             const matches = await context.fileSystem.findFiles(`**/${fileName}${swiftExt}`);
-            results[0] = results[0].concat(matches);
+            results.fileUris = results.fileUris.concat(matches);
         }
-        
-        if (results[0].length > 0 || results[1].length > 0) {
+
+        if (results.fileUris.length > 0 || results.fileUris.length > 0) {
             return results;
         }
     }
@@ -93,11 +98,14 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
 
     const pkgPath = await findSwiftPackagePath(fileUri, context.fileSystem);
     if (pkgPath === null) {
-        return [[], [{
-            message: "Cannot find Package.swift manifest for the current workspace.",
-            kind: TestFileDiagnosticKind.packageManifestNotFound,
-            sourceFile: fileUri
-        }]];
+        return {
+            fileUris: [],
+            diagnostics: [{
+                message: "Cannot find Package.swift manifest for the current workspace.",
+                kind: TestFileDiagnosticKind.packageManifestNotFound,
+                sourceFile: fileUri
+            }]
+        };
     }
 
     const pkg = await context.packageProvider.swiftPackageManifestForFile(fileUri, cancellation);
@@ -106,18 +114,24 @@ async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext
         throw new vscode.CancellationError();
     }
 
-    const pkgRoot = context.fileSystem.joinPathUri(pkgPath, "..");
+    const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
     const pathManager = new SwiftPackagePathsManager(pkgRoot, pkg, context.fileSystem);
 
     if (await pathManager.isTestFile(fileUri)) {
-        return [[], [{
-            message: "Already in a test file!",
-            kind: TestFileDiagnosticKind.alreadyInTestFile,
-            sourceFile: fileUri,
-        }]];
+        return {
+            fileUris: [],
+            diagnostics: [{
+                message: "Already in a test file!",
+                kind: TestFileDiagnosticKind.alreadyInTestFile,
+                sourceFile: fileUri,
+            }]
+        };
     }
 
-    const [files, diagnostics] = await suggestTestFiles([fileUri], context.packageProvider, cancellation);
+    const { testFiles, diagnostics } = await suggestTestFiles([fileUri], context.packageProvider, cancellation);
 
-    return [files.map(f => f.path), diagnostics];
+    return {
+        fileUris: testFiles.map(f => f.path),
+        diagnostics
+    };
 }

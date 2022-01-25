@@ -1,7 +1,7 @@
 import path = require('path');
 import * as vscode from 'vscode';
 import { mapPathsToSwiftPackages } from '../swiftPackageFinder';
-import { suggestTestFiles } from '../testFileGeneration';
+import { joinSuggestedTestFileResults, suggestTestFiles, SuggestTestFilesResult } from '../suggestTestFiles';
 import { emitDiagnostics, TestFileDiagnosticResult } from '../data/testFileDiagnosticResult';
 import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
@@ -38,23 +38,25 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     const wsEdit = context.workspace.makeWorkspaceEdit();
     const documents: vscode.Uri[] = [];
-    const filesToCreate:  SwiftTestFile[] = [];
-    const diagnostics: TestFileDiagnosticResult[] = [];
 
+    let results: SuggestTestFilesResult = {
+        testFiles: [],
+        diagnostics: []
+    };
+    
     for (const [_, packageFiles] of packagesMap) {
         const result = await suggestTestFiles(packageFiles, context.packageProvider, cancellation);
-        filesToCreate.splice(0, 0, ...result[0]);
-        diagnostics.splice(0, 0, ...result[1]);
+        results = joinSuggestedTestFileResults(results, result);
     }
 
     progress?.report({ message: "Generating test files..." });
 
     // Emit diagnostics
-    emitDiagnostics(diagnostics, context.workspace);
+    emitDiagnostics(results.diagnostics, context.workspace);
 
     const filesOpened: vscode.Uri[] = [];
 
-    for (const testFile of filesToCreate) {
+    for (const testFile of results.testFiles) {
         // Ignore files that already exist
         if (await context.fileSystem.fileExists(testFile.path)) {
             continue;
