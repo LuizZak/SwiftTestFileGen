@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { describe, it } from 'mocha';
 import { gotoTestFileCommand } from '../../../commands/gotoTestFileCommand';
-import { fileUri, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from './fullTestFixture';
+import { fileUri, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from '../fullTestFixture';
 import assert = require('assert');
 import { Configuration } from '../../../data/configurations/configuration';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';

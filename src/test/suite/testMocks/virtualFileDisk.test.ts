@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { describe, it, beforeEach } from 'mocha';
 import assert = require('assert');
 import { VirtualDisk, VirtualDiskDirectory, VirtualDiskEntry, VirtualDiskEntryContainer, VirtualDiskEntryType, VirtualDiskFile, VirtualDiskRoot } from './virtualFileDisk';
-import { fileUri } from '../commands/fullTestFixture';
+import { fileUri } from '../fullTestFixture';
 
 suite('virtualFileDisk Test Suite', () => {
     let sut: VirtualDisk;

@@ -3,7 +3,7 @@ import { describe, it, beforeEach } from 'mocha';
 import { generateTestFilesCommand } from '../../../commands/generateTestFilesCommand';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
 import { SwiftPackageManifest, TargetType } from '../../../data/swiftPackage';
-import { fileUri, fileUris, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from './fullTestFixture';
+import { fileUri, fileUris, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from '../fullTestFixture';
 
 suite('generateTestFilesCommand Test Suite', () => {
     describe('generateTestFilesCommand', () => {

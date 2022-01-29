@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { Configuration } from '../../../data/configurations/configuration';
-import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from '../testMocks/testContext';
-import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../../data/swiftPackage';
-import { groupBy } from '../../../algorithms/groupBy';
+import { Configuration } from '../../data/configurations/configuration';
+import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from './testMocks/testContext';
+import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../data/swiftPackage';
+import { groupBy } from '../../algorithms/groupBy';
 import path = require('path');
 
 export type ShowFileArguments = [fileUri: vscode.Uri | string, options?: vscode.TextDocumentShowOptions];

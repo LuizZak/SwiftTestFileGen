@@ -4,7 +4,7 @@ import { describe } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
 import { suggestTestFiles } from '../../suggestTestFiles';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
-import { fileUris, FullTestFixture, makeExpectedTestFileContentString } from './commands/fullTestFixture';
+import { fileUris, FullTestFixture, makeExpectedTestFileContentString } from './fullTestFixture';
 
 suite('suggestTestFiles Test Suite', () => {
     describe('suggestTestFiles', () => {

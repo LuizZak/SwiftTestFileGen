@@ -54,7 +54,7 @@ export class TestPackageProvider implements PackageProviderInterface {
         this.swiftPackageManifestForFile_calls.push([fileUri, cancellation]);
 
         if (this.stubPackageList) {
-            const stubbed = this.closesPackageToPath(fileUri);
+            const stubbed = this.closestPackageToPath(fileUri);
             if (stubbed) {
                 return stubbed[1];
             }
@@ -70,7 +70,7 @@ export class TestPackageProvider implements PackageProviderInterface {
     async swiftPackagePathManagerForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackagePathsManager> {
         this.swiftPackagePathManagerForFile_calls.push([fileUri, cancellation]);
 
-        const stubbed = this.closesPackageToPath(fileUri);
+        const stubbed = this.closestPackageToPath(fileUri);
         if (!stubbed) {
             throw new Error("No stubbed package found!");
         }
@@ -80,7 +80,7 @@ export class TestPackageProvider implements PackageProviderInterface {
         return new SwiftPackagePathsManager(pkgPath, stubbed[1], this.fileSystem);
     }
 
-    private closesPackageToPath(fileUri: vscode.Uri): [vscode.Uri, SwiftPackageManifest] | null {
+    private closestPackageToPath(fileUri: vscode.Uri): [vscode.Uri, SwiftPackageManifest] | null {
         if (!this.stubPackageList) {
             throw new Error("No stubbed package provided!");
         }
