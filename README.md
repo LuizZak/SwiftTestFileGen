@@ -16,7 +16,7 @@ With a file opened on an active editor, execute the command `> SwiftTestFileGen:
 
 ##### Simple heuristic search
 
-If `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern`
+If the `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` extension setting is `true`, the extension will use values provided to `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` to perform a simpler filename-based search when looking for test files. This will reduce the delay between invoking "Go to Test File..." and opening the test file, but may result in incorrect files being opened, if more than a single package with similar file names is present in the workspace.
 
 ## Requirements
 
