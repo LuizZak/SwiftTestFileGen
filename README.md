@@ -50,6 +50,10 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
+### 0.3.1
+
+- Adding 'snippet' target type support.
+
 ### 0.3.0
 
 - Fixing system, binary, and plugin targets not being recognized and resulting in Package.swift parse errors.
