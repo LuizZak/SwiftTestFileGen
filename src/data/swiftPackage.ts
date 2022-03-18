@@ -28,6 +28,7 @@ export enum TargetType {
     System = "system",
     Binary = "binary",
     Plugin = "plugin",
+    Snippet = "snippet",
 }
 
 export interface ToolsVersion {
@@ -195,5 +196,6 @@ const typeMap: any = {
         "system",
         "binary",
         "plugin",
+        "snippet",
     ],
 };

@@ -28,6 +28,10 @@ suite('swiftPackage Test Suite', () => {
             it("should recognize 'plugin' targets", () => {
                 assertParsesTargetType("plugin");
             });
+
+            it("should recognize 'snippet' targets", () => {
+                assertParsesTargetType("snippet");
+            });
         });
     });
 });
