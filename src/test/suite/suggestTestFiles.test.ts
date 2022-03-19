@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { describe } from 'mocha';
+import { describe, it } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
-import { suggestTestFiles } from '../../suggestTestFiles';
+import { replaceSpecialCharactersForTestName, suggestTestFiles } from '../../suggestTestFiles';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
 import { fileUris, FullTestFixture, makeExpectedTestFileContentString } from './fullTestFixture';
 
@@ -233,6 +233,81 @@ suite('suggestTestFiles Test Suite', () => {
                     kind: TestFileDiagnosticKind.fileNotInSourcesFolder
                 }
             ]);
+        });
+
+        test('with file with special characters in name', async () => {
+            const testPackage = makeSingleTargetTestPackage();
+            const fixture = new FullTestFixture([
+                "/Package/Path/Package.swift",
+                "/Package/Path/Sources/A.swift",
+                "/Package/Path/Sources/A+Ext.swift",
+                "/Package/Path/Tests/",
+            ], undefined, testPackage);
+
+            const filePaths = fileUris(
+                "/Package/Path/Sources/A.swift",
+                "/Package/Path/Sources/A+Ext.swift",
+            );
+            
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+
+            assert.deepStrictEqual(
+                result.testFiles,
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        contents: makeExpectedTestFileContentString("Target", "ATests"),
+                        originalFile: filePaths[0]
+                    },
+                    {
+                        name: "A+ExtTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/A+ExtTests.swift"),
+                        contents: makeExpectedTestFileContentString("Target", "A_ExtTests"),
+                        originalFile: filePaths[1]
+                    },
+                ]
+            );
+        });
+    });
+
+    describe('replaceSpecialCharactersForTestName', () => {
+        function run(name: string, expected: string) {
+            const result = replaceSpecialCharactersForTestName(name);
+
+            assert.strictEqual(result, expected);
+        }
+
+        it('must replace + characters with _', () => {
+            run("A+File", "A_File");
+        });
+
+        it('must replace - characters with _', () => {
+            run("A-File", "A_File");
+        });
+
+        it('must replace @ characters with _', () => {
+            run("A@File", "A_File");
+        });
+
+        it('must replace = characters with _', () => {
+            run("A=File", "A_File");
+        });
+
+        it('must replace . characters with _', () => {
+            run("A.File", "A_File");
+        });
+
+        it('must replace , characters with _', () => {
+            run("A,File", "A_File");
+        });
+
+        it('must replace spaces with _', () => {
+            run("A File", "A_File");
+        });
+
+        it('must replace all occurrences of invalid characters with _', () => {
+            run("A,File.Name_ With+Multiple@Violations", "A_File_Name__With_Multiple_Violations");
         });
     });
 });

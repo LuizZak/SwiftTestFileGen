@@ -33,7 +33,7 @@ export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider:
 
         // Compute file / test class names
         const fileNameWithoutExt = path.basename(filePath.fsPath, ".swift");
-        const testClassName = `${fileNameWithoutExt}Tests`;
+        const testClassName = replaceSpecialCharactersForTestName(`${fileNameWithoutExt}Tests`);
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
         const target = await pkg.targetForFilePath(filePath);
@@ -178,4 +178,9 @@ export function joinOperationWithDiagnostics<T>(results1: OperationWithDiagnosti
         ...result,
         diagnostics: results1.diagnostics.concat(results2.diagnostics),
     };
+}
+
+/** Replaces special characters in file names with an underscore for test class names */
+export function replaceSpecialCharactersForTestName(str: string): string {
+    return str.replace(/[@\+\-\s,.=]/g, "_");
 }

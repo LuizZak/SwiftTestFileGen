@@ -4,11 +4,12 @@ All notable changes to the "SwiftTestFileGen" extension will be documented in th
 
 ## [Unreleased]
 
-- Disallowing special characters in patterns for `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern`.
+- Now special characters in the test class name that where derived from the original source file are replaced with '_'.
 
 ## [0.3.1]
 
 - Adding 'snippet' target type support.
+- Disallowing special characters in patterns for `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern`.
 
 ## [0.3.0]
 
