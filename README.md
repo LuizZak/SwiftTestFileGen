@@ -50,6 +50,10 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
+### 0.3.2
+
+- Now special characters in the test class name that where derived from the original source file are replaced with '_'.
+
 ### 0.3.1
 
 - Adding 'snippet' target type support.
@@ -63,6 +67,4 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 - Fixing warnings being displayed despite no actual issues.
 
-### 0.2.0
-
-- Added `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` and `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` configurations that enable a simple file search pattern to be used for finding test files.
+Full changelog available at: [CHANGELOG.md](CHANGELOG.md)
