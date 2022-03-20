@@ -57,7 +57,7 @@ function configuration(): Configuration {
 	};
 	const gotoTestFile: Configuration["gotoTestFile"] = config.get("gotoTestFile") ?? {
 		useFilenameHeuristics: false,
-		heuristicFilenamePattern: "(\\w+)Tests",
+		heuristicFilenamePattern: "$1Tests",
 	};
 
 	return {
