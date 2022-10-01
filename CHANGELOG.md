@@ -4,6 +4,8 @@ All notable changes to the "SwiftTestFileGen" extension will be documented in th
 
 ## [Unreleased]
 
+## [0.3.2]
+
 - Now special characters in the test class name that where derived from the original source file are replaced with '_'.
 
 ## [0.3.1]
