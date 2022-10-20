@@ -1,4 +1,4 @@
-# SwiftTestFileGen for Visual Studio Code
+# Swift Test File Generator for Visual Studio Code
 
 An extension for Visual Studio Code that adds a shortcut for generating test files for Swift Package Manager projects.
 
@@ -12,7 +12,7 @@ From a set of .swift files selected, right click and choose 'Generate Test File(
 
 ### - Go to Test File
 
-With a file opened on an active editor, execute the command `> SwiftTestFileGen: Go to test file...` to navigate to a test with a matching file name, or create a new test if none is found.
+With a file opened on an active editor, execute the command `> Swift Test File Generator: Go to test file...` to navigate to a test with a matching file name, or create a new test if none is found.
 
 ##### Simple heuristic search
 

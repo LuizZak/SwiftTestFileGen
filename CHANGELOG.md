@@ -1,8 +1,10 @@
 # Change Log
 
-All notable changes to the "SwiftTestFileGen" extension will be documented in this file.
+All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
-## [Unreleased]
+## [0.3.3]
+
+- Renaming package to "Swift Test File Generator"
 
 ## [0.3.2]
 

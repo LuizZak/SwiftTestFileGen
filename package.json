@@ -1,6 +1,6 @@
 {
   	"name": "swifttestfilegen",
-	"displayName": "SwiftTestFileGen",
+	"displayName": "Swift Test File Generator",
 	"description": "Generates test files from Swift Package Manager target files",
 	"version": "0.3.2",
 	"author": "LuizZak",
@@ -24,6 +24,10 @@
 	"keywords": [
 		"swift",
 		"test",
+		"file",
+		"generator",
+		"generating",
+		"generation",
 		"testing",
 		"unit test"
 	],
@@ -50,7 +54,7 @@
 			]
 		},
 		"configuration": {
-			"title": "SwiftTestFileGen",
+			"title": "Swift Test File Generator",
 			"properties": {
 				"swiftTestFileGen.gotoTestFile.useFilenameHeuristics": {
 					"type": "boolean",
