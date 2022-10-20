@@ -1,3 +1,4 @@
+import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 
@@ -24,6 +25,12 @@ export class FileSystem implements FileSystemInterface {
         } catch {
             return false;
         }
+    }
+
+    async contentsOfFile(uri: vscode.Uri): Promise<string> {
+        const contents = await vscode.workspace.fs.readFile(uri);
+
+        return new TextDecoder().decode(contents);
     }
 
     /**

@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFileDiagnosticResult';
 import { SwiftTestFile } from './data/swiftTestFile';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
+import { SwiftFile } from './data/swiftFile';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -10,40 +11,45 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
 /**
  * Returns a set of suggested test files for a list of .swift file paths.
  * 
- * @param filePaths File paths to generate test files out of
+ * @param files File paths to generate test files out of
  * @param packageProvider A package provider for computing package for file Uris.
  * @param cancellation A cancellation token to stop the operation.
  * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
  */
-export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider: PackageProviderInterface, cancellation?: vscode.CancellationToken): Promise<SuggestTestFilesResult> {
-    const operations = filePaths.map(async (filePath): Promise<SuggestTestFilesResult> => {
-        const pkg = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+export async function suggestTestFiles(
+    files: SwiftFile[],
+    packageProvider: PackageProviderInterface,
+    cancellation?: vscode.CancellationToken
+): Promise<SuggestTestFilesResult> {
+
+    const operations = files.map(async (file): Promise<SuggestTestFilesResult> => {
+        const pkg = await packageProvider.swiftPackagePathManagerForFile(file.path, cancellation);
 
         // Ignore files that are not within the sources root directory
-        if (!await pkg.isSourceFile(filePath)) {
+        if (!await pkg.isSourceFile(file.path)) {
             return {
                 testFiles: [],
                 diagnostics: [{
                     message: "File is not contained within a recognized Sources/ folder",
-                    sourceFile: filePath,
+                    sourceFile: file.path,
                     kind: TestFileDiagnosticKind.fileNotInSourcesFolder
                 }]
             };
         }
 
         // Compute file / test class names
-        const fileNameWithoutExt = path.basename(filePath.fsPath, ".swift");
+        const fileNameWithoutExt = path.basename(file.path.fsPath, ".swift");
         const testClassName = replaceSpecialCharactersForTestName(`${fileNameWithoutExt}Tests`);
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
-        const target = await pkg.targetForFilePath(filePath);
-        const targetName = target?.name ?? await pkg.targetNameFromFilePath(filePath);
+        const target = await pkg.targetForFilePath(file.path);
+        const targetName = target?.name ?? await pkg.targetNameFromFilePath(file.path);
         const testTarget = pkg.testTargetForTarget(target);
         const testsPath = await pkg.availableTestsPath();
 
         // Compute relative paths to maintain directory substructure in tests folder
         let fileRelativeDirPath: string;
-        const fileDir = path.dirname(filePath.fsPath);
+        const fileDir = path.dirname(file.path.fsPath);
         if (typeof target?.path === "string") {
             fileRelativeDirPath = path.relative(path.join(pkg.packageRoot.fsPath, target.path), fileDir);
         } else if (target) {
@@ -58,7 +64,7 @@ export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider:
                     diagnostics: [{
                         message: "Cannot find folder that contains a source file!",
                         kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -74,7 +80,7 @@ export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider:
                     diagnostics: [{
                         message: "Cannot find folder that contains a source file!",
                         kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -97,7 +103,7 @@ export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider:
                     diagnostics: [{
                         message: "Could not locate tests folder for a file's package",
                         kind: TestFileDiagnosticKind.testsFolderNotFound,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -119,7 +125,7 @@ export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider:
                     diagnostics: [{
                         message: "Could not locate tests folder for a file's package",
                         kind: TestFileDiagnosticKind.testsFolderNotFound,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -139,10 +145,14 @@ export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider:
             importLine = `@testable import <#TargetName#>`;
         }
 
+        let detectedImports = detectModuleImports(file.contents);
+
         const result: SwiftTestFile = {
             name: testFileName,
             path: fullTestFilePath,
-            originalFile: filePath,
+            originalFile: file.path,
+            existsOnDisk: false,
+            suggestedImports: detectedImports,
             contents:
                 `import XCTest
 
@@ -161,6 +171,26 @@ class ${testClassName}: XCTestCase {
     });
 
     return (await Promise.all(operations)).reduce(joinSuggestedTestFileResults);
+}
+
+/**
+ * From a given Swift source file's contents, detects imported modules that may
+ * be required to be imported in the test file.
+ */
+function detectModuleImports(swiftFileContents: string): string[] {
+    let result: string[] = [];
+
+    const moduleImport = /import\s+((?:\w+\.?)+)\s*(;|\n)/g;
+    const symbolImport = /import\s+(?:typealias|struct|class|enum|protocol|let|var|func)\s+((?:\w+\.?))+(?:\.\w+)\s*(;|\n)/g;
+
+    for (const match of swiftFileContents.matchAll(moduleImport)) {
+        result.push(match[1]);
+    }
+    for (const match of swiftFileContents.matchAll(symbolImport)) {
+        result.push(match[1]);
+    }
+
+    return result;
 }
 
 /** Utility function for joining `SuggestTestFilesResult` objects. */

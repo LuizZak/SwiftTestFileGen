@@ -8,7 +8,14 @@ import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
 import { deduplicateStable } from '../algorithms/dedupe';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
+export async function generateTestFilesCommand(
+    fileUris: vscode.Uri[],
+    confirmationMode: ConfirmationMode,
+    context: InvocationContext,
+    progress?: vscode.Progress<{ message?: string }>,
+    cancellation?: vscode.CancellationToken
+): Promise<vscode.Uri[]> {
+
     progress?.report({ message: "Finding Swift package..." });
 
     const expandedFileUris = await expandSwiftFoldersInUris(fileUris, context.fileSystem);
@@ -43,8 +50,11 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
         diagnostics: []
     };
     
-    for (const [_, packageFiles] of packagesMap) {
-        const result = await suggestTestFiles(packageFiles, context.packageProvider, cancellation);
+    for (const [pkgPath, packageFiles] of packagesMap) {
+        const pkg = await context.packageProvider.swiftPackagePathManagerForFile(pkgPath, cancellation);
+        const files = await Promise.all(packageFiles.map((file) => { return pkg.loadSourceFile(file); }));
+
+        const result = await suggestTestFiles(files, context.packageProvider, cancellation);
         results = joinSuggestedTestFileResults(results, result);
     }
 

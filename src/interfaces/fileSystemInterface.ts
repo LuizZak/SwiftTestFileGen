@@ -22,6 +22,11 @@ export interface FileSystemInterface {
     isDirectoryUri(uri: vscode.Uri): Promise<boolean>;
 
     /**
+     * Returns the string contents of a file at a given path.
+     */
+    contentsOfFile(uri: vscode.Uri): Promise<string>;
+
+    /**
      * Requests that a uri representation be joined.
      * 
      * @deprecated Use `vscode.Uri.joinPath` instead.

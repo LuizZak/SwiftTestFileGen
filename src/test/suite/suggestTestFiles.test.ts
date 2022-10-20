@@ -4,7 +4,7 @@ import { describe, it } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
 import { replaceSpecialCharactersForTestName, suggestTestFiles } from '../../suggestTestFiles';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
-import { fileUris, FullTestFixture, makeExpectedTestFileContentString } from './fullTestFixture';
+import { fileUris, FullTestFixture, makeExpectedTestFileContentString, swiftFiles } from './fullTestFixture';
 
 suite('suggestTestFiles Test Suite', () => {
     describe('suggestTestFiles', () => {
@@ -17,7 +17,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = fileUris(
+            const filePaths = swiftFiles(
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/B.swift",
             );
@@ -31,13 +31,17 @@ suite('suggestTestFiles Test Suite', () => {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
-                        originalFile: filePaths[0]
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "BTests"),
-                        originalFile: filePaths[1]
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                 ]
             );
@@ -53,7 +57,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = fileUris(
+            const filePaths = swiftFiles(
                 "/Package/Path/Sources/Target/SubfolderA/A.swift",
                 "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
             );
@@ -67,13 +71,17 @@ suite('suggestTestFiles Test Suite', () => {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
-                        originalFile: filePaths[0]
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
                         contents: makeExpectedTestFileContentString("TargetWithPath", "BTests"),
-                        originalFile: filePaths[1]
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                 ]
             );
@@ -90,7 +98,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = fileUris(
+            const filePaths = swiftFiles(
                 "/Package/Path/Sources/ExplicitPath/A.swift",
                 "/Package/Path/Sources/ExplicitPath/B.swift",
             );
@@ -104,13 +112,17 @@ suite('suggestTestFiles Test Suite', () => {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("TargetWithPath", "ATests"),
-                        originalFile: filePaths[0]
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
                         contents: makeExpectedTestFileContentString("TargetWithPath", "BTests"),
-                        originalFile: filePaths[1]
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                 ]
             );
@@ -127,7 +139,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/AlternatePath/"
             ], undefined, testPackage);
 
-            const filePaths = fileUris(
+            const filePaths = swiftFiles(
                 "/Package/Path/Sources/Target/A.swift",
                 "/Package/Path/Sources/Target/B.swift",
             );
@@ -141,13 +153,17 @@ suite('suggestTestFiles Test Suite', () => {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
-                        originalFile: filePaths[0]
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "BTests"),
-                        originalFile: filePaths[1]
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                 ]
             );
@@ -165,7 +181,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/"
             ], undefined, testPackage);
 
-            const filePaths = fileUris(
+            const filePaths = swiftFiles(
                 "/Package/Path/Sources/TargetA/A.swift",
                 "/Package/Path/Sources/TargetB/B.swift",
                 "/Package/Path/Sources/C.swift",
@@ -180,19 +196,25 @@ suite('suggestTestFiles Test Suite', () => {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("TargetA", "ATests"),
-                        originalFile: filePaths[0]
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "BTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
                         contents: makeExpectedTestFileContentString("TargetB", "BTests"),
-                        originalFile: filePaths[1]
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "CTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
                         contents: makeExpectedTestFileContentString("<#TargetName#>", "CTests"),
-                        originalFile: filePaths[2]
+                        originalFile: filePaths[2].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                 ]
             );
@@ -213,10 +235,10 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/"
             ], undefined, testPackage);
 
-            const filePaths: vscode.Uri[] = [
+            const filePaths = swiftFiles(
                 fileA,
                 fileB,
-            ];
+            );
             
             const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
 
@@ -244,7 +266,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = fileUris(
+            const filePaths = swiftFiles(
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/A+Ext.swift",
             );
@@ -258,13 +280,62 @@ suite('suggestTestFiles Test Suite', () => {
                         name: "ATests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
-                        originalFile: filePaths[0]
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
                     },
                     {
                         name: "A+ExtTests.swift",
                         path: vscode.Uri.file("/Package/Path/Tests/A+ExtTests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "A_ExtTests"),
-                        originalFile: filePaths[1]
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: [],
+                    },
+                ]
+            );
+        });
+
+        it('must detect imported modules in original source file', async () => {
+            const testPackage = makeSingleTargetTestPackage();
+            const fixture = new FullTestFixture([
+                "/Package/Path/Package.swift",
+                "/Package/Path/Sources/A.swift",
+                "/Package/Path/Sources/B.swift",
+                "/Package/Path/Tests/",
+            ], undefined, testPackage);
+
+            const filePaths = swiftFiles(
+                {
+                    path: "/Package/Path/Sources/A.swift",
+                    contents: "import Module\n\nclass A { }",
+                },
+                {
+                    path: "/Package/Path/Sources/B.swift",
+                    contents: "import struct OtherModule.Struct\n\nclass B { }",
+                },
+            );
+            
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+
+            assert.deepStrictEqual(
+                result.testFiles,
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        contents: makeExpectedTestFileContentString("Target", "ATests"),
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: ["Module"],
+                    },
+                    {
+                        name: "BTests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
+                        contents: makeExpectedTestFileContentString("Target", "BTests"),
+                        originalFile: filePaths[1].path,
+                        existsOnDisk: false,
+                        suggestedImports: ["OtherModule"],
                     },
                 ]
             );

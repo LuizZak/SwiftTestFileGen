@@ -5,6 +5,7 @@ import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from './testMoc
 import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../data/swiftPackage';
 import { groupBy } from '../../algorithms/groupBy';
 import path = require('path');
+import { SwiftFile } from '../../data/swiftFile';
 
 export type ShowFileArguments = [fileUri: vscode.Uri | string, options?: vscode.TextDocumentShowOptions];
 
@@ -255,6 +256,34 @@ export function stubPackage(targets: SwiftTarget[] = [{ name: "Target", type: Ta
 
 export function fileUris(...filePaths: string[]): vscode.Uri[] {
     return filePaths.map(fileUri);
+}
+
+export function swiftFiles(...filePaths: ({ path: string, contents: string } | string | vscode.Uri)[]): SwiftFile[] {
+    return filePaths.map((value) => {
+        if (typeof value === "string") {
+            return {
+                name: path.basename(value),
+                path: fileUri(value),
+                contents: "",
+                existsOnDisk: true
+            };
+        }
+        if (value instanceof vscode.Uri) {
+            return {
+                name: path.basename(value.fsPath),
+                path: value,
+                contents: "",
+                existsOnDisk: true
+            };
+        }
+
+        return {
+            name: path.basename(value.path),
+            path: fileUri(value.path),
+            contents: value.contents,
+            existsOnDisk: true
+        };
+    });
 }
 
 export function fileUri(filePath: string): vscode.Uri {

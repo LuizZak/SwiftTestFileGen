@@ -1,5 +1,6 @@
 import path = require('path');
 import * as vscode from 'vscode';
+import { SwiftFile } from './data/swiftFile';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from './data/swiftPackage';
 import { predefinedSourceSearchPaths, predefinedTestSearchPaths } from './definitions';
 import { FileSystemInterface } from './interfaces/fileSystemInterface';
@@ -36,7 +37,7 @@ export class SwiftPackagePathsManager {
     async availableSourcesPath(): Promise<vscode.Uri | null> {
         // TODO: Cache this operation?
         for (const path of predefinedSourceSearchPaths) {
-            const fullPath = this.fileSystem.joinPathUri(this.packageRoot, path);
+            const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
                 return fullPath;
@@ -59,7 +60,7 @@ export class SwiftPackagePathsManager {
     async availableTestsPath(): Promise<vscode.Uri | null> {
         // TODO: Cache this operation?
         for (const path of predefinedTestSearchPaths) {
-            const fullPath = this.fileSystem.joinPathUri(this.packageRoot, path);
+            const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
                 return fullPath;
@@ -129,6 +130,20 @@ export class SwiftPackagePathsManager {
         }
 
         return false;
+    }
+
+    /**
+     * Loads a Swift file from disk at a given path.
+     */
+    async loadSourceFile(uri: vscode.Uri): Promise<SwiftFile> {
+        const contents = await this.fileSystem.contentsOfFile(uri);
+        
+        return {
+            name: path.basename(uri.fsPath),
+            path: uri,
+            existsOnDisk: true,
+            contents: contents
+        };
     }
 
     /**

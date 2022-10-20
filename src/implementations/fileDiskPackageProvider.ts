@@ -49,7 +49,7 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
             throw new Error(`Package for file ${fileUri.fsPath} not found`);
         }
 
-        const pkgRoot = this.fileSystem.joinPathUri(manifestPath, "..");
+        const pkgRoot = vscode.Uri.joinPath(manifestPath, "..");
 
         return new SwiftPackagePathsManager(pkgRoot, pkg, this.fileSystem);
     }

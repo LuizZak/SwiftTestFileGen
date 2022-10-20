@@ -95,7 +95,7 @@ export async function mapPathsToSwiftPackages(
     fileUris: vscode.Uri[],
     fileSystem: FileSystemInterface,
     cancellation?: vscode.CancellationToken
-): Promise<[packageMap: Map<string, vscode.Uri[]>, notInPackage: vscode.Uri[]]> {
+): Promise<[packageMap: Map<vscode.Uri, vscode.Uri[]>, notInPackage: vscode.Uri[]]> {
 
     const packagePathPairs: [vscode.Uri | null, vscode.Uri][] =
         await Promise.all(fileUris.map(async fileUri => {
@@ -106,7 +106,7 @@ export async function mapPathsToSwiftPackages(
             return [await findSwiftPackagePath(fileUri, fileSystem), fileUri];
         }));
 
-    const packageMap = new Map<string, vscode.Uri[]>();
+    const packageMap = new Map<vscode.Uri, vscode.Uri[]>();
     const nonPackage: vscode.Uri[] = [];
 
     for (const packagePathPair of packagePathPairs) {
@@ -117,9 +117,9 @@ export async function mapPathsToSwiftPackages(
             continue;
         }
 
-        const existing = packageMap.get(packagePath.fsPath);
+        const existing = packageMap.get(packagePath);
         if (!existing) {
-            packageMap.set(packagePath.fsPath, [filePath]);
+            packageMap.set(packagePath, [filePath]);
         } else {
             existing.push(filePath);
         }

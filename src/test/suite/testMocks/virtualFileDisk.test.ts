@@ -134,6 +134,19 @@ suite('virtualFileDisk Test Suite', () => {
         });
     });
 
+    describe('findFile', () => {
+        it("should find files", () => {
+            sut.createEntries([
+                '/file.ext',
+            ]);
+
+            assert.deepStrictEqual(
+                sut.findFile('/file.ext'),
+                sut.root.contents[0]
+            );
+        });
+    });
+
     describe('glob', () => {
         it("should find absolute paths", () => {
             sut.createEntries([

@@ -128,8 +128,17 @@ export class TestFileSystem implements FileSystemInterface {
      * 
      * Alias for `this.virtualFileDisk.createEntriesWithKind(filePathList)`.
      */
-     createEntriesWithKind(...filePathList: [string | vscode.Uri, VirtualDiskEntryType][])  {
+    createEntriesWithKind(...filePathList: [string | vscode.Uri, VirtualDiskEntryType][])  {
         this.virtualFileDisk.createEntriesWithKind(filePathList);
+    }
+
+    async contentsOfFile(uri: vscode.Uri): Promise<string> {
+        const file = this.virtualFileDisk.findFile(uri.fsPath);
+        if (file === undefined) {
+            throw Error(`File @ path ${uri.fsPath} does not exist.`);
+        }
+
+        return file.contents;
     }
 
     async fileExists(uri: vscode.Uri): Promise<boolean> {
