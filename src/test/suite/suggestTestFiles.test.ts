@@ -340,6 +340,39 @@ suite('suggestTestFiles Test Suite', () => {
                 ]
             );
         });
+
+        it('must detect imported modules in original source file separated by semicolons', async () => {
+            const testPackage = makeSingleTargetTestPackage();
+            const fixture = new FullTestFixture([
+                "/Package/Path/Package.swift",
+                "/Package/Path/Sources/A.swift",
+                "/Package/Path/Sources/B.swift",
+                "/Package/Path/Tests/",
+            ], undefined, testPackage);
+
+            const filePaths = swiftFiles(
+                {
+                    path: "/Package/Path/Sources/A.swift",
+                    contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
+                },
+            );
+            
+            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+
+            assert.deepStrictEqual(
+                result.testFiles,
+                [
+                    {
+                        name: "ATests.swift",
+                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        contents: makeExpectedTestFileContentString("Target", "ATests"),
+                        originalFile: filePaths[0].path,
+                        existsOnDisk: false,
+                        suggestedImports: ["ModuleA", "ModuleB", "ModuleC"],
+                    },
+                ]
+            );
+        });
     });
 
     describe('replaceSpecialCharactersForTestName', () => {

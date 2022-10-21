@@ -291,10 +291,21 @@ export function fileUri(filePath: string): vscode.Uri {
 }
 
 /** Helper function for generating an expected templated test file string. */
-export function makeExpectedTestFileContentString(targetName: string, testName: string): string {
+export function makeExpectedTestFileContentString(
+    targetName: string,
+    testName: string,
+    ...extraImports: string[]
+): string {
+    let importLines: string;
+    if (extraImports.length > 0) {
+        importLines = `\n${extraImports.map((m) => `import ${m}`).join("\n")}`;
+    } else {
+        importLines = "";
+    }
+
     return `import XCTest
 
-@testable import ${targetName}
+@testable import ${targetName}${importLines}
 
 class ${testName}: XCTestCase {
 

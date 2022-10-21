@@ -138,11 +138,11 @@ export async function suggestTestFiles(
                 );
         }
 
-        let importLine: string;
+        let importLines: string[] = [];
         if (typeof targetName === "string") {
-            importLine = `@testable import ${targetName}`;
+            importLines.push(`@testable import ${targetName}`);
         } else {
-            importLine = `@testable import <#TargetName#>`;
+            importLines.push(`@testable import <#TargetName#>`);
         }
 
         let detectedImports = detectModuleImports(file.contents);
@@ -156,7 +156,7 @@ export async function suggestTestFiles(
             contents:
                 `import XCTest
 
-${importLine}
+${importLines.join("\n")}
 
 class ${testClassName}: XCTestCase {
 
@@ -178,19 +178,25 @@ class ${testClassName}: XCTestCase {
  * be required to be imported in the test file.
  */
 function detectModuleImports(swiftFileContents: string): string[] {
-    let result: string[] = [];
+    let result: ({ module: string, offset: number })[] = [];
 
     const moduleImport = /import\s+((?:\w+\.?)+)\s*(;|\n)/g;
     const symbolImport = /import\s+(?:typealias|struct|class|enum|protocol|let|var|func)\s+((?:\w+\.?))+(?:\.\w+)\s*(;|\n)/g;
 
     for (const match of swiftFileContents.matchAll(moduleImport)) {
-        result.push(match[1]);
+        result.push({
+            module: match[1],
+            offset: match.index ?? 0
+        });
     }
     for (const match of swiftFileContents.matchAll(symbolImport)) {
-        result.push(match[1]);
+        result.push({
+            module: match[1],
+            offset: match.index ?? 0
+        });
     }
 
-    return result;
+    return result.sort((a, b) => a.offset - b.offset).map((v) => v.module);
 }
 
 /** Utility function for joining `SuggestTestFilesResult` objects. */
