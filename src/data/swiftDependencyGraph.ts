@@ -2,43 +2,42 @@ import { DirectedGraph } from "../algorithms/directedGraph";
 import { SwiftPackageManifest, SwiftTarget } from "./swiftPackage";
 import { targetDependenciesByName } from "./swiftPackage.ext";
 
-export class SwiftDependencyGraph extends DirectedGraph<SwiftTarget, number, number> {
+/**
+ * Represents the dependency graph of a package manifest.
+ */
+export class SwiftDependencyGraph extends DirectedGraph<string, number, number> {
     private _nextNodeId = 0;
     private _nextEdgeId = 0;
-    private _targetMap: Map<string, number>;
+    private _targetNameMap: Map<string, number>;
 
     constructor(pkg: SwiftPackageManifest) {
         super();
 
-        this._targetMap = new Map();
+        this._targetNameMap = new Map();
 
-        // Collect packages first
         for (const target of pkg.targets) {
-            this._targetMap.set(target.name, this.createNode(target));
-        }
-
-        // Join targets
-        for (const target of pkg.targets) {
-            const targetId = this._targetMap.get(target.name);
+            let targetId = this._targetNameMap.get(target.name);
             if (targetId === undefined) {
-                continue;
+                targetId = this.createNode(target.name);
+                this._targetNameMap.set(target.name, targetId);
             }
 
             const dependencies = targetDependenciesByName(target);
 
             for (const dependencyName of dependencies) {
-                const dependencyId = this._targetMap.get(dependencyName);
+                let dependencyId = this._targetNameMap.get(dependencyName);
                 if (dependencyId === undefined) {
-                    continue;
+                    dependencyId = this.createNode(dependencyName);
+                    this._targetNameMap.set(dependencyName, dependencyId);
                 }
-
+                
                 this.createEdge(dependencyId, targetId);
             }
         }
     }
 
-    dependentsOf(target: SwiftTarget): SwiftTarget[] {
-        const id = this._targetMap.get(target.name);
+    dependentsOf(target: SwiftTarget | string): string[] {
+        const id = this._nodeIdForTarget(target);
         if (id === undefined) {
             return [];
         }
@@ -46,14 +45,43 @@ export class SwiftDependencyGraph extends DirectedGraph<SwiftTarget, number, num
         return this.nodesFrom(id);
     }
 
-    dependenciesFor(target: SwiftTarget): SwiftTarget[] {
-        const id = this._targetMap.get(target.name);
+    dependenciesFor(target: SwiftTarget | string): string[] {
+        const id = this._nodeIdForTarget(target);
         if (id === undefined) {
             return [];
         }
 
         return this.nodesTo(id);
     }
+
+    hasDependencyPath(target: SwiftTarget | string, dependency: SwiftTarget | string): boolean {
+        const targetId =  this._nodeIdForTarget(target);
+        const dependencyTargetId =  this._nodeIdForTarget(dependency);
+        if (targetId === undefined || dependencyTargetId === undefined) {
+            return false;
+        }
+
+        return this.hasPathBetween(dependencyTargetId, targetId);
+    }
+
+    hasDirectDependency(target: SwiftTarget | string, dependency: SwiftTarget | string): boolean {
+        const targetId =  this._nodeIdForTarget(target);
+        const dependencyTargetId =  this._nodeIdForTarget(dependency);
+        if (targetId === undefined || dependencyTargetId === undefined) {
+            return false;
+        }
+
+        return this.hasEdgeBetween(dependencyTargetId, targetId);
+    }
+
+    private _nodeIdForTarget(target: SwiftTarget | string): number | undefined {
+        if (typeof target === "string") {
+            return this._targetNameMap.get(target);
+        }
+        return this._targetNameMap.get(target.name);
+    }
+
+    // Abstract implementations
 
     generateNodeId(): number {
         return this._nextNodeId++;

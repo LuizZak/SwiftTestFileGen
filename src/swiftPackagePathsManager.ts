@@ -1,5 +1,6 @@
 import path = require('path');
 import * as vscode from 'vscode';
+import { SwiftDependencyGraph } from './data/swiftDependencyGraph';
 import { SwiftFile } from './data/swiftFile';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from './data/swiftPackage';
 import { predefinedSourceSearchPaths, predefinedTestSearchPaths } from './definitions';
@@ -144,6 +145,11 @@ export class SwiftPackagePathsManager {
             existsOnDisk: true,
             contents: contents
         };
+    }
+
+    /** Returns the dependency graph for the package being managed. */
+    dependencyGraph(): SwiftDependencyGraph {
+        return new SwiftDependencyGraph(this.pkg);
     }
 
     /**

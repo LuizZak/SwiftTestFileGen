@@ -11,10 +11,6 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
         beforeEach(() => {
             pkg = stubPackage([
                 {
-                    name: "Target1",
-                    type: TargetType.Regular,
-                },
-                {
                     name: "Target2",
                     type: TargetType.Regular,
                     dependencies: [
@@ -36,7 +32,19 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
                                 null,
                             ],
                         },
+                        {
+                            product: [
+                                "ExternalTarget",
+                                "external-lib",
+                                null,
+                                null,
+                            ],
+                        },
                     ],
+                },
+                {
+                    name: "Target1",
+                    type: TargetType.Regular,
                 },
                 {
                     name: "Target4",
@@ -62,12 +70,22 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
 
         describe('dependentsOf', () => {
             it('must return dependents appropriately', () => {
-                const result = sut.dependentsOf(pkg.targets[0]);
+                const result = sut.dependentsOf("Target1");
 
                 assert.deepStrictEqual(result,
                     [
-                        pkg.targets[1],
-                        pkg.targets[3],
+                        "Target2",
+                        "Target4",
+                    ]
+                );
+            });
+
+            it('must return dependents of external targets', () => {
+                const result = sut.dependentsOf("ExternalTarget");
+
+                assert.deepStrictEqual(result,
+                    [
+                        "Target3",
                     ]
                 );
             });
@@ -75,14 +93,84 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
 
         describe('dependenciesFor', () => {
             it('must return dependencies appropriately', () => {
-                const result = sut.dependenciesFor(pkg.targets[3]);
-
-                assert.deepStrictEqual(result,
+                assert.deepStrictEqual(
+                    sut.dependenciesFor("Target4"),
                     [
-                        pkg.targets[0],
-                        pkg.targets[2],
+                        "Target1",
+                        "Target3",
                     ]
                 );
+                assert.deepStrictEqual(
+                    sut.dependenciesFor("Target3"),
+                    [
+                        "Target2",
+                        "ExternalTarget",
+                    ]
+                );
+            });
+        });
+
+        describe('hasDependencyPath', () => {
+            it('must return true for targets that have direct and/or indirect dependency', () => {
+                const target = pkg.targets[3];
+                const directDependency = "Target3";
+                const indirectDependency = "Target2";
+
+                assert.ok(sut.hasDependencyPath(target, directDependency));
+                assert.ok(sut.hasDependencyPath(target, indirectDependency));
+            });
+
+            it('must return true for targets that have direct and/or indirect dependency on external targets', () => {
+                const directTarget = "Target3";
+                const indirectTarget = pkg.targets[3];
+                const external = "ExternalTarget";
+
+                assert.ok(sut.hasDependencyPath(directTarget, external));
+                assert.ok(sut.hasDependencyPath(indirectTarget, external));
+            });
+
+            it('must return false for targets that have no direct or indirect dependency', () => {
+                const target = "Target3";
+                const unrelatedTarget = pkg.targets[3];
+
+                assert.ok(!sut.hasDependencyPath(target, unrelatedTarget));
+            });
+        });
+
+        describe('hasDirectDependency', () => {
+            it('must return true for targets that have direct dependency', () => {
+                const target = pkg.targets[3];
+                const directDependency = "Target3";
+
+                assert.ok(sut.hasDirectDependency(target, directDependency));
+            });
+
+            it('must return true for targets that have direct dependency on external targets', () => {
+                const directTarget = "Target3";
+                const external = "ExternalTarget";
+
+                assert.ok(sut.hasDependencyPath(directTarget, external));
+            });
+
+            it('must return false for targets that have indirect dependency', () => {
+                const target = "Target4";
+                const indirectDependency = "Target2";
+
+                assert.ok(!sut.hasDirectDependency(target, indirectDependency));
+            });
+
+            it('must return true for targets that have indirect dependency on external targets', () => {
+                const indirectTarget = "Target4";
+                const external = "ExternalTarget";
+
+                assert.ok(sut.hasDependencyPath(indirectTarget, external));
+            });
+
+            it('must return false for targets that have no direct or indirect dependency', () => {
+                const target = "Target3";
+                const unrelatedTarget = "Target4";
+
+                assert.ok(!sut.hasDirectDependency(target, unrelatedTarget));
             });
         });
 
@@ -91,10 +179,11 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
 
             assert.deepStrictEqual(result,
                 [
-                    pkg.targets[0],
-                    pkg.targets[1],
-                    pkg.targets[2],
-                    pkg.targets[3],
+                    "Target1",
+                    "Target2",
+                    "ExternalTarget",
+                    "Target3",
+                    "Target4",
                 ]
             );
         });

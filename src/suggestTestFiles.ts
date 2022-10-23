@@ -162,10 +162,10 @@ export async function suggestTestFiles(
                 // From detected module imports, emit the ones that are explicit target
                 // dependencies in the package manifest.
                 if (target !== null) {
-                    const dependencies = new Set(targetDependenciesByName(target));
-                    
+                    const dependencyGraph = pkg.dependencyGraph();
+
                     detectedImports.forEach((moduleName) => {
-                        if (dependencies.has(moduleName)) {
+                        if (dependencyGraph.hasDependencyPath(target, moduleName)) {
                             importLines.push(emitImportLine(moduleName));
                         }
                     });
