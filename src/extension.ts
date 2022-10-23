@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Configuration } from './data/configurations/configuration';
+import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 import { ConfirmationMode } from './data/configurations/confirmationMode';
 import { generateTestFilesEntry, gotoTestFileEntry } from './frontend';
 import { FileSystem } from './implementations/fileSystem';
@@ -53,7 +53,8 @@ function workspace(): VscodeWorkspaceInterface {
 function configuration(): Configuration {
 	const config = vscode.workspace.getConfiguration('swiftTestFileGen');
 	const fileGen: Configuration["fileGen"] = config.get("fileGen") ?? {
-		confirmation: ConfirmationMode.always
+		confirmation: ConfirmationMode.always,
+		emitImportDeclarations: EmitImportDeclarationsMode.never,
 	};
 	const gotoTestFile: Configuration["gotoTestFile"] = config.get("gotoTestFile") ?? {
 		useFilenameHeuristics: false,

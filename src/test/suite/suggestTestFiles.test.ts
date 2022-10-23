@@ -4,7 +4,9 @@ import { describe, it } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
 import { replaceSpecialCharactersForTestName, suggestTestFiles } from '../../suggestTestFiles';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
-import { fileUris, FullTestFixture, makeExpectedTestFileContentString, swiftFiles } from './fullTestFixture';
+import { FullTestFixture, makeExpectedTestFileContentString, swiftFiles } from './fullTestFixture';
+import { Configuration, EmitImportDeclarationsMode } from '../../data/configurations/configuration';
+import { ConfirmationMode } from '../../data/configurations/confirmationMode';
 
 suite('suggestTestFiles Test Suite', () => {
     describe('suggestTestFiles', () => {
@@ -22,7 +24,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Sources/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -62,7 +64,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -103,7 +105,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Sources/ExplicitPath/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -144,7 +146,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Sources/Target/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -187,7 +189,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Sources/C.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -240,7 +242,7 @@ suite('suggestTestFiles Test Suite', () => {
                 fileB,
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(result.testFiles, []);
             assert.deepStrictEqual(result.diagnostics, [
@@ -271,7 +273,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Sources/A+Ext.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -316,7 +318,7 @@ suite('suggestTestFiles Test Suite', () => {
                 },
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -357,7 +359,7 @@ suite('suggestTestFiles Test Suite', () => {
                 },
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -372,6 +374,180 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                 ]
             );
+        });
+
+        describe('when detecting import declarations', () => {
+            function makeConfig(mode: EmitImportDeclarationsMode): Configuration {
+                return {
+                    fileGen: {
+                        confirmation: ConfirmationMode.always,
+                        emitImportDeclarations: mode,
+                    },
+                    gotoTestFile: {
+                        useFilenameHeuristics: false,
+                        heuristicFilenamePattern: "(\\w+)Tests",
+                    },
+                };
+            }
+
+            describe('when "swiftTestFileGen.fileGen.emitImportDeclarations" is "always"', () => {
+                const configuration = makeConfig(EmitImportDeclarationsMode.always);
+
+                it('must emit any import declarations found', async () => {
+                    const testPackage = makeSingleTargetTestPackage();
+                    testPackage.targets[0].dependencies = [
+                        {
+                            byName: [
+                                "ModuleA",
+                                null
+                            ],
+                        },
+                        {
+                            product: [
+                                "ModuleB",
+                                "module-b",
+                                null,
+                                null
+                            ],
+                        },
+                    ];
+                    const fixture = new FullTestFixture([
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/A.swift",
+                        "/Package/Path/Sources/B.swift",
+                        "/Package/Path/Tests/",
+                    ], configuration, testPackage);
+        
+                    const filePaths = swiftFiles(
+                        {
+                            path: "/Package/Path/Sources/A.swift",
+                            contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
+                        },
+                    );
+                    
+                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+        
+                    assert.deepStrictEqual(
+                        result.testFiles,
+                        [
+                            {
+                                name: "ATests.swift",
+                                path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                contents: makeExpectedTestFileContentString("Target", "ATests", "ModuleA", "ModuleB", "ModuleC"),
+                                originalFile: filePaths[0].path,
+                                existsOnDisk: false,
+                                suggestedImports: ["ModuleA", "ModuleB", "ModuleC"],
+                            },
+                        ]
+                    );
+                });
+            });
+
+            describe('when "swiftTestFileGen.fileGen.emitImportDeclarations" is "explicitDependenciesOnly"', () => {
+                const configuration = makeConfig(EmitImportDeclarationsMode.explicitDependenciesOnly);
+
+                it('must emit import declarations for targets that explicitly import other targets', async () => {
+                    const testPackage = makeSingleTargetTestPackage();
+                    testPackage.targets[0].dependencies = [
+                        {
+                            byName: [
+                                "ModuleA",
+                                null
+                            ],
+                        },
+                        {
+                            product: [
+                                "ModuleB",
+                                "module-b",
+                                null,
+                                null
+                            ],
+                        },
+                    ];
+                    const fixture = new FullTestFixture([
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/A.swift",
+                        "/Package/Path/Sources/B.swift",
+                        "/Package/Path/Tests/",
+                    ], configuration, testPackage);
+        
+                    const filePaths = swiftFiles(
+                        {
+                            path: "/Package/Path/Sources/A.swift",
+                            contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
+                        },
+                    );
+                    
+                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+        
+                    assert.deepStrictEqual(
+                        result.testFiles,
+                        [
+                            {
+                                name: "ATests.swift",
+                                path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                contents: makeExpectedTestFileContentString("Target", "ATests", "ModuleA", "ModuleB"),
+                                originalFile: filePaths[0].path,
+                                existsOnDisk: false,
+                                suggestedImports: ["ModuleA", "ModuleB", "ModuleC"],
+                            },
+                        ]
+                    );
+                });
+            });
+
+            describe('when "swiftTestFileGen.fileGen.emitImportDeclarations" is "never"', () => {
+                const configuration = makeConfig(EmitImportDeclarationsMode.never);
+
+                it('must not emit any import declarations found', async () => {
+                    const testPackage = makeSingleTargetTestPackage();
+                    testPackage.targets[0].dependencies = [
+                        {
+                            byName: [
+                                "ModuleA",
+                                null
+                            ],
+                        },
+                        {
+                            product: [
+                                "ModuleB",
+                                "module-b",
+                                null,
+                                null
+                            ],
+                        },
+                    ];
+                    const fixture = new FullTestFixture([
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/A.swift",
+                        "/Package/Path/Sources/B.swift",
+                        "/Package/Path/Tests/",
+                    ], configuration, testPackage);
+        
+                    const filePaths = swiftFiles(
+                        {
+                            path: "/Package/Path/Sources/A.swift",
+                            contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
+                        },
+                    );
+                    
+                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+        
+                    assert.deepStrictEqual(
+                        result.testFiles,
+                        [
+                            {
+                                name: "ATests.swift",
+                                path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                contents: makeExpectedTestFileContentString("Target", "ATests"),
+                                originalFile: filePaths[0].path,
+                                existsOnDisk: false,
+                                suggestedImports: ["ModuleA", "ModuleB", "ModuleC"],
+                            },
+                        ]
+                    );
+                });
+            });
         });
     });
 

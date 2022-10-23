@@ -3,7 +3,7 @@ import { describe, it } from 'mocha';
 import { gotoTestFileCommand } from '../../../commands/gotoTestFileCommand';
 import { fileUri, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from '../fullTestFixture';
 import assert = require('assert');
-import { Configuration } from '../../../data/configurations/configuration';
+import { Configuration, EmitImportDeclarationsMode } from '../../../data/configurations/configuration';
 import { ConfirmationMode } from '../../../data/configurations/confirmationMode';
 
 suite('gotoTestFileCommand Test Suite', () => {
@@ -119,6 +119,7 @@ suite('gotoTestFileCommand Test Suite', () => {
             const configuration: Configuration = {
                 fileGen: {
                     confirmation: ConfirmationMode.always,
+                    emitImportDeclarations: EmitImportDeclarationsMode.never,
                 },
                 gotoTestFile: {
                     useFilenameHeuristics: true,

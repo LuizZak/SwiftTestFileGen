@@ -49,6 +49,11 @@ This extension contributes the following configurations:
 Add support for going back from a Tests/ file to a Sources/ file to compliment the Sources -> Tests command.
 
 ## Release Notes
+(of last 3 updates)
+
+### 0.3.3
+
+- Renaming package to "Swift Test File Generator"
 
 ### 0.3.2
 
@@ -57,14 +62,5 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 ### 0.3.1
 
 - Adding 'snippet' target type support.
-
-### 0.3.0
-
-- Fixing system, binary, and plugin targets not being recognized and resulting in Package.swift parse errors.
-- Fixing package finding when creating test files for multiple files at once.
-
-### 0.2.2
-
-- Fixing warnings being displayed despite no actual issues.
 
 Full changelog available at: [CHANGELOG.md](CHANGELOG.md)

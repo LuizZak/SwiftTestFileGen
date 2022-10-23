@@ -2,6 +2,10 @@
 
 All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
+## [Unreleased]
+
+- Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enabled mirroring certain import declarations from the original source file into the test file.
+
 ## [0.3.3]
 
 - Renaming package to "Swift Test File Generator"

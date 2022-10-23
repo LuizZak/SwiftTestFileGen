@@ -4,6 +4,8 @@ import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFil
 import { SwiftTestFile } from './data/swiftTestFile';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
 import { SwiftFile } from './data/swiftFile';
+import { targetDependenciesByName } from './data/swiftPackage.ext';
+import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -12,12 +14,14 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
  * Returns a set of suggested test files for a list of .swift file paths.
  * 
  * @param files File paths to generate test files out of
+ * @param configuration The extension configurations object.
  * @param packageProvider A package provider for computing package for file Uris.
  * @param cancellation A cancellation token to stop the operation.
  * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
  */
 export async function suggestTestFiles(
     files: SwiftFile[],
+    configuration: Configuration,
     packageProvider: PackageProviderInterface,
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
@@ -147,6 +151,31 @@ export async function suggestTestFiles(
 
         let detectedImports = detectModuleImports(file.contents);
 
+        switch (configuration.fileGen.emitImportDeclarations) {
+            case EmitImportDeclarationsMode.always:
+                detectedImports.forEach((moduleName) => {
+                    importLines.push(emitImportLine(moduleName));
+                });
+                break;
+
+            case EmitImportDeclarationsMode.explicitDependenciesOnly:
+                // From detected module imports, emit the ones that are explicit target
+                // dependencies in the package manifest.
+                if (target !== null) {
+                    const dependencies = new Set(targetDependenciesByName(target));
+                    
+                    detectedImports.forEach((moduleName) => {
+                        if (dependencies.has(moduleName)) {
+                            importLines.push(emitImportLine(moduleName));
+                        }
+                    });
+                }
+                break;
+            
+            case EmitImportDeclarationsMode.never:
+                break;
+        }
+
         const result: SwiftTestFile = {
             name: testFileName,
             path: fullTestFilePath,
@@ -197,6 +226,10 @@ function detectModuleImports(swiftFileContents: string): string[] {
     }
 
     return result.sort((a, b) => a.offset - b.offset).map((v) => v.module);
+}
+
+function emitImportLine(moduleName: string): string {
+    return `import ${moduleName}`;
 }
 
 /** Utility function for joining `SuggestTestFilesResult` objects. */

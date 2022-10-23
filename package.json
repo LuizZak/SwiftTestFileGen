@@ -82,6 +82,21 @@
 						"Never requests confirmation; always create test files straight away"
 					],
 					"description": "Whether to request confirmation of changes through a Refactor Preview window while creating files, or apply changes immediately after invoking the file generation command."
+				},
+				"swiftTestFileGen.fileGen.emitImportDeclarations": {
+					"type": "string",
+					"default": "never",
+					"enum": [
+						"always",
+						"explicitDependenciesOnly",
+						"never"
+					],
+					"enumDescriptions": [
+						"Always emit 'import <Module>', mirroring imports on original file.",
+						"Only emit 'import <Module>' for modules that are explicit dependencies in original package manifest.",
+						"Never emit 'import <Module>', other than the module being tested and XCTest."
+					],
+					"description": "Whether to detect and emit import declarations from the original Swift file in generated test files."
 				}
 			}
 		}

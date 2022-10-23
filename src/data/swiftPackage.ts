@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 // To parse this data:
 //
-//   import { Convert, SwiftPackageManifest } from "./file";
+//   import { SwiftPackageManifestParser, SwiftPackageManifest } from "./file";
 //
 //   const swiftPackageManifest = SwiftPackageManifestParser.toSwiftPackageManifest(json);
 //
@@ -10,25 +10,53 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface SwiftPackageManifest {
-    name:         string;
-    targets: SwiftTarget[];
-    toolsVersion: ToolsVersion;
+    dependencies?: SwiftPackageManifestDependency[];
+    name:          string;
+    targets:       SwiftTarget[];
+    toolsVersion:  ToolsVersion;
+}
+
+export interface SwiftPackageManifestDependency {
+    fileSystem?:    FileSystem[];
+    sourceControl?: SourceControl[];
+}
+
+export interface FileSystem {
+    identity:      string;
+    path:          string;
+    productFilter: null;
+}
+
+export interface SourceControl {
+    identity: string;
 }
 
 export interface SwiftTarget {
-    name:  string;
-    path?: null | string;
-    type:  TargetType;
+    dependencies?: TargetDependency[];
+    exclude?:      string[];
+    name:          string;
+    path?:         string;
+    resources?:    Resource[];
+    type:          TargetType;
+}
+
+export interface TargetDependency {
+    byName?:  Array<null | string>;
+    product?: Array<null | string>;
+}
+
+export interface Resource {
+    path: string;
 }
 
 export enum TargetType {
-    Executable = "executable",
-    Regular = "regular",
-    Test = "test",
-    System = "system",
     Binary = "binary",
+    Executable = "executable",
     Plugin = "plugin",
+    Regular = "regular",
     Snippet = "snippet",
+    System = "system",
+    Test = "test",
 }
 
 export interface ToolsVersion {
@@ -124,7 +152,7 @@ function transform(val: any, typ: any, getProps: any, key: any = ''): any {
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = val[key];
+                result[key] = transform(val[key], additional, getProps, key);
             }
         });
         return result;
@@ -171,31 +199,58 @@ function o(props: any[], additional: any) {
     return { props, additional };
 }
 
+function m(additional: any) {
+    return { props: [], additional };
+}
+
 function r(name: string) {
     return { ref: name };
 }
 
 const typeMap: any = {
     "SwiftPackageManifest": o([
+        { json: "dependencies", js: "dependencies", typ: u(undefined, a(r("SwiftPackageManifestDependency"))) },
         { json: "name", js: "name", typ: "" },
         { json: "targets", js: "targets", typ: a(r("SwiftTarget")) },
         { json: "toolsVersion", js: "toolsVersion", typ: r("ToolsVersion") },
-    ], false),
+    ], "any"),
+    "SwiftPackageManifestDependency": o([
+        { json: "fileSystem", js: "fileSystem", typ: u(undefined, a(r("FileSystem"))) },
+        { json: "sourceControl", js: "sourceControl", typ: u(undefined, a(r("SourceControl"))) },
+    ], "any"),
+    "FileSystem": o([
+        { json: "identity", js: "identity", typ: "" },
+        { json: "path", js: "path", typ: "" },
+        { json: "productFilter", js: "productFilter", typ: null },
+    ], "any"),
+    "SourceControl": o([
+        { json: "identity", js: "identity", typ: "" },
+    ], "any"),
     "SwiftTarget": o([
+        { json: "dependencies", js: "dependencies", typ: u(undefined, a(r("TargetDependency"))) },
+        { json: "exclude", js: "exclude", typ: u(undefined, a("")) },
         { json: "name", js: "name", typ: "" },
-        { json: "path", js: "path", typ: u(undefined, u(null, "")) },
+        { json: "path", js: "path", typ: u(undefined, "") },
+        { json: "resources", js: "resources", typ: u(undefined, a(r("Resource"))) },
         { json: "type", js: "type", typ: r("TargetType") },
-    ], false),
+    ], "any"),
+    "TargetDependency": o([
+        { json: "byName", js: "byName", typ: u(undefined, a(u(null, ""))) },
+        { json: "product", js: "product", typ: u(undefined, a(u(null, ""))) },
+    ], "any"),
+    "Resource": o([
+        { json: "path", js: "path", typ: "" },
+    ], "any"),
     "ToolsVersion": o([
         { json: "_version", js: "_version", typ: "" },
-    ], false),
+    ], "any"),
     "TargetType": [
-        "executable",
-        "regular",
-        "test",
-        "system",
         "binary",
+        "executable",
         "plugin",
+        "regular",
         "snippet",
+        "system",
+        "test",
     ],
 };

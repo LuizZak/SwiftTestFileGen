@@ -4,9 +4,16 @@ import { ConfirmationMode } from "./confirmationMode";
 export interface Configuration {
     fileGen: {
         confirmation: ConfirmationMode;
+        emitImportDeclarations: EmitImportDeclarationsMode;
     }
     gotoTestFile: {
         useFilenameHeuristics: boolean;
         heuristicFilenamePattern: string | string[];
     }
+}
+
+export enum EmitImportDeclarationsMode {
+    always = "always",
+    explicitDependenciesOnly = "explicitDependenciesOnly",
+    never = "never"
 }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import path = require("path");
 import * as vscode from "vscode";
-import { Configuration } from "../../../data/configurations/configuration";
+import { Configuration, EmitImportDeclarationsMode } from "../../../data/configurations/configuration";
 import { ConfirmationMode } from "../../../data/configurations/confirmationMode";
 import { SwiftPackageManifest } from "../../../data/swiftPackage";
 import { InvocationContext } from "../../../interfaces/context";
@@ -29,6 +29,7 @@ export class TestContext implements InvocationContext {
         this.configuration = configuration ?? {
             fileGen: {
                 confirmation: ConfirmationMode.always,
+                emitImportDeclarations: EmitImportDeclarationsMode.never,
             },
             gotoTestFile: {
                 useFilenameHeuristics: false,
