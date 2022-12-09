@@ -20,11 +20,12 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -60,11 +61,12 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 "/Package/Path/Sources/Target/SubfolderA/A.swift",
                 "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -101,11 +103,12 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 "/Package/Path/Sources/ExplicitPath/A.swift",
                 "/Package/Path/Sources/ExplicitPath/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -142,11 +145,12 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 "/Package/Path/Sources/Target/A.swift",
                 "/Package/Path/Sources/Target/B.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -184,12 +188,13 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 "/Package/Path/Sources/TargetA/A.swift",
                 "/Package/Path/Sources/TargetB/B.swift",
                 "/Package/Path/Sources/C.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -238,11 +243,12 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 fileA,
                 fileB,
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(result.testFiles, []);
             assert.deepStrictEqual(result.diagnostics, [
@@ -269,11 +275,12 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/A+Ext.swift",
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -308,6 +315,7 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 {
                     path: "/Package/Path/Sources/A.swift",
                     contents: "import Module\n\nclass A { }",
@@ -318,7 +326,7 @@ suite('suggestTestFiles Test Suite', () => {
                 },
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -353,13 +361,14 @@ suite('suggestTestFiles Test Suite', () => {
             ], undefined, testPackage);
 
             const filePaths = swiftFiles(
+                fixture.context.fileSystem,
                 {
                     path: "/Package/Path/Sources/A.swift",
                     contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                 },
             );
             
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
             assert.deepStrictEqual(
                 result.testFiles,
@@ -419,13 +428,14 @@ suite('suggestTestFiles Test Suite', () => {
                     ], configuration, testPackage);
         
                     const filePaths = swiftFiles(
+                        fixture.context.fileSystem,
                         {
                             path: "/Package/Path/Sources/A.swift",
                             contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                         },
                     );
                     
-                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
         
                     assert.deepStrictEqual(
                         result.testFiles,
@@ -473,13 +483,14 @@ suite('suggestTestFiles Test Suite', () => {
                         ], configuration, testPackage);
             
                         const filePaths = swiftFiles(
+                            fixture.context.fileSystem,
                             {
                                 path: "/Package/Path/Sources/A.swift",
                                 contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                             },
                         );
                         
-                        const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+                        const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
             
                         assert.deepStrictEqual(
                             result.testFiles,
@@ -550,13 +561,14 @@ suite('suggestTestFiles Test Suite', () => {
                         ], configuration, testPackage);
             
                         const filePaths = swiftFiles(
+                            fixture.context.fileSystem,
                             {
                                 path: "/Package/Path/Sources/ModuleA/A.swift",
                                 contents: "import ModuleB;import ModuleC;\n\nclass A { }",
                             },
                         );
                         
-                        const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+                        const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
             
                         assert.deepStrictEqual(
                             result.testFiles,
@@ -604,13 +616,14 @@ suite('suggestTestFiles Test Suite', () => {
                     ], configuration, testPackage);
         
                     const filePaths = swiftFiles(
+                        fixture.context.fileSystem,
                         {
                             path: "/Package/Path/Sources/A.swift",
                             contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                         },
                     );
                     
-                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context.packageProvider);
+                    const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
         
                     assert.deepStrictEqual(
                         result.testFiles,
@@ -705,7 +718,7 @@ function makeMultiTargetTestPackage(): SwiftPackageManifest {
             {
                 name: "TargetWithPath",
                 type: TargetType.Regular,
-                path: "Sources/ExplicitPath"
+                path: "Sources/ExplicitPath",
             },
             {
                 name: "TargetTests",
@@ -733,7 +746,7 @@ function makeExplicitTestTargetPathTestPackage(): SwiftPackageManifest {
             {
                 name: "TargetTests",
                 type: TargetType.Test,
-                path: "Tests/AlternatePath"
+                path: "Tests/AlternatePath",
             },
         ],
         toolsVersion: {

@@ -7,6 +7,7 @@ import { SwiftPackageManifest } from "../../../data/swiftPackage";
 import { InvocationContext } from "../../../interfaces/context";
 import { FileSystemInterface } from "../../../interfaces/fileSystemInterface";
 import { PackageProviderInterface } from "../../../interfaces/packageProviderInterface";
+import { SwiftToolchainInterface } from "../../../interfaces/swiftToolchainInterface";
 import { VscodeWorkspaceEditInterface, VscodeWorkspaceInterface } from "../../../interfaces/vscodeWorkspaceInterface";
 import { SwiftPackagePathsManager } from "../../../swiftPackagePathsManager";
 import { VirtualDiskFile, VirtualDisk, VirtualDiskDirectory, VirtualDiskEntryType } from "./virtualFileDisk";
@@ -20,11 +21,13 @@ export class TestContext implements InvocationContext {
     workspace: TestVscodeWorkspace;
     packageProvider: TestPackageProvider;
     configuration: Configuration;
+    toolchain: SwiftToolchainInterface;
 
     constructor(configuration?: Configuration) {
         this.fileSystem = new TestFileSystem();
         this.workspace = new TestVscodeWorkspace();
         this.packageProvider = new TestPackageProvider(this.fileSystem);
+        this.toolchain = new TestSwiftToolchain();
 
         this.configuration = configuration ?? {
             fileGen: {
@@ -169,6 +172,23 @@ export class TestFileSystem implements FileSystemInterface {
         });
     }
 
+    async createOrUpdateFileContents(uri: vscode.Uri, contents: string): Promise<void> {
+        if (!await this.fileExists(uri)) {
+            this.createEntries(uri);
+        }
+
+        await this.updateFileContents(uri, contents);
+    }
+
+    async updateFileContents(uri: vscode.Uri, contents: string): Promise<void> {
+        const file = this.virtualFileDisk.findEntry(uri.fsPath);
+        if (file instanceof VirtualDiskFile) {
+            file.contents = contents;
+        } else {
+            throw Error(`Virtual disk path @ ${uri.fsPath} is not a file.`);
+        }
+    }
+
     /**
      * @deprecated Use `vscode.Uri.joinPath` instead.
      */
@@ -176,6 +196,33 @@ export class TestFileSystem implements FileSystemInterface {
         return vscode.Uri.joinPath(uri, ...components);
     }
 };
+
+export class TestSwiftToolchain implements SwiftToolchainInterface {
+    
+    dumpPackage_calls: [packageRootUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined][] = [];
+    dumpPackage_stub?: (packageRootUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined) => Promise<string>;
+    async dumpPackage(packageRootUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined): Promise<string> {
+        this.dumpPackage_calls.push([packageRootUri, cancellation]);
+
+        if (this.dumpPackage_stub === undefined) {
+            throw Error(`Missing stub for TestSwiftToolchain.dumpPackage()!.`);
+        }
+
+        return this.dumpPackage_stub(packageRootUri, cancellation);
+    }
+
+    dumpSwiftAst_calls: [fileUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined][] = [];
+    dumpSwiftAst_stub?: (fileUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined) => Promise<string>;
+    async dumpSwiftAst(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined): Promise<string> {
+        this.dumpSwiftAst_calls.push([fileUri, cancellation]);
+
+        if (this.dumpSwiftAst_stub === undefined) {
+            throw Error(`Missing stub for TestSwiftToolchain.dumpSwiftAst()!.`);
+        }
+        
+        return this.dumpSwiftAst_stub(fileUri, cancellation);
+    }
+}
 
 export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
     saveOpenedDocument_calls: [uri: vscode.Uri][] = [];

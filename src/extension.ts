@@ -9,6 +9,8 @@ import { InvocationContext } from './interfaces/context';
 import { FileSystemInterface } from './interfaces/fileSystemInterface';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
 import { VscodeWorkspaceInterface } from './interfaces/vscodeWorkspaceInterface';
+import { SwiftToolchainInterface } from './interfaces/swiftToolchainInterface';
+import { FileDiskSwiftToolchain } from './implementations/fileDiskSwiftToolchain';
 
 export async function activate(context: vscode.ExtensionContext) {
 	let disposable: vscode.Disposable;
@@ -33,17 +35,23 @@ export async function activate(context: vscode.ExtensionContext) {
 
 function makeContext(): InvocationContext {
 	const fs = fileSystem();
+	const toolchain = swiftToolchain();
 
 	return {
 		fileSystem: fs,
 		workspace: workspace(),
-		packageProvider: packageProvider(fs),
-		configuration: configuration()
+		packageProvider: packageProvider(fs, toolchain),
+		configuration: configuration(),
+		toolchain: toolchain,
 	};
 }
 
 function fileSystem(): FileSystemInterface {
 	return new FileSystem();
+}
+
+function swiftToolchain(): SwiftToolchainInterface {
+	return new FileDiskSwiftToolchain();
 }
 
 function workspace(): VscodeWorkspaceInterface {
@@ -67,6 +75,6 @@ function configuration(): Configuration {
 	};
 }
 
-function packageProvider(fileSystem: FileSystemInterface): PackageProviderInterface {
-	return new FileDiskPackageProvider(fileSystem);
+function packageProvider(fileSystem: FileSystemInterface, toolchain: SwiftToolchainInterface): PackageProviderInterface {
+	return new FileDiskPackageProvider(fileSystem, toolchain);
 }

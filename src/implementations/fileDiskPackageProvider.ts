@@ -1,15 +1,15 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
 import { SwiftPackageManifest, SwiftPackageManifestParser } from '../data/swiftPackage';
 import { PackageProviderInterface } from "../interfaces/packageProviderInterface";
 import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
+import { SwiftToolchainInterface } from '../interfaces/swiftToolchainInterface';
 
 /** Provides Swift package manifest by invoking `swift package dump-package` on a file path. */
 export class FileDiskPackageProvider implements PackageProviderInterface {
-    constructor(public fileSystem: FileSystemInterface) {
+    constructor(public fileSystem: FileSystemInterface, public toolchain: SwiftToolchainInterface) {
     }
 
     /**
@@ -17,28 +17,9 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
      * process within a given file's containing directory.
      */
     async swiftPackageManifestForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackageManifest> {
-        const directory = path.dirname(fileUri.fsPath);
+        const packageStr = await this.toolchain.dumpPackage(fileUri, cancellation);
 
-        return new Promise<string>((resolve, reject) => {
-            const childProc = exec("swift package dump-package", { cwd: directory }, function (err, stdout, stderr) {
-                if (err !== null) {
-                    throw err;
-                }
-                if (stderr !== '') {
-                    reject(stderr);
-                }
-
-                resolve(stdout.trim());
-            });
-
-            cancellation?.onCancellationRequested(() => {
-                reject(new vscode.CancellationError());
-
-                childProc.kill();
-            });
-        }).then((response) => {
-            return SwiftPackageManifestParser.toSwiftPackageManifest(response);
-        });
+        return SwiftPackageManifestParser.toSwiftPackageManifest(packageStr);
     }
 
     async swiftPackagePathManagerForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackagePathsManager> {

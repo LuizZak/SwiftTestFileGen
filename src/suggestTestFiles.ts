@@ -6,6 +6,8 @@ import { PackageProviderInterface } from './interfaces/packageProviderInterface'
 import { SwiftFile } from './data/swiftFile';
 import { targetDependenciesByName } from './data/swiftPackage.ext';
 import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
+import { SwiftFileSyntaxHelper } from './syntax/swiftFileSyntaxHelper';
+import { InvocationContext } from './interfaces/context';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -22,9 +24,11 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
 export async function suggestTestFiles(
     files: SwiftFile[],
     configuration: Configuration,
-    packageProvider: PackageProviderInterface,
+    invocationContext: InvocationContext,
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
+
+    const packageProvider = invocationContext.packageProvider;
 
     const operations = files.map(async (file): Promise<SuggestTestFilesResult> => {
         const pkg = await packageProvider.swiftPackagePathManagerForFile(file.path, cancellation);
@@ -149,7 +153,13 @@ export async function suggestTestFiles(
             importLines.push(`@testable import <#TargetName#>`);
         }
 
-        let detectedImports = detectModuleImports(file.contents);
+        const syntaxHelper = new SwiftFileSyntaxHelper(
+            file.path,
+            invocationContext.fileSystem,
+            invocationContext.toolchain
+        );
+
+        const detectedImports = await syntaxHelper.parseModuleImports();
 
         switch (configuration.fileGen.emitImportDeclarations) {
             case EmitImportDeclarationsMode.always:

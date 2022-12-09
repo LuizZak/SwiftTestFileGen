@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { Configuration } from '../../data/configurations/configuration';
-import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from './testMocks/testContext';
+import { makeTestContext, TestContext, TestFileSystem, TestVscodeWorkspaceEdit } from './testMocks/testContext';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../data/swiftPackage';
 import { groupBy } from '../../algorithms/groupBy';
 import path = require('path');
@@ -258,7 +258,7 @@ export function fileUris(...filePaths: string[]): vscode.Uri[] {
     return filePaths.map(fileUri);
 }
 
-export function swiftFiles(...filePaths: ({ path: string, contents: string } | string | vscode.Uri)[]): SwiftFile[] {
+export function swiftFiles(fileDisk: TestFileSystem, ...filePaths: ({ path: string, contents: string } | string | vscode.Uri)[]): SwiftFile[] {
     return filePaths.map((value) => {
         if (typeof value === "string") {
             return {
@@ -276,6 +276,8 @@ export function swiftFiles(...filePaths: ({ path: string, contents: string } | s
                 existsOnDisk: true
             };
         }
+
+        fileDisk.createOrUpdateFileContents(fileUri(value.path), value.contents);
 
         return {
             name: path.basename(value.path),
