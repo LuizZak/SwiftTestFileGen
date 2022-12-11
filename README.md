@@ -50,6 +50,14 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
+### 0.3.4
+
+- Now the "SwiftTestFileGen: Generate Test File(s)..." command opens up any existing test files for the selected source files that already exist on disk instead of silently terminating.
+
+### 0.3.3
+
+- Renaming package to "Swift Test File Generator"
+
 ### 0.3.2
 
 - Now special characters in the test class name that where derived from the original source file are replaced with '_'.
