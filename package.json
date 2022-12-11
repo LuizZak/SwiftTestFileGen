@@ -59,7 +59,7 @@
 				"swiftTestFileGen.gotoTestFile.useFilenameHeuristics": {
 					"type": "boolean",
 					"default": false,
-					"description": "Whether to use simple <FileName>.swift -> <FileName><Suffix>.swift heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths. If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests."
+					"description": "Whether to use simple (filename).swift -> (filename)(suffix).swift heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths. If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests."
 				},
 				"swiftTestFileGen.gotoTestFile.heuristicFilenamePattern": {
 					"type": ["array", "string"],

@@ -8,7 +8,14 @@ import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
 import { deduplicateStable } from '../algorithms/dedupe';
 
-export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmationMode: ConfirmationMode, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<vscode.Uri[]> {
+export async function generateTestFilesCommand(
+    fileUris: vscode.Uri[],
+    confirmationMode: ConfirmationMode,
+    context: InvocationContext, 
+    progress?: vscode.Progress<{ message?: string }>,
+    cancellation?: vscode.CancellationToken
+): Promise<vscode.Uri[]> {
+
     progress?.report({ message: "Finding Swift package..." });
 
     const expandedFileUris = await expandSwiftFoldersInUris(fileUris, context.fileSystem);
@@ -36,7 +43,6 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     }
 
     const wsEdit = context.workspace.makeWorkspaceEdit();
-    const documents: vscode.Uri[] = [];
 
     let results: SuggestTestFilesResult = {
         testFiles: [],
@@ -53,11 +59,12 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
     // Emit diagnostics
     emitDiagnostics(results.diagnostics, context.workspace);
 
-    const filesOpened: vscode.Uri[] = [];
+    const filesSuggested: vscode.Uri[] = [];
 
     for (const testFile of results.testFiles) {
         // Ignore files that already exist
         if (await context.fileSystem.fileExists(testFile.path)) {
+            context.workspace.showTextDocument(testFile.path);
             continue;
         }
 
@@ -70,7 +77,7 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
             label: "Insert boilerplate code for test file"
         };
 
-        filesOpened.push(testFile.path);
+        filesSuggested.push(testFile.path);
 
         wsEdit.createFile(testFile.path, { ignoreIfExists: true }, createFileMetadata);
         wsEdit.replaceDocumentText(testFile.path, testFile.contents, insertMetadata);
@@ -82,19 +89,25 @@ export async function generateTestFilesCommand(fileUris: vscode.Uri[], confirmat
 
     await wsEdit.applyWorkspaceEdit();
 
+    // Find documents that where created
+    const documentsExisting = await Promise.all(filesSuggested.map(async fileUri => {
+        return await context.fileSystem.fileExists(fileUri);
+    })).then(
+        (documentsExists) => filesSuggested.filter((_, index) => documentsExists[index])
+    );
+
     // Pre-save all files
-    const newDocuments = await Promise.all(filesOpened.map(async fileUri => {
+    const documents = await Promise.all(documentsExisting.map(async fileUri => {
         await context.workspace.saveOpenedDocument(fileUri);
 
         return fileUri;
     }));
-    documents.splice(0, 0, ...newDocuments);
     
     progress?.report({ message: "Done!" });
 
     // Move focus to first file created
-    if (documents.length > 0) {
-        await context.workspace.showTextDocument(documents[0]);
+    if (documentsExisting.length > 0) {
+        await context.workspace.showTextDocument(documentsExisting[0]);
     }
     
     return documents;

@@ -6,7 +6,10 @@ import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../data/swiftP
 import { groupBy } from '../../algorithms/groupBy';
 import path = require('path');
 
-export type ShowFileArguments = [fileUri: vscode.Uri | string, options?: vscode.TextDocumentShowOptions];
+export interface ShowFileArguments {
+    fileUri: vscode.Uri | string,
+    options?: vscode.TextDocumentShowOptions
+};
 
 export interface WorkspaceExpectedFileArguments {
     uri: vscode.Uri | string
@@ -78,19 +81,21 @@ export class FullTestFixture {
      */
     assertShownFiles(...expected: ShowFileArguments[]): FullTestFixture {
         // Map down to avoid comparing vscode.Uri by reference
-        function _map(entry: ShowFileArguments): [filePath: string, options?: vscode.TextDocumentShowOptions] {
-            if (typeof entry[0] === "string") {
-                return [vscode.Uri.file(entry[0]).fsPath, entry[1]];
+        function _mapExpected(entry: ShowFileArguments): [filePath: string, options?: vscode.TextDocumentShowOptions] {
+            if (typeof entry.fileUri === "string") {
+                return [vscode.Uri.file(entry.fileUri).fsPath, entry.options];
             }
 
+            return [entry.fileUri.fsPath, entry.options];
+        }
+        function _mapActual(entry: [filePath: vscode.Uri, options?: vscode.TextDocumentShowOptions]): [filePath: string, options?: vscode.TextDocumentShowOptions] {
             return [entry[0].fsPath, entry[1]];
         }
-
-        assert.strictEqual(this.context.workspace.showTextDocument_calls.length, expected.length);
-
+        
         assert.deepStrictEqual(
-            this.context.workspace.showTextDocument_calls.map(_map),
-            expected.map(_map)
+            this.context.workspace.showTextDocument_calls.map(_mapActual),
+            expected.map(_mapExpected),
+            "assertShownFiles() failed."
         );
 
         return this;
@@ -169,6 +174,19 @@ export class FullTestFixture {
     assertNoPackageManifestQueries(): FullTestFixture {
         assert.deepStrictEqual(this.context.packageProvider.swiftPackageManifestForFile_calls, []);
         assert.deepStrictEqual(this.context.packageProvider.swiftPackagePathManagerForFile_calls, []);
+
+        return this;
+    }
+
+    /**
+     * Asserts that no calls to modify a workspace where made via workspace edits
+     * in this text fixture's context.
+     */
+    assertNoModifyingWorkspaceEdits(): FullTestFixture {
+        const wsEdits = this.context.workspace.makeWorkspaceEdit_calls.flat();
+        const isEmpty = wsEdits.reduce((prev, wsEdit) => prev && wsEdit.isEmptyEdit(), true);
+
+        assert.deepStrictEqual(isEmpty, true, "assertNoWorkspaceEdits() failed: Found modifying workspace edit calls.");
 
         return this;
     }

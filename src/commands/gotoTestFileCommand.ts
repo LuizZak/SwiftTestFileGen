@@ -8,7 +8,14 @@ import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../suggestTestFiles';
 import { sanitizeFilename } from '../pathUtils';
 
-export async function gotoTestFileCommand(fileUri: vscode.Uri, context: InvocationContext, viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<void> {
+export async function gotoTestFileCommand(
+    fileUri: vscode.Uri,
+    context: InvocationContext,
+    viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active,
+    progress?: vscode.Progress<{ message?: string }>,
+    cancellation?: vscode.CancellationToken
+): Promise<void> {
+
     const { fileUris, diagnostics } = await performFileSearch(fileUri, context, progress, cancellation);
 
     // Emit diagnostics
@@ -42,7 +49,13 @@ export async function gotoTestFileCommand(fileUri: vscode.Uri, context: Invocati
 
 type TestFileSearchResult = OperationWithDiagnostics<{ fileUris: vscode.Uri[] }>;
 
-async function performFileSearch(fileUri: vscode.Uri, context: InvocationContext, progress?: vscode.Progress<{ message?: string }>, cancellation?: vscode.CancellationToken): Promise<TestFileSearchResult> {
+async function performFileSearch(
+    fileUri: vscode.Uri,
+    context: InvocationContext,
+    progress?: vscode.Progress<{ message?: string }>,
+    cancellation?: vscode.CancellationToken
+): Promise<TestFileSearchResult> {
+    
     // Perform simple filename heuristic search, if enabled.
     outer:
     if (context.configuration.gotoTestFile.useFilenameHeuristics) {
