@@ -2,6 +2,10 @@
 
 All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
+## [0.3.5]
+
+- Fixing error message when running 'Generate Test File(s)...' command from the command palette.
+
 ## [0.3.4]
 
 - Now the "SwiftTestFileGen: Generate Test File(s)..." command opens up any existing test files for the selected source files that already exist on disk instead of silently terminating.
