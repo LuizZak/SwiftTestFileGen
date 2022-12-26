@@ -5,22 +5,57 @@ import { predefinedSourceSearchPaths, predefinedTestSearchPaths } from './defini
 import { FileSystemInterface } from './interfaces/fileSystemInterface';
 import { isSubdirectory } from './pathUtils';
 
-/** Map of target path Uri -> target, to perform directory-based lookups. */
-export type TargetPathMap = Map<vscode.Uri, SwiftTarget>;
+/**a
+ * List of SwiftTargets with pre-computed directory information for quick
+ * directory-based lookups.
+ */
+type TargetPathList = InternalSwiftTarget[];
+
+interface InternalSwiftTarget extends SwiftTarget {
+    /**
+     * Whether the path associated with this `InternalSwiftTarget` is a directory
+     * in the file system.
+     */
+    hasDirectoryPath: boolean;
+
+    /**
+     * A fully computed path for this target that exists on disk.
+     */
+    computedPath: vscode.Uri;
+};
 
 /**
  * Class used to query for target <-> file containment for a particular package
  * manifest on the file system.
  */
 export class SwiftPackagePathsManager {
-    targetPathMap: Promise<TargetPathMap>;
+    targetPathList: TargetPathList;
 
-    constructor(public packageRoot: vscode.Uri, public pkg: SwiftPackageManifest, public fileSystem: FileSystemInterface) {
-        this.targetPathMap = this.makeTargetPathMap();
+    /** Cached result for last query of `this.availableSourcesPath()` */
+    private _sourcesPath?: vscode.Uri | null;
+
+    /** Cached result for last query of `this.availableTestsPath()` */
+    private _testsPath?: vscode.Uri | null;
+
+    private constructor(
+        public packageRoot: vscode.Uri,
+        public pkg: SwiftPackageManifest,
+        public fileSystem: FileSystemInterface,
+        targetPathList: TargetPathList
+    ) {
+
+        this.targetPathList = targetPathList;
     }
 
-    private async _targetPathMap(): Promise<TargetPathMap> {
-        return await this.targetPathMap;
+    public static async create(
+        packageRoot: vscode.Uri,
+        pkg: SwiftPackageManifest,
+        fileSystem: FileSystemInterface
+    ): Promise<SwiftPackagePathsManager> {
+
+        const targetPathList = await this.makeTargetPathMap(packageRoot, pkg, fileSystem);
+
+        return new SwiftPackagePathsManager(packageRoot, pkg, fileSystem, targetPathList);
     }
 
     /**
@@ -34,15 +69,20 @@ export class SwiftPackagePathsManager {
      * naming conventions.
      */
     async availableSourcesPath(): Promise<vscode.Uri | null> {
-        // TODO: Cache this operation?
+        if (this._sourcesPath !== undefined) {
+            return this._sourcesPath;
+        }
+
         for (const path of predefinedSourceSearchPaths) {
             const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
+                this._sourcesPath = fullPath;
                 return fullPath;
             }
         }
 
+        this._sourcesPath = null;
         return null;
     }
 
@@ -57,15 +97,20 @@ export class SwiftPackagePathsManager {
      * naming conventions.
      */
     async availableTestsPath(): Promise<vscode.Uri | null> {
-        // TODO: Cache this operation?
+        if (this._testsPath !== undefined) {
+            return this._testsPath;
+        }
+
         for (const path of predefinedTestSearchPaths) {
             const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
+                this._testsPath = fullPath;
                 return fullPath;
             }
         }
 
+        this._testsPath = null;
         return null;
     }
 
@@ -76,11 +121,12 @@ export class SwiftPackagePathsManager {
      * Returns `false` for files in test targets.
      */
     async isSourceFile(fileUri: vscode.Uri): Promise<boolean> {
-        for (const [targetPath, target] of await this._targetPathMap()) {
-            if (await this.fileSystem.isDirectoryUri(targetPath) && isSubdirectory(targetPath, fileUri)) {
+        for (const target of this.targetPathList) {
+            if (target.hasDirectoryPath && isSubdirectory(target.computedPath, fileUri)) {
                 switch (target.type) {
                     case TargetType.Executable:
                     case TargetType.Regular:
+                    case TargetType.Plugin:
                         return true;
 
                     case TargetType.Test:
@@ -106,8 +152,8 @@ export class SwiftPackagePathsManager {
      * given package.
      */
     async isTestFile(fileUri: vscode.Uri): Promise<boolean> {
-        for (const [targetPath, target] of await this._targetPathMap()) {
-            if (await this.fileSystem.isDirectoryUri(targetPath) && isSubdirectory(targetPath, fileUri)) {
+        for (const target of this.targetPathList) {
+            if (target.hasDirectoryPath && isSubdirectory(target.computedPath, fileUri)) {
                 switch (target.type) {
                     case TargetType.Test:
                         return true;
@@ -137,9 +183,9 @@ export class SwiftPackagePathsManager {
      * search path, in case no custom path has been provided in the manifest.
      */
     async pathForTarget(target: SwiftTarget): Promise<vscode.Uri> {
-        for (const [targetPath, t] of await this._targetPathMap()) {
+        for (const t of this.targetPathList) {
             if (target.name === t.name) {
-                return targetPath;
+                return t.computedPath;
             }
         }
 
@@ -151,9 +197,9 @@ export class SwiftPackagePathsManager {
      * target folder was found.
      */
     async targetForFilePath(filePath: vscode.Uri): Promise<SwiftTarget | null> {
-        for (const entry of (await this._targetPathMap()).entries()) {
-            if (isSubdirectory(entry[0], filePath)) {
-                return entry[1];
+        for (const target of this.targetPathList) {
+            if (isSubdirectory(target.computedPath, filePath)) {
+                return target;
             }
         }
         
@@ -161,20 +207,31 @@ export class SwiftPackagePathsManager {
     }
 
     /**
-     * Returns a `TargetPathMap` for a given package, rooted on a given base path.
+     * Returns a `TargetPathList` for the current package, mapping each known target
+     * in the package manifest to a directory on disk, if one can be found.
      */
-    async makeTargetPathMap(): Promise<TargetPathMap> {
-        let pairs: [vscode.Uri, SwiftTarget][] = await Promise.all(this.pkg.targets.map(async target => {
-            return [await _computePathForTarget(target, this.packageRoot, this.fileSystem), target];
-        }));
+    static async makeTargetPathMap(packageRoot: vscode.Uri, pkg: SwiftPackageManifest, fileSystem: FileSystemInterface): Promise<TargetPathList> {
+        const targets = pkg.targets;
         
-        let targetPathMap: TargetPathMap = new Map();
+        const compute: (target: SwiftTarget) => Promise<[vscode.Uri, SwiftTarget]> = (target) => {
+            return _computePathForTarget(target, packageRoot, fileSystem).then((result) => [result, target]);
+        };
 
-        pairs.forEach(pair => {
-            targetPathMap.set(pair[0], pair[1]);
-        });
+        const fullTargetPromises = await Promise.all(targets.map(compute));
 
-        return targetPathMap;
+        let targetPathList: TargetPathList = [];
+
+        for (const [path, target] of fullTargetPromises) {
+            const finalTarget: InternalSwiftTarget = {
+                ...target,
+                computedPath: path,
+                hasDirectoryPath: await fileSystem.isDirectoryUri(path)
+            };
+
+            targetPathList.push(finalTarget);
+        }
+
+        return targetPathList;
     }
 
     /**
@@ -186,8 +243,8 @@ export class SwiftPackagePathsManager {
      * root.
      */
     async targetNameFromFilePath(filePath: vscode.Uri): Promise<string | null> {
-        for (const [targetUri, target] of await this.targetPathMap) {
-            if (isSubdirectory(targetUri, filePath)) {
+        for (const target of await this.targetPathList) {
+            if (isSubdirectory(target.computedPath, filePath)) {
                 return target.name;
             }
         }

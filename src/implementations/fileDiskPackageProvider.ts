@@ -12,8 +12,37 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
     private packageCachePerDirectory: Map<string, Promise<SwiftPackageManifest>> = new Map();
     private packagePathCachePerDirectory: Map<string, Promise<vscode.Uri | null>> = new Map();
 
+    private packageManagerCache: Map<string, SwiftPackagePathsManager> = new Map();
+
     constructor(public fileSystem: FileSystemInterface) {
 
+    }
+
+    async swiftPackagePathManagerForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackagePathsManager> {
+        const pkg = await this.swiftPackageManifestForFile(fileUri, cancellation);
+        const manifestPath = await this.swiftPackagePath(fileUri, cancellation);
+
+        if (manifestPath === null) {
+            throw new Error(`Package for file ${fileUri.fsPath} not found`);
+        }
+
+        const pkgRoot = vscode.Uri.joinPath(manifestPath, "..");
+
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
+        }
+
+        const pkgRootPath = pkgRoot.path;
+        const cached = this.packageManagerCache.get(pkgRootPath);
+        if (cached) {
+            return cached;
+        }
+        
+        const manager = await SwiftPackagePathsManager.create(pkgRoot, pkg, this.fileSystem);
+
+        this.packageManagerCache.set(pkgRootPath, manager);
+
+        return manager;
     }
 
     /**
@@ -52,23 +81,6 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
         this.packageCachePerDirectory.set(directory, promise);
 
         return promise;
-    }
-
-    async swiftPackagePathManagerForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackagePathsManager> {
-        const pkg = await this.swiftPackageManifestForFile(fileUri, cancellation);
-        const manifestPath = await this.swiftPackagePath(fileUri, cancellation);
-
-        if (manifestPath === null) {
-            throw new Error(`Package for file ${fileUri.fsPath} not found`);
-        }
-
-        const pkgRoot = vscode.Uri.joinPath(manifestPath, "..");
-
-        if (cancellation?.isCancellationRequested) {
-            throw new vscode.CancellationError();
-        }
-        
-        return new SwiftPackagePathsManager(pkgRoot, pkg, this.fileSystem);
     }
 
     async swiftPackagePath(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<vscode.Uri | null> {

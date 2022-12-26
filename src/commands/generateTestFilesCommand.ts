@@ -60,6 +60,8 @@ export async function generateTestFilesCommand(
         diagnostics: []
     };
     
+    // Query suggested test files to figure out files that exist or that need to
+    // be created
     const suggestTestFilesProgress = progress?.createChild(packagesMap.size);
     if (suggestTestFilesProgress) {
         suggestTestFilesProgress.unitsPerChild = 1;
@@ -81,6 +83,7 @@ export async function generateTestFilesCommand(
         throw new vscode.CancellationError();
     }
 
+    // Generate test file requests for a WorkspaceEdit
     progress?.reportMessage("Generating test files...");
 
     const filesProgress = progress?.createChild(results.testFiles.length);
@@ -90,15 +93,13 @@ export async function generateTestFilesCommand(
 
     const filesSuggested: vscode.Uri[] = [];
 
-    var shownFirstFile = false;
     for (const testFile of results.testFiles) {
         filesProgress?.increment();
 
         // Ignore files that already exist
         if (await context.fileSystem.fileExists(testFile.path)) {
             // Show first file as a shortcut to 'Go to test file...' command.
-            if (!shownFirstFile) {
-                shownFirstFile = true;
+            if (results.testFiles.length === 1) {
                 context.workspace.showTextDocument(testFile.path);
             }
 
@@ -220,7 +221,7 @@ async function expandSwiftFoldersInUris(
 
         if (await fileSystem.isDirectoryUri(fileUri)) {
             const pattern = new vscode.RelativePattern(fileUri, "**/*.swift");
-            const files = await fileSystem.findFiles(pattern);
+            const files = await fileSystem.findFiles(pattern, undefined, undefined, cancellation);
 
             return files;
         }

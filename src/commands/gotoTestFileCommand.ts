@@ -139,7 +139,7 @@ async function performFileSearch(
     }
 
     const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
-    const pathManager = new SwiftPackagePathsManager(pkgRoot, pkg, context.fileSystem);
+    const pathManager = await SwiftPackagePathsManager.create(pkgRoot, pkg, context.fileSystem);
 
     if (await pathManager.isTestFile(fileUri)) {
         return {

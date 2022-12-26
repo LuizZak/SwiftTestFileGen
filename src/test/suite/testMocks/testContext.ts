@@ -90,7 +90,7 @@ export class TestPackageProvider implements PackageProviderInterface {
 
         const pkgPath = vscode.Uri.joinPath(stubbed[0], "..");
         
-        return new SwiftPackagePathsManager(pkgPath, stubbed[1], this.fileSystem);
+        return await SwiftPackagePathsManager.create(pkgPath, stubbed[1], this.fileSystem);
     }
 
     private closestPackageToPath(fileUri: vscode.Uri): [vscode.Uri, SwiftPackageManifest] | null {

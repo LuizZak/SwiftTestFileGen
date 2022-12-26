@@ -6,6 +6,7 @@ All notable changes to the "Swift Test File Generator" extension will be documen
 
 - Improving progress reporting on notification while generating test files.
 - Improving speed of file testing generation on large number of files sharing the same folders.
+- Improving general throughput of I/O operations to reduce number of disk hits simultaneously.
 
 ## [0.3.5]
 

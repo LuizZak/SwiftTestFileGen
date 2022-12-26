@@ -96,6 +96,7 @@ export class NestableProgress {
      * `this.totalUnitCount`.
      * 
      * @param progress The number of progress units to increment to `this.completedUnitCount`.
+     *     Defaults to `1`.
      */
     increment(progress: number = 1) {
         this.recursive(

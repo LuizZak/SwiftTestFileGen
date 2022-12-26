@@ -2,13 +2,13 @@ import * as vscode from 'vscode';
 import { NestableProgress } from '../progress/nestableProgress';
 
 /**
- * Allows throttling of a sequence of promises by feeding a generator function
- * with a given input array as promises are completed.
+ * Allows limiting the number of concurrent promises by feeding a generator
+ * function with a given input array as promises are completed.
  * 
  * @param concurrent The maximum number of concurrent promises to execute at a time.
  * @param generator A promise-generating function that is invoked once per input.
  * @param input A list of input values that will feed the generator to produce
- *     the promises to throttle. If empty, this function returns immediately.
+ *     the promises to limit. If empty, this function returns immediately.
  * @param progress A progress object that is incremented once per promise settled.
  *     If `progress.completedUnitCount` reaches `progress.totalUnitCount`, the
  *     progress object is automatically completed.
@@ -20,7 +20,7 @@ import { NestableProgress } from '../progress/nestableProgress';
  * @param thenF An optional function that is invoked with the result of each
  *     promise as they are fulfilled.
  */
-export async function throttleWithParameters<I, R>(
+export async function limitWithParameters<I, R>(
     concurrent: number,
     generator: (input: I) => Promise<R>,
     input: I[],
@@ -30,35 +30,63 @@ export async function throttleWithParameters<I, R>(
     thenF?: (result: R) => R
 ): Promise<R[]> {
 
-    var remaining = Array.from(input);
-    let results: R[] = [];
+    type InputItem = [index: number, input: I] | undefined;
+    type OutputItem = [index: number, output: R];
 
-    while (remaining.length > 0) {
-        if (cancellation && cancellation.isCancellationRequested) {
-            throw new vscode.CancellationError();
+    let remaining = Array.from(input);
+    let dequeued = 0;
+
+    function dequeueNext(): InputItem {
+        const next = remaining.shift();
+        if (!next) {
+            return;
         }
 
-        const partial = await Promise.all(
-            remaining
-                .splice(0, concurrent)
-                .map((input): Promise<R> => {
-                    let promise = generator(input);
-                    if (thenF) {
-                        promise = promise.then(thenF);
-                    }
-                        
-                    return promise.finally(() => progress?.increment(unitsPerPromise));
-                })
-        );
-
-        results = results.concat(partial);
+        return [dequeued++, next];
     }
+
+    function generateLane(): Promise<OutputItem[]> {
+        return new Promise(async (resolve, reject) => {
+            if (cancellation && cancellation.isCancellationRequested) {
+                reject(new vscode.CancellationError());
+                return;
+            }
+
+            let current: OutputItem[] = [];
+
+            while (true) {
+                const next = dequeueNext();
+                if (!next) {
+                    break;
+                }
+
+                const result = await generator(next[1]).then(thenF);
+
+                progress?.increment(unitsPerPromise);
+
+                current.push([next[0], result]);
+            }
+
+            resolve(current);
+        });
+    }
+
+    let lanes: Promise<OutputItem[]>[] = [];
+
+    for (let i = 0; i < concurrent; i++) {
+        lanes.push(generateLane());
+    }
+
+    let results = (await Promise.all(lanes)).flat();
 
     if (progress?.completedUnitCount === progress?.totalUnitCount) {
         progress?.complete();
     }
 
-    return results;
+    // Re-order results based on index and return
+    results.sort((a, b) => a[0] - b[0]);
+
+    return results.map(r => r[1]);
 }
 
 /**
@@ -78,7 +106,7 @@ export async function throttleWithParameters<I, R>(
  * @param thenF An optional function that is invoked with the result of each
  *     promise as they are fulfilled.
  */
-export async function throttle<R>(
+export async function limit<R>(
     concurrent: number,
     generators: (() => Promise<R>)[],
     progress?: NestableProgress,
@@ -87,7 +115,7 @@ export async function throttle<R>(
     thenF?: (result: R) => R
 ): Promise<R[]> {
 
-    return throttleWithParameters(
+    return limitWithParameters(
         concurrent,
         (f) => f(),
         generators,

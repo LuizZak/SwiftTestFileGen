@@ -25,9 +25,61 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isSourceFile(fileUri), true);
+        });
+        
+        test('returns true for files in Executable targets in Sources/', async () => {
+            const pkg = makeStandardTestPackage();
+            pkg.targets[0].type = TargetType.Executable;
+
+            const baseUri = vscode.Uri.file(path.join("base", "path"));
+            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+
+            fileSystem.createEntriesWithKind(
+                [baseUri, VirtualDiskEntryType.directory],
+                [fileUri, VirtualDiskEntryType.file]
+            );
+
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
+
+            assert.strictEqual(await sut.isSourceFile(fileUri), true);
+        });
+        
+        test('returns true for files in Plugin targets in Sources/', async () => {
+            const pkg = makeStandardTestPackage();
+            pkg.targets[0].type = TargetType.Plugin;
+
+            const baseUri = vscode.Uri.file(path.join("base", "path"));
+            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+
+            fileSystem.createEntriesWithKind(
+                [baseUri, VirtualDiskEntryType.directory],
+                [fileUri, VirtualDiskEntryType.file]
+            );
+
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
+
+            assert.strictEqual(await sut.isSourceFile(fileUri), true);
+        });
+        
+        test('returns false for files in Test targets in Sources/', async () => {
+            const pkg = makeStandardTestPackage();
+            pkg.targets[0].type = TargetType.Test;
+            pkg.targets[0].path = "Sources";
+
+            const baseUri = vscode.Uri.file(path.join("base", "path"));
+            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+
+            fileSystem.createEntriesWithKind(
+                [baseUri, VirtualDiskEntryType.directory],
+                [fileUri, VirtualDiskEntryType.file]
+            );
+
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
+
+            assert.strictEqual(await sut.isSourceFile(fileUri), false);
         });
 
         test('returns true for files in Source/', async () => {
@@ -41,7 +93,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isSourceFile(fileUri), true);
         });
@@ -57,7 +109,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isSourceFile(fileUri), true);
         });
@@ -73,7 +125,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isSourceFile(fileUri), true);
         });
@@ -92,7 +144,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isSourceFile(fileUri), true);
         });
@@ -111,7 +163,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isSourceFile(fileUri), false);
         });
@@ -128,7 +180,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [baseUri, VirtualDiskEntryType.directory],
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(
                 await sut.isSourceFile(
@@ -157,7 +209,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), true);
         });
@@ -173,7 +225,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), true);
         });
@@ -189,7 +241,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), true);
         });
@@ -205,7 +257,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), true);
         });
@@ -221,7 +273,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), true);
         });
@@ -240,7 +292,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), true);
         });
@@ -259,7 +311,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [fileUri, VirtualDiskEntryType.file]
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(await sut.isTestFile(fileUri), false);
         });
@@ -276,7 +328,7 @@ suite('SwiftPackagePathsManager Test Suite', () => {
                 [baseUri, VirtualDiskEntryType.directory],
             );
 
-            const sut = new SwiftPackagePathsManager(baseUri, pkg, fileSystem);
+            const sut = await SwiftPackagePathsManager.create(baseUri, pkg, fileSystem);
 
             assert.strictEqual(
                 await sut.isTestFile(

@@ -4,7 +4,8 @@ import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFil
 import { SwiftTestFile } from './data/swiftTestFile';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
 import { NestableProgress } from './progress/nestableProgress';
-import { throttleWithParameters } from './asyncUtils/asyncUtils';
+import { limitWithParameters } from './asyncUtils/asyncUtils';
+import { deduplicateStable } from './algorithms/dedupe';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -24,6 +25,24 @@ export async function suggestTestFiles(
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
 
+    // Warm up the cache prior to the operation by querying the file directories
+    // first
+    const directories = deduplicateStable(filePaths, (filePath) => {
+        return path.dirname(filePath.path);
+    });
+
+    const filesProgress = progress?.createChild(
+        filePaths.length + directories.length,
+        undefined,
+        "Finding existing test files..."
+    );
+
+    // TODO: Allow parameterization of concurrent task count.
+    await limitWithParameters(10, async (filePath) => {
+        await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+    }, directories, filesProgress, cancellation);
+
+    // Do proper operation now
     const operation = async (filePath: vscode.Uri): Promise<SuggestTestFilesResult> => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
@@ -172,9 +191,8 @@ class ${testClassName}: XCTestCase {
         };
     };
 
-    const filesProgress = progress?.createChild(filePaths.length, undefined, "Finding existing test files...");
-
-    const result = await throttleWithParameters(10, operation, filePaths, filesProgress, cancellation);
+    // TODO: Allow parameterization of concurrent task count.
+    const result = await limitWithParameters(25, operation, filePaths, filesProgress, cancellation);
     return result.reduce(joinSuggestedTestFileResults);
 }
 
