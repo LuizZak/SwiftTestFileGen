@@ -36,7 +36,7 @@ export class SwiftPackagePathsManager {
     async availableSourcesPath(): Promise<vscode.Uri | null> {
         // TODO: Cache this operation?
         for (const path of predefinedSourceSearchPaths) {
-            const fullPath = this.fileSystem.joinPathUri(this.packageRoot, path);
+            const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
                 return fullPath;
@@ -59,7 +59,7 @@ export class SwiftPackagePathsManager {
     async availableTestsPath(): Promise<vscode.Uri | null> {
         // TODO: Cache this operation?
         for (const path of predefinedTestSearchPaths) {
-            const fullPath = this.fileSystem.joinPathUri(this.packageRoot, path);
+            const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
                 return fullPath;

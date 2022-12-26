@@ -2,6 +2,10 @@
 
 All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
+## [master]
+
+- Improving progress reporting on notification while generating test files.
+
 ## [0.3.5]
 
 - Fixing error message when running 'Generate Test File(s)...' command from the command palette.

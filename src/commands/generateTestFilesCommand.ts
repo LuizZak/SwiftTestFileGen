@@ -7,18 +7,29 @@ import { ConfirmationMode } from '../data/configurations/confirmationMode';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { InvocationContext } from '../interfaces/context';
 import { deduplicateStable } from '../algorithms/dedupe';
+import { monitorWithProgress, NestableProgress } from '../progress/nestableProgress';
 
 export async function generateTestFilesCommand(
     fileUris: vscode.Uri[],
     confirmationMode: ConfirmationMode,
-    context: InvocationContext, 
-    progress?: vscode.Progress<{ message?: string }>,
+    context: InvocationContext,
+    progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<vscode.Uri[]> {
 
-    progress?.report({ message: "Finding Swift package..." });
+    if (progress) {
+        progress = progress.createChild(5);
+        progress.unitsPerChild = 1;
+    }
 
-    const expandedFileUris = await expandSwiftFoldersInUris(fileUris, context.fileSystem);
+    progress?.reportMessage("Finding Swift package...");
+
+    const expandedFileUris = await expandSwiftFoldersInUris(
+        fileUris,
+        context.fileSystem,
+        progress,
+        cancellation
+    );
     let swiftFiles = expandedFileUris.filter(fileUri => path.extname(fileUri.fsPath) === ".swift");
 
     // Deduplicate input files
@@ -49,22 +60,48 @@ export async function generateTestFilesCommand(
         diagnostics: []
     };
     
+    const suggestTestFilesProgress = progress?.createChild(packagesMap.size);
+    if (suggestTestFilesProgress) {
+        suggestTestFilesProgress.unitsPerChild = 1;
+    }
+
     for (const [_, packageFiles] of packagesMap) {
-        const result = await suggestTestFiles(packageFiles, context.packageProvider, cancellation);
+        const result = await suggestTestFiles(
+            packageFiles,
+            context.packageProvider,
+            suggestTestFilesProgress,
+            cancellation
+        );
         results = joinSuggestedTestFileResults(results, result);
     }
 
-    progress?.report({ message: "Generating test files..." });
+    suggestTestFilesProgress?.complete();
 
+    if (cancellation?.isCancellationRequested) {
+        throw new vscode.CancellationError();
+    }
+
+    progress?.reportMessage("Generating test files...");
+
+    const filesProgress = progress?.createChild(results.testFiles.length);
+    
     // Emit diagnostics
     emitDiagnostics(results.diagnostics, context.workspace);
 
     const filesSuggested: vscode.Uri[] = [];
 
+    var shownFirstFile = false;
     for (const testFile of results.testFiles) {
+        filesProgress?.increment();
+
         // Ignore files that already exist
         if (await context.fileSystem.fileExists(testFile.path)) {
-            context.workspace.showTextDocument(testFile.path);
+            // Show first file as a shortcut to 'Go to test file...' command.
+            if (!shownFirstFile) {
+                shownFirstFile = true;
+                context.workspace.showTextDocument(testFile.path);
+            }
+
             continue;
         }
 
@@ -83,37 +120,48 @@ export async function generateTestFilesCommand(
         wsEdit.replaceDocumentText(testFile.path, testFile.contents, insertMetadata);
     }
 
+    filesProgress?.complete();
+
     if (cancellation?.isCancellationRequested) {
         throw new vscode.CancellationError();
     }
 
+    progress?.reportMessage("Waiting for user to accept workspace edit...");
+
     await wsEdit.applyWorkspaceEdit();
 
     // Find documents that where created
-    const documentsExisting = await Promise.all(filesSuggested.map(async fileUri => {
+    const createdDocuments = await Promise.all(filesSuggested.map(async fileUri => {
         return await context.fileSystem.fileExists(fileUri);
     })).then(
         (documentsExists) => filesSuggested.filter((_, index) => documentsExists[index])
     );
 
     // Pre-save all files
-    const documents = await Promise.all(documentsExisting.map(async fileUri => {
+    const savedDocuments = await Promise.all(createdDocuments.map(async fileUri => {
         await context.workspace.saveOpenedDocument(fileUri);
 
         return fileUri;
     }));
     
-    progress?.report({ message: "Done!" });
+    progress?.incrementWithMessage("Done!");
 
     // Move focus to first file created
-    if (documentsExisting.length > 0) {
-        await context.workspace.showTextDocument(documentsExisting[0]);
+    if (createdDocuments.length > 0) {
+        await context.workspace.showTextDocument(createdDocuments[0]);
     }
+
+    progress?.complete();
     
-    return documents;
+    return savedDocuments;
 }
 
-async function shouldRequestConfirmation(fileUris: vscode.Uri[], fileSystem: FileSystemInterface, confirmationMode: ConfirmationMode): Promise<boolean> {
+async function shouldRequestConfirmation(
+    fileUris: vscode.Uri[],
+    fileSystem: FileSystemInterface,
+    confirmationMode: ConfirmationMode
+): Promise<boolean> {
+
     switch (confirmationMode) {
         case ConfirmationMode.always:
             return true;
@@ -152,8 +200,20 @@ async function shouldRequestConfirmation(fileUris: vscode.Uri[], fileSystem: Fil
  * Returns a new list of of filesystem Uris by expanding folders in the input list to all .swift files
  * contained within the folders.
  */
-async function expandSwiftFoldersInUris(fileUris: vscode.Uri[], fileSystem: FileSystemInterface): Promise<vscode.Uri[]> {
+async function expandSwiftFoldersInUris(
+    fileUris: vscode.Uri[],
+    fileSystem: FileSystemInterface,
+    progress?: NestableProgress,
+    cancellation?: vscode.CancellationToken
+): Promise<vscode.Uri[]> {
+
+    const promisesProgress = progress?.createChild(fileUris.length, undefined, "Expanding paths...");
+
     const promises = fileUris.map(async (fileUri) => {
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
+        }
+        
         if (await fileSystem.fileExists(fileUri)) {
             return [fileUri];
         }
@@ -168,5 +228,6 @@ async function expandSwiftFoldersInUris(fileUris: vscode.Uri[], fileSystem: File
         return [];
     });
 
-    return (await Promise.all(promises)).flat();
+    const result = await Promise.all(monitorWithProgress(promises, promisesProgress, 1));
+    return result.flat();
 }

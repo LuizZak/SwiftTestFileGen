@@ -3,6 +3,8 @@ import * as vscode from 'vscode';
 import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFileDiagnosticResult';
 import { SwiftTestFile } from './data/swiftTestFile';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
+import { NestableProgress } from './progress/nestableProgress';
+import { throttleWithParameters } from './asyncUtils/asyncUtils';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -15,8 +17,18 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
  * @param cancellation A cancellation token to stop the operation.
  * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
  */
-export async function suggestTestFiles(filePaths: vscode.Uri[], packageProvider: PackageProviderInterface, cancellation?: vscode.CancellationToken): Promise<SuggestTestFilesResult> {
-    const operations = filePaths.map(async (filePath): Promise<SuggestTestFilesResult> => {
+export async function suggestTestFiles(
+    filePaths: vscode.Uri[],
+    packageProvider: PackageProviderInterface,
+    progress?: NestableProgress,
+    cancellation?: vscode.CancellationToken
+): Promise<SuggestTestFilesResult> {
+
+    const operation = async (filePath: vscode.Uri): Promise<SuggestTestFilesResult> => {
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
+        }
+        
         const pkg = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
 
         // Ignore files that are not within the sources root directory
@@ -158,9 +170,12 @@ class ${testClassName}: XCTestCase {
             testFiles: [result],
             diagnostics: []
         };
-    });
+    };
 
-    return (await Promise.all(operations)).reduce(joinSuggestedTestFileResults);
+    const filesProgress = progress?.createChild(filePaths.length, undefined, "Finding existing test files...");
+
+    const result = await throttleWithParameters(10, operation, filePaths, filesProgress, cancellation);
+    return result.reduce(joinSuggestedTestFileResults);
 }
 
 /** Utility function for joining `SuggestTestFilesResult` objects. */

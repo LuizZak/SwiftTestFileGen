@@ -7,12 +7,13 @@ import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../suggestTestFiles';
 import { sanitizeFilename } from '../pathUtils';
+import { NestableProgress } from '../progress/nestableProgress';
 
 export async function gotoTestFileCommand(
     fileUri: vscode.Uri,
     context: InvocationContext,
     viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active,
-    progress?: vscode.Progress<{ message?: string }>,
+    progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<void> {
 
@@ -52,7 +53,7 @@ type TestFileSearchResult = OperationWithDiagnostics<{ fileUris: vscode.Uri[] }>
 async function performFileSearch(
     fileUri: vscode.Uri,
     context: InvocationContext,
-    progress?: vscode.Progress<{ message?: string }>,
+    progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<TestFileSearchResult> {
     
@@ -117,9 +118,9 @@ async function performFileSearch(
         }
     }
 
-    progress?.report({ message: "Finding Swift package..." });
+    progress?.reportMessage("Finding Swift package...");
 
-    const pkgPath = await findSwiftPackagePath(fileUri, context.fileSystem);
+    const pkgPath = await findSwiftPackagePath(fileUri, context.fileSystem, undefined, cancellation);
     if (pkgPath === null) {
         return {
             fileUris: [],
@@ -151,7 +152,7 @@ async function performFileSearch(
         };
     }
 
-    const { testFiles, diagnostics } = await suggestTestFiles([fileUri], context.packageProvider, cancellation);
+    const { testFiles, diagnostics } = await suggestTestFiles([fileUri], context.packageProvider, progress, cancellation);
 
     return {
         fileUris: testFiles.map(f => f.path),
