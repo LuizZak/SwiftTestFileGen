@@ -1,6 +1,4 @@
-import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
-import { dumpSwiftAst } from '../exec/swiftc';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { SwiftToolchainInterface } from '../interfaces/swiftToolchainInterface';
 

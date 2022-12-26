@@ -25,7 +25,7 @@ export class TestContext implements InvocationContext {
 
     constructor(configuration?: Configuration) {
         this.fileSystem = new TestFileSystem();
-        this.workspace = new TestVscodeWorkspace();
+        this.workspace = new TestVscodeWorkspace(this.fileSystem.virtualFileDisk);
         this.packageProvider = new TestPackageProvider(this.fileSystem);
         this.toolchain = new TestSwiftToolchain();
 
@@ -39,6 +39,19 @@ export class TestContext implements InvocationContext {
                 heuristicFilenamePattern: "(\\w+)Tests",
             },
         };
+    }
+
+    /**
+     * Configures whether mock workspace edits should actually create virtual
+     * disk entries when they conclude editing.
+     *
+     * Defaults to `true`.
+     *
+     * Only applies to future `makeWorkspaceEdit()` calls.
+     */
+    setCreateVirtualFilesInWorkspaceEdits(value: boolean): TestContext {
+        this.workspace.setCreateVirtualFilesInWorkspaceEdits(value);
+        return this;
     }
 };
 
@@ -225,6 +238,12 @@ export class TestSwiftToolchain implements SwiftToolchainInterface {
 }
 
 export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
+    private _createVirtualFilesInWorkspaceEdits: boolean = true;
+
+    constructor(private fileDisk: VirtualDisk) {
+
+    }
+
     saveOpenedDocument_calls: [uri: vscode.Uri][] = [];
     async saveOpenedDocument(uri: vscode.Uri): Promise<void> {
         this.saveOpenedDocument_calls.push([uri]);
@@ -237,7 +256,10 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
 
     makeWorkspaceEdit_calls: TestVscodeWorkspaceEdit[] = [];
     makeWorkspaceEdit(): TestVscodeWorkspaceEdit {
-        const wsEdit = new TestVscodeWorkspaceEdit();
+        const wsEdit = new TestVscodeWorkspaceEdit(
+            this.fileDisk,
+            this._createVirtualFilesInWorkspaceEdits
+        );
         this.makeWorkspaceEdit_calls.push(wsEdit);
 
         return wsEdit;
@@ -277,9 +299,26 @@ export class TestVscodeWorkspace implements VscodeWorkspaceInterface {
         
         return await task(progress, token.token);
     }
+
+    /**
+     * Configures whether mock workspace edits should actually create virtual
+     * disk entries when they conclude editing.
+     *
+     * Defaults to `true`.
+     *
+     * Only applies to future `makeWorkspaceEdit()` calls.
+     */
+    setCreateVirtualFilesInWorkspaceEdits(value: boolean): TestVscodeWorkspace {
+        this._createVirtualFilesInWorkspaceEdits = value;
+        return this;
+    }
 };
 
 export class TestVscodeWorkspaceEdit implements VscodeWorkspaceEditInterface {
+    constructor(private fileDisk: VirtualDisk, private createVirtualFiles: boolean) {
+
+    }
+
     createFile_calls: [uri: vscode.Uri, options?: { overwrite?: boolean | undefined; ignoreIfExists?: boolean | undefined; }, metadata?: vscode.WorkspaceEditEntryMetadata][] = [];
     createFile(uri: vscode.Uri, options?: { overwrite?: boolean | undefined; ignoreIfExists?: boolean | undefined; }, metadata?: vscode.WorkspaceEditEntryMetadata): void {
         this.createFile_calls.push([uri, options, metadata]);
@@ -293,5 +332,24 @@ export class TestVscodeWorkspaceEdit implements VscodeWorkspaceEditInterface {
     applyWorkspaceEdit_calls: any[] = [];
     async applyWorkspaceEdit(): Promise<void> {
         this.applyWorkspaceEdit_calls.push();
+
+        if (this.createVirtualFiles) {
+            this.createFile_calls.forEach(call => {
+                const path = call[0];
+                
+                if (!this.fileDisk.fileExists(path)) {
+                    this.fileDisk.createFile(path);
+                }
+            });
+        }
+    }
+
+    /**
+     * Returns `true` if this workspace edit mock contains no calls to modifying
+     * methods like `createFile` or `replaceDocumentText`. Non-mutating calls
+     * such as `applyWorkspaceEdit` are not considered.
+     */
+    isEmptyEdit(): boolean {
+        return this.createFile_calls.length === 0 && this.replaceDocumentText_calls.length === 0;
     }
 }

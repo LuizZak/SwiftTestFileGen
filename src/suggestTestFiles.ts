@@ -8,6 +8,8 @@ import { targetDependenciesByName } from './data/swiftPackage.ext';
 import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 import { SwiftFileSyntaxHelper } from './syntax/swiftFileSyntaxHelper';
 import { InvocationContext } from './interfaces/context';
+import { NestableProgress } from './progress/nestableProgress';
+import { throttleWithParameters } from './asyncUtils/asyncUtils';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -25,12 +27,17 @@ export async function suggestTestFiles(
     files: SwiftFile[],
     configuration: Configuration,
     invocationContext: InvocationContext,
+    progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
 
     const packageProvider = invocationContext.packageProvider;
 
-    const operations = files.map(async (file): Promise<SuggestTestFilesResult> => {
+    const operation = async (file: SwiftFile): Promise<SuggestTestFilesResult> => {
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
+        }
+        
         const pkg = await packageProvider.swiftPackagePathManagerForFile(file.path, cancellation);
 
         // Ignore files that are not within the sources root directory
@@ -207,9 +214,12 @@ class ${testClassName}: XCTestCase {
             testFiles: [result],
             diagnostics: []
         };
-    });
+    };
 
-    return (await Promise.all(operations)).reduce(joinSuggestedTestFileResults);
+    const filesProgress = progress?.createChild(files.length, undefined, "Finding existing test files...");
+
+    const result = await throttleWithParameters(10, operation, files, filesProgress, cancellation);
+    return result.reduce(joinSuggestedTestFileResults);
 }
 
 /**

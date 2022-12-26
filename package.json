@@ -1,88 +1,92 @@
 {
   	"name": "swifttestfilegen",
-	"displayName": "Swift Test File Generator",
-	"description": "Generates test files from Swift Package Manager target files",
-	"version": "0.3.3",
-	"author": "LuizZak",
-	"publisher": "LuizZak",
-	"license": "MIT",
-	"icon": "icon.png",
-	"engines": {
-		"vscode": "^1.63.0"
-	},
-	"categories": [
-		"Testing", "Other"
-	],
-	"activationEvents": [
-		"workspaceContains:Package.swift",
-		"onLanguage:swift"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/LuizZak/SwiftTestFileGen.git"
-	},
-	"keywords": [
-		"swift",
-		"test",
-		"file",
-		"generator",
-		"generating",
-		"generation",
-		"testing",
-		"unit test"
-	],
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "swifttestfilegen.generateTestFiles",
-				"title": "SwiftTestFileGen: Generate Test File(s)...",
-				"shortTitle": "Generate Test File(s)..."
-			},
-			{
-				"command": "swifttestfilegen.gotoTestFile",
-				"title": "SwiftTestFileGen: Go to Test File...",
-				"shortTitle": "Go to Test File..."
-			}
-		],
-		"menus": {
-			"explorer/context": [
-				{
-					"command": "swifttestfilegen.generateTestFiles",
-					"when": "resourceExtname == .swift || explorerResourceIsFolder"
-				}
-			]
-		},
-		"configuration": {
-			"title": "Swift Test File Generator",
-			"properties": {
-				"swiftTestFileGen.gotoTestFile.useFilenameHeuristics": {
-					"type": "boolean",
-					"default": false,
-					"description": "Whether to use simple <FileName>.swift -> <FileName><Suffix>.swift heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths. If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests."
-				},
-				"swiftTestFileGen.gotoTestFile.heuristicFilenamePattern": {
-					"type": ["array", "string"],
-					"default": "$1Tests",
-					"description": "A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files. Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive. Any special character is stripped from the file name after the placeholder is replaced and before the file is created. Ignored if `useFilenameHeuristics` is false."
-				},
-				"swiftTestFileGen.fileGen.confirmation": {
-					"type": "string",
-					"default": "always",
-					"enum": [
-						"always",
-						"onlyIfMultiFile",
-						"onlyOnDirectories",
-						"never"
-					],
-					"enumDescriptions": [
-						"Always requests confirmation of changes through a Refactor Preview window",
-						"Only requests confirmation if more than one file is selected, or if the selected item is a directory",
-						"Only requests confirmation if the selection contains one or more directories",
-						"Never requests confirmation; always create test files straight away"
-					],
-					"description": "Whether to request confirmation of changes through a Refactor Preview window while creating files, or apply changes immediately after invoking the file generation command."
-				},
+  	"displayName": "Swift Test File Generator",
+  	"description": "Generates test files from Swift Package Manager target files",
+  	"version": "0.3.5",
+  	"author": "LuizZak",
+  	"publisher": "LuizZak",
+  	"license": "MIT",
+  	"icon": "icon.png",
+  	"engines": {
+  	  	"vscode": "^1.74.0"
+  	},
+  	"categories": [
+  	  	"Testing",
+  	  	"Other"
+  	],
+  	"activationEvents": [
+  	  	"workspaceContains:Package.swift",
+  	  	"onLanguage:swift"
+  	],
+  	"repository": {
+  	  	"type": "git",
+  	  	"url": "https://github.com/LuizZak/SwiftTestFileGen.git"
+  	},
+  	"keywords": [
+  	  	"swift",
+  	  	"test",
+  	  	"file",
+  	  	"generator",
+  	  	"generating",
+  	  	"generation",
+  	  	"testing",
+  	  	"unit test"
+  	],
+  	"main": "./out/extension.js",
+  	"contributes": {
+  	  	"commands": [
+  	  	  	{
+  	  	  	  	"command": "swifttestfilegen.generateTestFiles",
+  	  	  	  	"title": "SwiftTestFileGen: Generate Test File(s)...",
+  	  	  	  	"shortTitle": "Generate Test File(s)..."
+  	  	  	},
+  	  	  	{
+  	  	  	  	"command": "swifttestfilegen.gotoTestFile",
+  	  	  	  	"title": "SwiftTestFileGen: Go to Test File...",
+  	  	  	  	"shortTitle": "Go to Test File..."
+  	  	  	}
+  	  	],
+  	  	"menus": {
+  	  	  	"explorer/context": [
+  	  	  	  	{
+  	  	  	  	  	"command": "swifttestfilegen.generateTestFiles",
+  	  	  	  	  	"when": "resourceExtname == .swift || explorerResourceIsFolder"
+  	  	  	  	}
+  	  	  	]
+  	  	},
+  	  	"configuration": {
+  	  	  	"title": "Swift Test File Generator",
+  	  	  	"properties": {
+  	  	  	  	"swiftTestFileGen.gotoTestFile.useFilenameHeuristics": {
+  	  	  	  	  	"type": "boolean",
+  	  	  	  	  	"default": false,
+  	  	  	  	  	"description": "Whether to use simple (filename).swift -> (filename)(suffix).swift heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths. If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests."
+  	  	  	  	},
+  	  	  	  	"swiftTestFileGen.gotoTestFile.heuristicFilenamePattern": {
+  	  	  	  	  	"type": [
+  	  	  	  	  	  	"array",
+  	  	  	  	  	  	"string"
+  	  	  	  	  	],
+  	  	  	  	  	"default": "$1Tests",
+  	  	  	  	  	"description": "A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files. Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive. Any special character is stripped from the file name after the placeholder is replaced and before the file is created. Ignored if `useFilenameHeuristics` is false."
+  	  	  	  	},
+  	  	  	  	"swiftTestFileGen.fileGen.confirmation": {
+  	  	  	  	  	"type": "string",
+  	  	  	  	  	"default": "always",
+  	  	  	  	  	"enum": [
+  	  	  	  	  	  	"always",
+  	  	  	  	  	  	"onlyIfMultiFile",
+  	  	  	  	  	  	"onlyOnDirectories",
+  	  	  	  	  	  	"never"
+  	  	  	  	  	],
+  	  	  	  	  	"enumDescriptions": [
+  	  	  	  	  	  	"Always requests confirmation of changes through a Refactor Preview window",
+  	  	  	  	  	  	"Only requests confirmation if more than one file is selected, or if the selected item is a directory",
+  	  	  	  	  	  	"Only requests confirmation if the selection contains one or more directories",
+  	  	  	  	  	  	"Never requests confirmation; always create test files straight away"
+  	  	  	  	  	],
+  	  	  	  	  	"description": "Whether to request confirmation of changes through a Refactor Preview window while creating files, or apply changes immediately after invoking the file generation command."
+  	  	  	  	},
 				"swiftTestFileGen.fileGen.emitImportDeclarations": {
 					"type": "string",
 					"default": "never",
@@ -98,29 +102,29 @@
 					],
 					"description": "Whether to detect and emit import declarations from the original Swift file in generated test files."
 				}
-			}
-		}
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.63.0",
-		"@types/glob": "^7.2.0",
-		"@types/mocha": "^9.0.0",
-		"@types/node": "14.x",
-		"@typescript-eslint/eslint-plugin": "^5.9.1",
-		"@typescript-eslint/parser": "^5.9.1",
-		"eslint": "^8.6.0",
-		"glob": "^7.2.0",
-		"minimatch": "3.0.4",
-		"mocha": "^9.1.3",
-		"typescript": "^4.5.4",
-		"@vscode/test-electron": "^2.0.3"
-	}
+  	  	  	}
+  	  	}
+  	},
+  	"scripts": {
+  	  	"vscode:prepublish": "npm run compile",
+  	  	"compile": "tsc -p ./",
+  	  	"watch": "tsc -watch -p ./",
+  	  	"pretest": "npm run compile && npm run lint",
+  	  	"lint": "eslint src --ext ts",
+  	  	"test": "node ./out/test/runTest.js"
+  	},
+  	"devDependencies": {
+  	  	"@types/glob": "^8.0.0",
+  	  	"@types/mocha": "^10.0.1",
+  	  	"@types/node": "14.x",
+  	  	"@types/vscode": "^1.74.0",
+  	  	"@typescript-eslint/eslint-plugin": "^5.46.0",
+  	  	"@typescript-eslint/parser": "^5.46.0",
+  	  	"@vscode/test-electron": "^2.2.1",
+  	  	"eslint": "^8.29.0",
+  	  	"glob": "^8.0.3",
+  	  	"minimatch": "^5.1.1",
+  	  	"mocha": "^10.2.0",
+  	  	"typescript": "^4.9.4"
+  	}
 }

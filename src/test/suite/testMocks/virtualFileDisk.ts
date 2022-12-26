@@ -86,6 +86,17 @@ export class VirtualDisk {
         }
     }
 
+    /** Returns `true` if a file with a given path exists on this virtual disk. */
+    fileExists(filePath: string | vscode.Uri): boolean {
+        const object = this.findEntry(filePath);
+
+        if (object instanceof VirtualDiskFile) {
+            return true;
+        }
+
+        return false;
+    }
+
     createFile(filePath: string | vscode.Uri): VirtualDiskFile {
         const dirName = this.directoryName(filePath);
         const fileName = this.fileName(filePath);

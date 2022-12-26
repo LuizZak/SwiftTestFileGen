@@ -7,15 +7,16 @@ import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../suggestTestFiles';
 import { sanitizeFilename } from '../pathUtils';
+import { NestableProgress } from '../progress/nestableProgress';
 
 export async function gotoTestFileCommand(
     fileUri: vscode.Uri,
     context: InvocationContext,
     viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active,
-    progress?: vscode.Progress<{ message?: string }>,
+    progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<void> {
-    
+
     const { fileUris, diagnostics } = await performFileSearch(fileUri, context, progress, cancellation);
 
     // Emit diagnostics
@@ -52,10 +53,10 @@ type TestFileSearchResult = OperationWithDiagnostics<{ fileUris: vscode.Uri[] }>
 async function performFileSearch(
     fileUri: vscode.Uri,
     context: InvocationContext,
-    progress?: vscode.Progress<{ message?: string }>,
+    progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<TestFileSearchResult> {
-
+    
     // Perform simple filename heuristic search, if enabled.
     outer:
     if (context.configuration.gotoTestFile.useFilenameHeuristics) {
@@ -117,9 +118,9 @@ async function performFileSearch(
         }
     }
 
-    progress?.report({ message: "Finding Swift package..." });
+    progress?.reportMessage("Finding Swift package...");
 
-    const pkgPath = await findSwiftPackagePath(fileUri, context.fileSystem);
+    const pkgPath = await findSwiftPackagePath(fileUri, context.fileSystem, undefined, cancellation);
     if (pkgPath === null) {
         return {
             fileUris: [],
@@ -153,7 +154,7 @@ async function performFileSearch(
 
     const file = await pathManager.loadSourceFile(fileUri);
 
-    const { testFiles, diagnostics } = await suggestTestFiles([file], context.configuration, context, cancellation);
+    const { testFiles, diagnostics } = await suggestTestFiles([file], context.configuration, context, progress, cancellation);
 
     return {
         fileUris: testFiles.map(f => f.path),

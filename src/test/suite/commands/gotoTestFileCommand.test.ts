@@ -22,7 +22,10 @@ suite('gotoTestFileCommand Test Suite', () => {
             await gotoTestFileCommand(file, fixture.context);
 
             fixture.assertShownFiles(
-                ["/home/Tests/TargetTests/ATests.swift", { viewColumn: vscode.ViewColumn.Active }],
+                {
+                    fileUri: "/home/Tests/TargetTests/ATests.swift",
+                    options: { viewColumn: vscode.ViewColumn.Active }
+                },
             );
         });
 
@@ -88,7 +91,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                         fileContents: makeExpectedTestFileContentString("Target", "ATests")
                     },
                 ])
-                .assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
+                .assertShownFiles({fileUri: '/home/Tests/TargetTests/ATests.swift'});
         });
 
         it('should not create a file when none is found, if the user chooses not to.', async () => {
@@ -139,7 +142,10 @@ suite('gotoTestFileCommand Test Suite', () => {
                 await gotoTestFileCommand(file, fixture.context);
 
                 fixture.assertShownFiles(
-                    ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    {
+                        fileUri: "/home/Tests/TargetTests/ATestFile.swift",
+                        options: { viewColumn: vscode.ViewColumn.Active }
+                    },
                 );
             });
 
@@ -198,9 +204,18 @@ suite('gotoTestFileCommand Test Suite', () => {
                 ), fixture.context);
 
                 fixture.assertShownFiles(
-                    ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
-                    ["/home/Tests/TargetTests/BSpec.swift", { viewColumn: vscode.ViewColumn.Active }],
-                    ["/home/Tests/TargetTests/CTests.swift", { viewColumn: vscode.ViewColumn.Active }],
+                    {
+                        fileUri: "/home/Tests/TargetTests/ATestFile.swift",
+                        options: { viewColumn: vscode.ViewColumn.Active }
+                    },
+                    {
+                        fileUri: "/home/Tests/TargetTests/BSpec.swift",
+                        options: { viewColumn: vscode.ViewColumn.Active }
+                    },
+                    {
+                        fileUri: "/home/Tests/TargetTests/CTests.swift",
+                        options: { viewColumn: vscode.ViewColumn.Active }
+                    },
                 );
             });
 
@@ -234,7 +249,7 @@ suite('gotoTestFileCommand Test Suite', () => {
                             fileContents: makeExpectedTestFileContentString("Target", "ATests")
                         },
                     ])
-                    .assertShownFiles(['/home/Tests/TargetTests/ATests.swift']);
+                    .assertShownFiles({fileUri: '/home/Tests/TargetTests/ATests.swift'});
             });
 
             it('should not create a file when none is found, if the user chooses not to.', async () => {
@@ -276,7 +291,10 @@ suite('gotoTestFileCommand Test Suite', () => {
 
                 fixture
                     .assertShownFiles(
-                        ["/home/Tests/TargetTests/ATestFile.swift", { viewColumn: vscode.ViewColumn.Active }],
+                        {
+                            fileUri: "/home/Tests/TargetTests/ATestFile.swift",
+                            options: { viewColumn: vscode.ViewColumn.Active }
+                        },
                     )
                     .assertShownError();
             });

@@ -103,7 +103,7 @@ export async function mapPathsToSwiftPackages(
                 throw new vscode.CancellationError();
             }
 
-            return [await findSwiftPackagePath(fileUri, fileSystem), fileUri];
+            return [await findSwiftPackagePath(fileUri, fileSystem, undefined, cancellation), fileUri];
         }));
 
     const packageMap = new Map<vscode.Uri, vscode.Uri[]>();
@@ -123,6 +123,10 @@ export async function mapPathsToSwiftPackages(
         } else {
             existing.push(filePath);
         }
+    }
+
+    if (cancellation?.isCancellationRequested) {
+        throw new vscode.CancellationError();
     }
 
     return [packageMap, nonPackage];

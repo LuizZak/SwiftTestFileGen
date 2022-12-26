@@ -11,6 +11,4 @@ export interface SwiftToolchainInterface {
      * Requests a 'swiftc -dump-parse <fileUri>' for a given Swift source file path.
      */
     dumpSwiftAst(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<string>;
-
-    
 }
