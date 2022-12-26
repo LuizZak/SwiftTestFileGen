@@ -50,6 +50,12 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 
 ## Release Notes
 
+### 0.4.0
+
+- Improving progress reporting on notification while generating test files.
+- Improving speed of file testing generation on large number of files sharing the same folders.
+- Improving general throughput of I/O operations to reduce number of disk hits simultaneously.
+
 ### 0.3.5
 
 - Fixing error message when running 'Generate Test File(s)...' command from the command palette.
@@ -57,17 +63,5 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 ### 0.3.4
 
 - Now the "SwiftTestFileGen: Generate Test File(s)..." command opens up any existing test files for the selected source files that already exist on disk instead of silently terminating.
-
-### 0.3.3
-
-- Renaming package to "Swift Test File Generator"
-
-### 0.3.2
-
-- Now special characters in the test class name that where derived from the original source file are replaced with '_'.
-
-### 0.3.1
-
-- Adding 'snippet' target type support.
 
 Full changelog available at: [CHANGELOG.md](CHANGELOG.md)
