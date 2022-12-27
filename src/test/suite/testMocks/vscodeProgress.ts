@@ -10,7 +10,7 @@ export class MockProgress<T> implements vscode.Progress<T> {
     }
 
     assertWasReported(partial: Partial<T>) {
-        if (this.findReportMatching(partial) === null) {
+        if (this.firstReportMatching(partial) === null) {
             this.assertFailed(
                 `Expected to find at least one call to 'report(...)' with parameters ${format(partial)} but found none.`
             );
@@ -18,9 +18,34 @@ export class MockProgress<T> implements vscode.Progress<T> {
     }
 
     assertWasNotReported(partial: Partial<T>) {
-        if (this.findReportMatching(partial)) {
+        if (this.firstReportMatching(partial)) {
             this.assertFailed(
                 `Expected to find at no call to 'report(...)' with parameters ${format(partial)} but found at least one.`
+            );
+        }
+    }
+
+    /**
+     * Asserts all `report()` calls receive a value that matches with the given
+     * partial value. If no `report()` calls where made, the assertion succeeds.
+     */
+    assertAllReportsMatch(partial: Partial<T>) {
+        const allMatching = this.allReportsMatching(partial);
+
+        if (allMatching.length !== this.report_calls.length) {
+            this.assertFailed(
+                `Expected all calls to 'report(...)' to have parameters ${format(partial)} but found at least one that isn't.`
+            );
+        }
+    }
+
+    /**
+     * Asserts a given number of `report()` calls where made.
+     */
+    assertReportsCount(total: number) {
+        if (this.report_calls.length !== total) {
+            this.assertFailed(
+                `Expected ${total} calls to 'report(...)', found ${this.report_calls.length}.`
             );
         }
     }
@@ -31,7 +56,7 @@ export class MockProgress<T> implements vscode.Progress<T> {
         );
     }
 
-    findReportMatching(partial: Partial<T>): T | null {
+    firstReportMatching(partial: Partial<T>): T | null {
         for (const value of this.report_calls) {
             var isMatch = true;
 
@@ -52,6 +77,31 @@ export class MockProgress<T> implements vscode.Progress<T> {
         }
 
         return null;
+    }
+
+    allReportsMatching(partial: Partial<T>): T[] {
+        let result: T[] = [];
+
+        for (const value of this.report_calls) {
+            var isMatch = true;
+
+            for (const key in partial) {
+                if (Object.prototype.hasOwnProperty.call(partial, key)) {
+                    const expected = partial[key];
+                    const actual = value[key];
+                    
+                    if (expected !== actual) {
+                        isMatch = false;
+                    }
+                }
+            }
+
+            if (isMatch) {
+                result.push(value);
+            }
+        }
+
+        return result;
     }
 }
 

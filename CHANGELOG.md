@@ -2,6 +2,11 @@
 
 All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
+## [master]
+
+- Adding a "[(current)/(total)]" progress to some steps of test file generation progress reporting.
+- Improving speed that large number of files are mapped to their respective Swift packages.
+
 ## [0.4.0]
 
 - Improving progress reporting on notification while generating test files.

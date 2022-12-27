@@ -60,11 +60,16 @@ export async function limitWithParameters<I, R>(
                     break;
                 }
 
-                const result = await generator(next[1]).then(thenF);
+                try {
+                    const result = await generator(next[1]).then(thenF);
 
-                progress?.increment(unitsPerPromise);
-
-                current.push([next[0], result]);
+                    progress?.increment(unitsPerPromise);
+    
+                    current.push([next[0], result]);
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
             }
 
             resolve(current);

@@ -1,6 +1,27 @@
 import * as vscode from "vscode";
 
 /**
+ * Specifies the way current progress is attached to `NestableProgress` message
+ * strings.
+ */
+export enum NestableProgressReportStyle {
+    /** No progress is appended to messages. */
+    none,
+
+    /**
+     * Completed and total units are treated as a percentage normalized from 0.0
+     * to <total>>, and displayed as "[xxx%]", with no decimal points.
+     */
+    asPercentage,
+
+    /**
+     * Completed and total units are treated as units, and displayed as
+     * "[<completed>/<total>]", with values rounded down.
+     */
+    asUnits,
+};
+
+/**
  * A progress reporting class that supports creating child progresses that are
  * logically connected to a parent progress object.
  */
@@ -17,6 +38,10 @@ export class NestableProgress {
      * progress.
      */
     private rateOnParent: number = 1.0;
+
+    private get _showShowProgress(): boolean {
+        return this.message.length > 0 && this.showProgressInMessageStyle !== NestableProgressReportStyle.none;
+    }
 
     private _completedUnitCount: number = 0;
     public get completedUnitCount(): number {
@@ -54,6 +79,24 @@ export class NestableProgress {
      */
     public unitsPerChild: number | null = null;
 
+    /**
+     * If `true`, the current progress value is automatically appended to the
+     * current progress' message, if `this.message` is not empty, as a
+     * '[<current>/<total>]'. The value is updated every time the progress is 
+     * incremented, and is automatically placed before an ellipsis if one is
+     * present at the end of the message string.
+     */
+    private _showProgressInMessageStyle: NestableProgressReportStyle = NestableProgressReportStyle.none;
+    public get showProgressInMessageStyle(): NestableProgressReportStyle {
+        return this._showProgressInMessageStyle;
+    }
+    public set showProgressInMessageStyle(value: NestableProgressReportStyle) {
+        if (this._showProgressInMessageStyle === value) { return; }
+
+        this._showProgressInMessageStyle = value;
+        this.updateProgressMessage();
+    }
+
     constructor(
         public progress: vscode.Progress<{ message?: string; increment?: number }>,
         public message: string = "",
@@ -84,6 +127,9 @@ export class NestableProgress {
         if (this.isCompleted) { return; }
 
         this.increment(this.remainingUnitCount);
+
+        // Reset message on parent progresses
+        this.parent?.recurseMessage();
 
         this.isCompleted = true;
         
@@ -166,13 +212,31 @@ export class NestableProgress {
         const increment = Math.min(progress, this.remainingUnitCount);
         this.completedUnitCount += increment;
 
+        if (this._showShowProgress) {
+            this.updateProgressMessage();
+        }
+
         this.invokeProgressCallbacks();
 
         return increment;
     }
 
+    private updateProgressMessage() {
+        this.recurseMessage();
+    }
+
     private recurseMessage(messages: string[] = []) {
-        const fullMessages = [this.message].concat(messages);
+        let message = this.message;
+
+        if (this._showShowProgress) {
+            const progress = this.formatProgressMessage(this.showProgressInMessageStyle);
+
+            const [prefix, ellipsis] = this.splitEndingEllipsis(message);
+
+            message = `${prefix} ${progress}${ellipsis}`;
+        }
+
+        const fullMessages = [message].concat(messages);
 
         this.recursive(
             (parent) => {
@@ -187,13 +251,32 @@ export class NestableProgress {
             });
     }
 
+    private formatProgressMessage(style: NestableProgressReportStyle): string {
+        switch(style) {
+        case NestableProgressReportStyle.none:
+            return "";
+
+        case NestableProgressReportStyle.asPercentage:
+            if (this.totalUnitCount === 0.0) {
+                return "";
+            }
+
+            const ratio = this.completedUnitCount / this.totalUnitCount;
+
+            return `[${Math.floor(ratio * 100.0)}%]`;
+        
+        case NestableProgressReportStyle.asUnits:
+            return `[${Math.floor(this.completedUnitCount)}/${Math.floor(this.totalUnitCount)}]`;
+        }
+    }
+
     private formatMessages(messages: string[], charLimit: number = 150): string {
         messages = messages.filter(m => m.trim().length > 0);
 
         // Automatically trim "..." on intermediary message entries
         messages = messages.map((message, index) => {
             if (index < messages.length - 1 && message.endsWith("...")) {
-                return message.slice(0, message.length - 3);
+                return this.splitEndingEllipsis(message)[0];
             }
 
             return message;
@@ -220,6 +303,14 @@ export class NestableProgress {
         }
 
         return `${prefix} - ${trailing}`;
+    }
+
+    private splitEndingEllipsis(str: string): [string, string] {
+        if (!str.endsWith("...")) {
+            return [str, ""];
+        }
+
+        return [str.slice(0, str.length - 3), "..."];
     }
 
     /**

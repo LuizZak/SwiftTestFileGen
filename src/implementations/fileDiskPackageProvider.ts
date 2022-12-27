@@ -3,9 +3,10 @@ import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { SwiftPackageManifest, SwiftPackageManifestParser } from '../data/swiftPackage';
 import { PackageProviderInterface } from "../interfaces/packageProviderInterface";
-import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
+import { isSubdirectory } from '../pathUtils';
+import * as definitions from '../definitions';
 
 /** Provides Swift package manifest by invoking `swift package dump-package` on a file path. */
 export class FileDiskPackageProvider implements PackageProviderInterface {
@@ -19,12 +20,13 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
     }
 
     async swiftPackagePathManagerForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackagePathsManager> {
-        const pkg = await this.swiftPackageManifestForFile(fileUri, cancellation);
-        const manifestPath = await this.swiftPackagePath(fileUri, cancellation);
-
+        const manifestPath = await this.swiftPackageManifestPathForFile(fileUri, cancellation);
+        
         if (manifestPath === null) {
             throw new Error(`Package for file ${fileUri.fsPath} not found`);
         }
+
+        const pkg = await this.swiftPackageManifestForFile(manifestPath, cancellation);
 
         const pkgRoot = vscode.Uri.joinPath(manifestPath, "..");
 
@@ -38,7 +40,7 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
             return cached;
         }
         
-        const manager = await SwiftPackagePathsManager.create(pkgRoot, pkg, this.fileSystem);
+        const manager = await SwiftPackagePathsManager.create(pkgRoot, manifestPath, pkg, this.fileSystem);
 
         this.packageManagerCache.set(pkgRootPath, manager);
 
@@ -83,7 +85,7 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
         return promise;
     }
 
-    async swiftPackagePath(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<vscode.Uri | null> {
+    async swiftPackageManifestPathForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined): Promise<vscode.Uri | null> {
         const directory = path.dirname(fileUri.fsPath);
 
         const cached = this.packagePathCachePerDirectory.get(directory);
@@ -91,10 +93,68 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
             return cached;
         }
 
-        const promise = findSwiftPackagePath(fileUri, this.fileSystem, undefined, cancellation);
+        const promise = this.swiftPackagePathUncached(fileUri, undefined, cancellation);
 
         this.packagePathCachePerDirectory.set(directory, promise);
 
         return promise;
     }
+
+    /**
+    * Returns a Uri for a Package.swift that contains a given file path, or `null`,
+    * if no Package.swift exists within the file path's hierarchy.
+    * 
+    * @param packageManifestFile A file name for the package manifest to find, or
+    * `undefined`, in which case defaults to `defaultPackageManifestFileName`.
+    */
+    private async swiftPackagePathUncached(
+        filePath: vscode.Uri,
+        packageManifestFile?: string,
+        cancellation?: vscode.CancellationToken
+    ): Promise<vscode.Uri | null> {
+
+        packageManifestFile = packageManifestFile ?? definitions.defaultPackageManifestFileName;
+
+        const packages =
+            await this.fileSystem.findFiles(
+                `**/${packageManifestFile}`,
+                undefined,
+                undefined,
+                cancellation
+            );
+
+        if (packages.length > 0) {
+            for (const pkgUri of packages) {
+                if (cancellation?.isCancellationRequested) {
+                    throw new vscode.CancellationError();
+                }
+
+                const packageFolder = vscode.Uri.joinPath(pkgUri, "..");
+
+                if (isSubdirectory(filePath, packageFolder)) {
+                    return pkgUri;
+                }
+            }
+        }
+
+        // Fallback to recursive search up the file tree
+        let currentDirectory = path.dirname(filePath.fsPath);
+
+        while (path.dirname(currentDirectory) !== currentDirectory) {
+            if (cancellation?.isCancellationRequested) {
+                throw new vscode.CancellationError();
+            }
+
+            let packagePath = vscode.Uri.file(path.join(currentDirectory, packageManifestFile));
+
+            if (await this.fileSystem.fileExists(packagePath)) {
+                return packagePath;
+            }
+
+            currentDirectory = path.dirname(currentDirectory);
+        }
+
+        return null;
+    }
+
 };

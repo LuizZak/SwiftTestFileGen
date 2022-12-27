@@ -1,9 +1,9 @@
 import path = require('path');
 import * as vscode from 'vscode';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from './data/swiftPackage';
-import { predefinedSourceSearchPaths, predefinedTestSearchPaths } from './definitions';
 import { FileSystemInterface } from './interfaces/fileSystemInterface';
 import { isSubdirectory } from './pathUtils';
+import * as definitions from './definitions';
 
 /**a
  * List of SwiftTargets with pre-computed directory information for quick
@@ -39,6 +39,7 @@ export class SwiftPackagePathsManager {
 
     private constructor(
         public packageRoot: vscode.Uri,
+        public packageManifestPath: vscode.Uri,
         public pkg: SwiftPackageManifest,
         public fileSystem: FileSystemInterface,
         targetPathList: TargetPathList
@@ -49,13 +50,20 @@ export class SwiftPackagePathsManager {
 
     public static async create(
         packageRoot: vscode.Uri,
+        packageManifestPath: vscode.Uri,
         pkg: SwiftPackageManifest,
         fileSystem: FileSystemInterface
     ): Promise<SwiftPackagePathsManager> {
 
         const targetPathList = await this.makeTargetPathMap(packageRoot, pkg, fileSystem);
 
-        return new SwiftPackagePathsManager(packageRoot, pkg, fileSystem, targetPathList);
+        return new SwiftPackagePathsManager(
+            packageRoot,
+            packageManifestPath,
+            pkg,
+            fileSystem,
+            targetPathList
+        );
     }
 
     /**
@@ -73,7 +81,7 @@ export class SwiftPackagePathsManager {
             return this._sourcesPath;
         }
 
-        for (const path of predefinedSourceSearchPaths) {
+        for (const path of definitions.predefinedSourceSearchPaths) {
             const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
@@ -101,7 +109,7 @@ export class SwiftPackagePathsManager {
             return this._testsPath;
         }
 
-        for (const path of predefinedTestSearchPaths) {
+        for (const path of definitions.predefinedTestSearchPaths) {
             const fullPath = vscode.Uri.joinPath(this.packageRoot, path);
 
             if (await this.fileSystem.isDirectoryUri(fullPath)) {
@@ -136,7 +144,7 @@ export class SwiftPackagePathsManager {
         }
 
         // Fallback: Files in known source subdirectories
-        for (const dirName of predefinedSourceSearchPaths) {
+        for (const dirName of definitions.predefinedSourceSearchPaths) {
             const sourcesPath = vscode.Uri.joinPath(this.packageRoot, dirName);
 
             if (await this.fileSystem.isDirectoryUri(sourcesPath) && isSubdirectory(sourcesPath, fileUri)) {
@@ -166,7 +174,7 @@ export class SwiftPackagePathsManager {
         }
 
         // Fallback: Files in known test subdirectories
-        for (const dirName of predefinedTestSearchPaths) {
+        for (const dirName of definitions.predefinedTestSearchPaths) {
             const testsPath = vscode.Uri.joinPath(this.packageRoot, dirName);
 
             if (await this.fileSystem.isDirectoryUri(testsPath) && isSubdirectory(testsPath, fileUri)) {
@@ -250,7 +258,7 @@ export class SwiftPackagePathsManager {
         }
 
         const candidates: string[] = [];
-        for (const sourcePath of predefinedSourceSearchPaths) {
+        for (const sourcePath of definitions.predefinedSourceSearchPaths) {
             const targetPath = vscode.Uri.joinPath(this.packageRoot, sourcePath);
             if (!isSubdirectory(targetPath, filePath)) {
                 continue;
@@ -312,11 +320,11 @@ async function _computePathForTarget(target: SwiftTarget, packageRoot: vscode.Ur
     case TargetType.System:
     case TargetType.Snippet:
     case TargetType.Binary:
-        pathsToSearch = predefinedSourceSearchPaths;
+        pathsToSearch = definitions.predefinedSourceSearchPaths;
         break;
 
     case TargetType.Test:
-        pathsToSearch = predefinedTestSearchPaths;
+        pathsToSearch = definitions.predefinedTestSearchPaths;
         break;
     }
 

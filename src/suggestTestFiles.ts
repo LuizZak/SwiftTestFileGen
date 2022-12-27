@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFileDiagnosticResult';
 import { SwiftTestFile } from './data/swiftTestFile';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
-import { NestableProgress } from './progress/nestableProgress';
+import { NestableProgress, NestableProgressReportStyle } from './progress/nestableProgress';
 import { limitWithParameters } from './asyncUtils/asyncUtils';
 import { deduplicateStable } from './algorithms/dedupe';
 
@@ -25,8 +25,6 @@ export async function suggestTestFiles(
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
 
-    // Warm up the cache prior to the operation by querying the file directories
-    // first
     const directories = deduplicateStable(filePaths, (filePath) => {
         return path.dirname(filePath.path);
     });
@@ -34,15 +32,23 @@ export async function suggestTestFiles(
     const filesProgress = progress?.createChild(
         filePaths.length + directories.length,
         undefined,
-        "Finding existing test files..."
+        "Parsing package manifests..."
     );
 
+    // Warm up the cache prior to the operation by querying the file directories
+    // first
     // TODO: Allow parameterization of concurrent task count.
     await limitWithParameters(10, async (filePath) => {
         await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
     }, directories, filesProgress, cancellation);
 
     // Do proper operation now
+    if (filesProgress) {
+        filesProgress.showProgressInMessageStyle = NestableProgressReportStyle.asUnits;
+    }
+
+    filesProgress?.reportMessage("Finding existing test files...");
+
     const operation = async (filePath: vscode.Uri): Promise<SuggestTestFilesResult> => {
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
@@ -192,7 +198,7 @@ class ${testClassName}: XCTestCase {
     };
 
     // TODO: Allow parameterization of concurrent task count.
-    const result = await limitWithParameters(25, operation, filePaths, filesProgress, cancellation);
+    const result = await limitWithParameters(20, operation, filePaths, filesProgress, cancellation);
     return result.reduce(joinSuggestedTestFileResults);
 }
 
