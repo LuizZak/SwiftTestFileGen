@@ -12,6 +12,7 @@ import * as definitions from '../definitions';
 export class FileDiskPackageProvider implements PackageProviderInterface {
     private packageCachePerDirectory: Map<string, Promise<SwiftPackageManifest>> = new Map();
     private packagePathCachePerDirectory: Map<string, Promise<vscode.Uri | null>> = new Map();
+    private packagePathsPerManifestFile: Map<string, Promise<vscode.Uri[]>> = new Map();
 
     private packageManagerCache: Map<string, SwiftPackagePathsManager> = new Map();
 
@@ -115,26 +116,20 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
 
         packageManifestFile = packageManifestFile ?? definitions.defaultPackageManifestFileName;
 
-        const packages =
-            await this.fileSystem.findFiles(
-                `**/${packageManifestFile}`,
-                undefined,
-                undefined,
-                cancellation
-            );
+        const packages = await this.swiftPackagePaths(packageManifestFile, cancellation);
 
         if (packages.length > 0) {
             for (const pkgUri of packages) {
-                if (cancellation?.isCancellationRequested) {
-                    throw new vscode.CancellationError();
-                }
-
                 const packageFolder = vscode.Uri.joinPath(pkgUri, "..");
 
                 if (isSubdirectory(filePath, packageFolder)) {
                     return pkgUri;
                 }
             }
+        }
+        
+        if (cancellation?.isCancellationRequested) {
+            throw new vscode.CancellationError();
         }
 
         // Fallback to recursive search up the file tree
@@ -157,4 +152,44 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
         return null;
     }
 
+    /**
+     * Returns a list of all package manifests matching a specified package
+     * manifest file name in the currently active workspace environment.
+     */
+    private async swiftPackagePaths(
+        packageManifestFile: string,
+        cancellation?: vscode.CancellationToken
+    ): Promise<vscode.Uri[]> {
+
+        const cached = this.packagePathsPerManifestFile.get(packageManifestFile);
+        if (cached) {
+            return cached;
+        }
+
+        const promise = this.swiftPackagePathsUncached(
+            packageManifestFile,
+            cancellation
+        );
+
+        this.packagePathsPerManifestFile.set(packageManifestFile, promise);
+
+        return promise;
+    }
+
+    /**
+     * Returns a list of all package manifests matching a specified package
+     * manifest file name in the currently active workspace environment.
+     */
+    private async swiftPackagePathsUncached(
+        packageManifestFile: string,
+        cancellation?: vscode.CancellationToken
+    ): Promise<vscode.Uri[]> {
+
+        return await this.fileSystem.findFiles(
+            `**/${packageManifestFile}`,
+            undefined,
+            undefined,
+            cancellation
+        );
+    }
 };
