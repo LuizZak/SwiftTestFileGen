@@ -24,3 +24,8 @@ export const predefinedSourceSearchPaths: string[] = [
      "src",
      "srcs"
 ];
+
+/**
+ * The default package manifest file name: `Package.swift`.
+ */
+export const defaultPackageManifestFileName = "Package.swift";

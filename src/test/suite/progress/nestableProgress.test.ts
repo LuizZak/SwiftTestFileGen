@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import * as assert from 'assert';
 import path = require('path');
 import { describe, it, test, beforeEach } from 'mocha';
-import { NestableProgress } from '../../../progress/nestableProgress';
+import { NestableProgress, NestableProgressReportStyle } from '../../../progress/nestableProgress';
 import { MockProgress } from '../testMocks/vscodeProgress';
 
 describe('NestableProgress', () => {
@@ -33,10 +32,8 @@ describe('NestableProgress', () => {
 
         it('should join messages on nested progresses', () => {
             const sut = makeSut("Root");
-            sut.createChild(1, undefined, "Child message");
 
-            sut.reportMessage("A message");
-            sut.reportMessage("Another message");
+            sut.createChild(1, undefined, "Child message");
 
             mockProgress.assertWasReported({
                 message: "Root - Child message",
@@ -126,6 +123,142 @@ describe('NestableProgress', () => {
 
             mockProgress.assertWasReported({
                 increment: 15,
+            });
+        });
+    });
+
+    describe('showProgressInMessageStyle', () => {
+        describe('none', () => {
+            it('should do nothing if message is empty', () => {
+                const sut = makeSut(undefined, 100);
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.none;
+
+                mockProgress.assertAllReportsMatch({
+                    message: "",
+                });
+            });
+        });
+
+        describe('asPercentage', () => {
+            it('should do nothing if message is empty', () => {
+                const sut = makeSut(undefined, 100);
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+                mockProgress.assertAllReportsMatch({
+                    message: "",
+                });
+            });
+
+            it('should update progress message immediately when set', () => {
+                const sut = makeSut("Progress", 100);
+                
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+                mockProgress.assertWasReported({
+                    message: "Progress [0%]",
+                });
+            });
+
+            it('should place progress before ellipsis, if present', () => {
+                const sut = makeSut("Progress...", 100);
+                
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+                mockProgress.assertWasReported({
+                    message: "Progress [0%]...",
+                });
+            });
+
+            it('should automatically update the message as progress increments', () => {
+                const sut = makeSut("Progress", 100);
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+                sut.increment();
+                sut.increment(2);
+
+                mockProgress.assertWasReported({
+                    message: "Progress [0%]",
+                });
+                mockProgress.assertWasReported({
+                    message: "Progress [1%]",
+                });
+                mockProgress.assertWasReported({
+                    message: "Progress [3%]",
+                });
+            });
+
+            it('should use totalUnitCount as the 100% mark', () => {
+                const sut = makeSut("Progress", 500);
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+                sut.increment();
+                sut.increment(25);
+                sut.increment(225);
+
+                mockProgress.assertWasReported({
+                    message: "Progress [0%]",
+                });
+                mockProgress.assertWasReported({
+                    message: "Progress [5%]",
+                });
+                mockProgress.assertWasReported({
+                    message: "Progress [50%]",
+                });
+            });
+        });
+
+        describe('asUnits', () => {
+            it('should do nothing if message is empty', () => {
+                const sut = makeSut(undefined, 100);
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asUnits;
+
+                mockProgress.assertAllReportsMatch({
+                    message: "",
+                });
+            });
+
+            it('should update progress message immediately when set', () => {
+                const sut = makeSut("Progress", 100);
+                
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asUnits;
+
+                mockProgress.assertWasReported({
+                    message: "Progress [0/100]",
+                });
+            });
+
+            it('should automatically update the message as progress increments', () => {
+                const sut = makeSut("Progress", 100);
+                sut.showProgressInMessageStyle = NestableProgressReportStyle.asUnits;
+
+                sut.increment();
+                sut.increment(2);
+
+                mockProgress.assertWasReported({
+                    message: "Progress [0/100]",
+                });
+                mockProgress.assertWasReported({
+                    message: "Progress [1/100]",
+                });
+                mockProgress.assertWasReported({
+                    message: "Progress [3/100]",
+                });
+            });
+        });
+
+        it('should not overwrite nested progress status when updating parent progress statuses', () => {
+            const sut = makeSut("Progress", 100);
+            const child = sut.createChild(50, 50, "Child...");
+            sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+            child.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+            child.increment(10);
+
+            mockProgress.assertWasReported({
+                message: "Progress [0%] - Child [0%]...",
+            });
+            mockProgress.assertLastReported({
+                message: "Progress [10%] - Child [20%]...",
             });
         });
     });

@@ -93,8 +93,24 @@ export class TestPackageProvider implements PackageProviderInterface {
         }
 
         const pkgPath = vscode.Uri.joinPath(stubbed[0], "..");
+        const manifestPath = vscode.Uri.joinPath(pkgPath, "Package.swift");
         
-        return new SwiftPackagePathsManager(pkgPath, stubbed[1], this.fileSystem);
+        return await SwiftPackagePathsManager.create(pkgPath, manifestPath, stubbed[1], this.fileSystem);
+    }
+
+    swiftPackageManifestPathForFile_calls: [fileUri: vscode.Uri, cancellation?: vscode.CancellationToken][] = [];
+    async swiftPackageManifestPathForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken | undefined): Promise<vscode.Uri | null> {
+        this.swiftPackagePathManagerForFile_calls.push([fileUri, cancellation]);
+
+        const stubbed = this.closestPackageToPath(fileUri);
+        if (!stubbed) {
+            return null;
+        }
+
+        const pkgPath = vscode.Uri.joinPath(stubbed[0], "..");
+        const manifestPath = vscode.Uri.joinPath(pkgPath, "Package.swift");
+        
+        return manifestPath;
     }
 
     private closestPackageToPath(fileUri: vscode.Uri): [vscode.Uri, SwiftPackageManifest] | null {

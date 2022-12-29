@@ -8,8 +8,9 @@ import { targetDependenciesByName } from './data/swiftPackage.ext';
 import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 import { SwiftFileSyntaxHelper } from './syntax/swiftFileSyntaxHelper';
 import { InvocationContext } from './interfaces/context';
-import { NestableProgress } from './progress/nestableProgress';
-import { throttleWithParameters } from './asyncUtils/asyncUtils';
+import { NestableProgress, NestableProgressReportStyle } from './progress/nestableProgress';
+import { limitWithParameters } from './asyncUtils/asyncUtils';
+import { deduplicateStable } from './algorithms/dedupe';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -32,6 +33,32 @@ export async function suggestTestFiles(
 ): Promise<SuggestTestFilesResult> {
 
     const packageProvider = invocationContext.packageProvider;
+
+    const filePaths = files.map(file => file.path);
+
+    const directories = deduplicateStable(filePaths, (filePath) => {
+        return path.dirname(filePath.path);
+    });
+
+    const filesProgress = progress?.createChild(
+        filePaths.length + directories.length,
+        undefined,
+        "Parsing package manifests..."
+    );
+
+    // Warm up the cache prior to the operation by querying the file directories
+    // first
+    // TODO: Allow parameterization of concurrent task count.
+    await limitWithParameters(10, async (filePath) => {
+        await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+    }, directories, filesProgress, cancellation);
+
+    // Do proper operation now
+    if (filesProgress) {
+        filesProgress.showProgressInMessageStyle = NestableProgressReportStyle.asUnits;
+    }
+
+    filesProgress?.reportMessage("Finding existing test files...");
 
     const operation = async (file: SwiftFile): Promise<SuggestTestFilesResult> => {
         if (cancellation?.isCancellationRequested) {
@@ -216,9 +243,8 @@ class ${testClassName}: XCTestCase {
         };
     };
 
-    const filesProgress = progress?.createChild(files.length, undefined, "Finding existing test files...");
-
-    const result = await throttleWithParameters(10, operation, files, filesProgress, cancellation);
+    // TODO: Allow parameterization of concurrent task count.
+    const result = await limitWithParameters(20, operation, files, filesProgress, cancellation);
     return result.reduce(joinSuggestedTestFileResults);
 }
 

@@ -19,3 +19,14 @@ export function deduplicateStable<T, U>(input: Iterable<T>, key: (value: T) => U
 
     return result;
 }
+
+/**
+ * Performs deduplication of elements of an iterable object by using strict
+ * equality (`===`) against previously seen items, returning a
+ * [stable](https://en.wikipedia.org/wiki/Sorting_algorithm#Stability) array
+ * relative to `input` where no two pairs of elements evaluate to true under
+ * `(v1, v2) => v1 === v2`.
+ */
+export function deduplicateArrayStable<T>(input: Iterable<T>): T[] {
+    return deduplicateStable(input, (v) => v);
+}

@@ -1,6 +1,27 @@
 import * as vscode from "vscode";
 
 /**
+ * Specifies the way current progress is attached to `NestableProgress` message
+ * strings.
+ */
+export enum NestableProgressReportStyle {
+    /** No progress is appended to messages. */
+    none,
+
+    /**
+     * Completed and total units are treated as a percentage normalized from 0.0
+     * to <total>>, and displayed as `[xxx%]`, with no decimal points.
+     */
+    asPercentage,
+
+    /**
+     * Completed and total units are treated as units, and displayed as
+     * `[<completed>/<total>]`, with values rounded down.
+     */
+    asUnits,
+};
+
+/**
  * A progress reporting class that supports creating child progresses that are
  * logically connected to a parent progress object.
  */
@@ -18,6 +39,10 @@ export class NestableProgress {
      */
     private rateOnParent: number = 1.0;
 
+    private get _showShowProgress(): boolean {
+        return this.message.length > 0 && this.showProgressInMessageStyle !== NestableProgressReportStyle.none;
+    }
+
     private _completedUnitCount: number = 0;
     public get completedUnitCount(): number {
         return this._completedUnitCount;
@@ -26,6 +51,10 @@ export class NestableProgress {
         this._completedUnitCount = value;
     }
 
+    /**
+     * Returns `this.totalUnitCount - this.completedUnitCount`, or `0`, if the
+     * prior is negative.
+     */
     public get remainingUnitCount(): number {
         return Math.max(0, this.totalUnitCount - this.completedUnitCount);
     }
@@ -54,6 +83,24 @@ export class NestableProgress {
      */
     public unitsPerChild: number | null = null;
 
+    /**
+     * If `true`, the current progress value is automatically appended to the
+     * current progress' message, if `this.message` is not empty, as a
+     * `[<current>/<total>]`. The value is updated every time the progress is 
+     * incremented, and is automatically placed before an ellipsis if one is
+     * present at the end of the message string.
+     */
+    private _showProgressInMessageStyle: NestableProgressReportStyle = NestableProgressReportStyle.none;
+    public get showProgressInMessageStyle(): NestableProgressReportStyle {
+        return this._showProgressInMessageStyle;
+    }
+    public set showProgressInMessageStyle(value: NestableProgressReportStyle) {
+        if (this._showProgressInMessageStyle === value) { return; }
+
+        this._showProgressInMessageStyle = value;
+        this.updateProgressMessage();
+    }
+
     constructor(
         public progress: vscode.Progress<{ message?: string; increment?: number }>,
         public message: string = "",
@@ -72,6 +119,11 @@ export class NestableProgress {
         this.onCompletedCallbacks.push(callback);
     }
 
+    /**
+     * Reports a textual message as a progress status. If this progress object is
+     * a child of another progress object, the message is also cascaded up the
+     * hierarchy to be displayed completely.
+     */
     reportMessage(message: string) {
         if (this.isCompleted) { return; }
 
@@ -80,10 +132,14 @@ export class NestableProgress {
         this.recurseMessage();
     }
 
+    /** Increments this progress object all the way to `this.totalUnitCount`. */
     complete() {
         if (this.isCompleted) { return; }
 
         this.increment(this.remainingUnitCount);
+
+        // Reset message on parent progresses
+        this.parent?.recurseMessage();
 
         this.isCompleted = true;
         
@@ -96,6 +152,7 @@ export class NestableProgress {
      * `this.totalUnitCount`.
      * 
      * @param progress The number of progress units to increment to `this.completedUnitCount`.
+     *     Defaults to `1`.
      */
     increment(progress: number = 1) {
         this.recursive(
@@ -108,6 +165,8 @@ export class NestableProgress {
                 }
 
                 parent.increment(onParent);
+
+                this.recurseMessage();
             },
             () => {
                 const previousFraction = this.fractionalProgress;
@@ -122,11 +181,27 @@ export class NestableProgress {
             });
     }
 
+    /** Convenience for `this.reportMessage(message); this.increment(progress);`. */
     incrementWithMessage(message: string, progress: number = 1) {
-        this.reportMessage(message);
         this.increment(progress);
+        this.reportMessage(message);
     }
 
+    /**
+     * Creates a child progress from this progress object that can be used to
+     * track a smaller set of work units as if it was a contiguous progress on
+     * itself.
+     * 
+     * @param unitsForChild The number of units that the child progress will have
+     *     as `totalUnitCount`.
+     * @param unitsOnThis The number of units that the child will represent on
+     *     this progress object once it's completed. Defaults to `this.unitsPerChild`,
+     *     or in case it is not defined, it's the remaining units all the way to
+     *     `totalUnitCount`.
+     * @param message An initial message for the child progress.
+     * @returns A child progress that can be independently progressed and whose
+     *     progress changes will be reported to this object as well.
+     */
     createChild(
         unitsForChild: number,
         unitsOnThis: number = this.unitsPerChild ?? this.remainingUnitCount,
@@ -142,6 +217,12 @@ export class NestableProgress {
         return child;
     }
 
+    /**
+     * Invokes an asynchronous function that receives a temporary progress
+     * object nested within this one.
+     * 
+     * @see `createChild()`
+     */
     async withChildProgress<R>(
         unitsForChild: number,
         unitsOnThis: number = this.unitsPerChild ?? this.remainingUnitCount,
@@ -165,13 +246,31 @@ export class NestableProgress {
         const increment = Math.min(progress, this.remainingUnitCount);
         this.completedUnitCount += increment;
 
+        if (this._showShowProgress) {
+            this.updateProgressMessage();
+        }
+
         this.invokeProgressCallbacks();
 
         return increment;
     }
 
+    private updateProgressMessage() {
+        this.recurseMessage();
+    }
+
     private recurseMessage(messages: string[] = []) {
-        const fullMessages = [this.message].concat(messages);
+        let message = this.message;
+
+        if (this._showShowProgress) {
+            const progress = this.formatProgressMessage(this.showProgressInMessageStyle);
+
+            const [prefix, ellipsis] = this.splitEndingEllipsis(message);
+
+            message = `${prefix} ${progress}${ellipsis}`;
+        }
+
+        const fullMessages = [message].concat(messages);
 
         this.recursive(
             (parent) => {
@@ -186,13 +285,32 @@ export class NestableProgress {
             });
     }
 
+    private formatProgressMessage(style: NestableProgressReportStyle): string {
+        switch(style) {
+        case NestableProgressReportStyle.none:
+            return "";
+
+        case NestableProgressReportStyle.asPercentage:
+            if (this.totalUnitCount === 0.0) {
+                return "";
+            }
+
+            const ratio = this.completedUnitCount / this.totalUnitCount;
+
+            return `[${Math.floor(ratio * 100.0)}%]`;
+        
+        case NestableProgressReportStyle.asUnits:
+            return `[${Math.floor(this.completedUnitCount)}/${Math.floor(this.totalUnitCount)}]`;
+        }
+    }
+
     private formatMessages(messages: string[], charLimit: number = 150): string {
         messages = messages.filter(m => m.trim().length > 0);
 
         // Automatically trim "..." on intermediary message entries
         messages = messages.map((message, index) => {
             if (index < messages.length - 1 && message.endsWith("...")) {
-                return message.slice(0, message.length - 3);
+                return this.splitEndingEllipsis(message)[0];
             }
 
             return message;
@@ -221,13 +339,25 @@ export class NestableProgress {
         return `${prefix} - ${trailing}`;
     }
 
+    private splitEndingEllipsis(str: string): [string, string] {
+        if (!str.endsWith("...")) {
+            return [str, ""];
+        }
+
+        return [str.slice(0, str.length - 3), "..."];
+    }
+
     /**
-     * Executes a closure recursively until the root of the progress tree is
-     * reached.
+     * Executes a closure depending on whether this object has a parent progress
+     * associated with it or not.
      * `ifChild` is invoked if `this.parent` is not `null`, otherwise calls
      * `ifRoot`.
      *
      * The method is a no-op if `this.isCompleted` is `true`.
+     *
+     * Note: Although called `recursive()`, this method does not actually recurse
+     * either function to parent objects itself, delegating that process to the
+     * functions, for the sake of pre/post recurse control.
      */
     private recursive(ifChild: (parent: NestableProgress) => void, ifRoot: () => void) {
         if (this.isCompleted) { return; }
@@ -261,12 +391,18 @@ export class NestableProgress {
  *     If `progress.completedUnitCount` reaches `progress.totalUnitCount`, the
  *     progress object is automatically completed.
  * @param unitPerPromise An optional number of units to increment on `progress`
- *     per settled promise.
+ *     per settled promise. If not provided, the default argument of
+ *     `NestableProgress.increment()` is used, instead.
  * @returns Either the input array of promises with a 'finally' clause for
  * incrementing `progress`, or the unmodified `promises` array, if `progress` is
  * null or undefined.
  */
-export function monitorWithProgress<R>(promises: Promise<R>[], progress: NestableProgress | undefined | null, unitsPerPromise?: number): Promise<R>[] {
+export function monitorWithProgress<R>(
+    promises: Promise<R>[],
+    progress: NestableProgress | undefined | null,
+    unitsPerPromise?: number
+): Promise<R>[] {
+
     if (!progress) {
         return promises;
     }

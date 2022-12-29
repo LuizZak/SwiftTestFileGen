@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { emitDiagnostics, OperationWithDiagnostics, TestFileDiagnosticKind } from '../data/testFileDiagnosticResult';
 import { generateTestFilesEntry } from '../frontend';
 import { InvocationContext } from '../interfaces/context';
-import { findSwiftPackagePath } from '../swiftPackageFinder';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../suggestTestFiles';
 import { sanitizeFilename } from '../pathUtils';
@@ -120,7 +119,7 @@ async function performFileSearch(
 
     progress?.reportMessage("Finding Swift package...");
 
-    const pkgPath = await findSwiftPackagePath(fileUri, context.fileSystem, undefined, cancellation);
+    const pkgPath = await context.packageProvider.swiftPackageManifestPathForFile(fileUri, cancellation);
     if (pkgPath === null) {
         return {
             fileUris: [],
@@ -139,7 +138,12 @@ async function performFileSearch(
     }
 
     const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
-    const pathManager = new SwiftPackagePathsManager(pkgRoot, pkg, context.fileSystem);
+    const pathManager = await SwiftPackagePathsManager.create(
+        pkgRoot,
+        pkgPath,
+        pkg,
+        context.fileSystem
+    );
 
     if (await pathManager.isTestFile(fileUri)) {
         return {

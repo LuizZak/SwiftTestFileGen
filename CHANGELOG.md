@@ -6,10 +6,16 @@ All notable changes to the "Swift Test File Generator" extension will be documen
 
 - Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enabled mirroring certain import declarations from the original source file into the test file.
 
-## [master]
+## [0.4.1]
+
+- Adding a "[(current)/(total)]" progress to some steps of test file generation progress reporting.
+- Improving speed that large number of files are mapped to their respective Swift packages.
+
+## [0.4.0]
 
 - Improving progress reporting on notification while generating test files.
 - Improving speed of file testing generation on large number of files sharing the same folders.
+- Improving general throughput of I/O operations to reduce number of disk hits simultaneously.
 
 ## [0.3.5]
 
