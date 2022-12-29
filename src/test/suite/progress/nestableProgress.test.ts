@@ -245,5 +245,21 @@ describe('NestableProgress', () => {
                 });
             });
         });
+
+        it('should not overwrite nested progress status when updating parent progress statuses', () => {
+            const sut = makeSut("Progress", 100);
+            const child = sut.createChild(50, 50, "Child...");
+            sut.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+            child.showProgressInMessageStyle = NestableProgressReportStyle.asPercentage;
+
+            child.increment(10);
+
+            mockProgress.assertWasReported({
+                message: "Progress [0%] - Child [0%]...",
+            });
+            mockProgress.assertLastReported({
+                message: "Progress [10%] - Child [20%]...",
+            });
+        });
     });
 });

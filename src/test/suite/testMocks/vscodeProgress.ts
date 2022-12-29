@@ -25,6 +25,22 @@ export class MockProgress<T> implements vscode.Progress<T> {
         }
     }
 
+    assertLastReported(partial: Partial<T>) {
+        if (this.report_calls.length === 0) {
+            this.assertFailed(
+                `Expected last report update to be ${format(partial)} but found no update.`
+            );
+        }
+
+        const last = this.report_calls[this.report_calls.length - 1];
+
+        if (!this.reportMatchesPartial(last, partial)) {
+            this.assertFailed(
+                `Expected last report update to be ${format(partial)} but found ${format(last)}.`
+            );
+        }
+    }
+
     /**
      * Asserts all `report()` calls receive a value that matches with the given
      * partial value. If no `report()` calls where made, the assertion succeeds.
@@ -58,20 +74,7 @@ export class MockProgress<T> implements vscode.Progress<T> {
 
     firstReportMatching(partial: Partial<T>): T | null {
         for (const value of this.report_calls) {
-            var isMatch = true;
-
-            for (const key in partial) {
-                if (Object.prototype.hasOwnProperty.call(partial, key)) {
-                    const expected = partial[key];
-                    const actual = value[key];
-                    
-                    if (expected !== actual) {
-                        isMatch = false;
-                    }
-                }
-            }
-
-            if (isMatch) {
+            if (this.reportMatchesPartial(value, partial)) {
                 return value;
             }
         }
@@ -83,25 +86,27 @@ export class MockProgress<T> implements vscode.Progress<T> {
         let result: T[] = [];
 
         for (const value of this.report_calls) {
-            var isMatch = true;
-
-            for (const key in partial) {
-                if (Object.prototype.hasOwnProperty.call(partial, key)) {
-                    const expected = partial[key];
-                    const actual = value[key];
-                    
-                    if (expected !== actual) {
-                        isMatch = false;
-                    }
-                }
-            }
-
-            if (isMatch) {
+            if (this.reportMatchesPartial(value, partial)) {
                 result.push(value);
             }
         }
 
         return result;
+    }
+
+    reportMatchesPartial(value: T, partial: Partial<T>): boolean {
+        for (const key in partial) {
+            if (Object.prototype.hasOwnProperty.call(partial, key)) {
+                const expected = partial[key];
+                const actual = value[key];
+                
+                if (expected !== actual) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
 
