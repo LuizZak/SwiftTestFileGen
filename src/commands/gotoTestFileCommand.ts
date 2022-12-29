@@ -156,9 +156,13 @@ async function performFileSearch(
         };
     }
 
-    const file = await pathManager.loadSourceFile(fileUri);
-
-    const { testFiles, diagnostics } = await suggestTestFiles([file], context.configuration, context, progress, cancellation);
+    const { testFiles, diagnostics } = await suggestTestFiles(
+        [fileUri],
+        context.configuration,
+        context,
+        progress,
+        cancellation
+    );
 
     return {
         fileUris: testFiles.map(f => f.path),

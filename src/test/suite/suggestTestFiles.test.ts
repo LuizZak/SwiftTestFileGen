@@ -19,11 +19,12 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/B.swift",
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -60,11 +61,12 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 "/Package/Path/Sources/Target/SubfolderA/A.swift",
                 "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -102,11 +104,12 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 "/Package/Path/Sources/ExplicitPath/A.swift",
                 "/Package/Path/Sources/ExplicitPath/B.swift",
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -144,11 +147,12 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/AlternatePath/"
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 "/Package/Path/Sources/Target/A.swift",
                 "/Package/Path/Sources/Target/B.swift",
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -187,12 +191,13 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/"
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 "/Package/Path/Sources/TargetA/A.swift",
                 "/Package/Path/Sources/TargetB/B.swift",
                 "/Package/Path/Sources/C.swift",
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -242,11 +247,12 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/"
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 fileA,
                 fileB,
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -274,11 +280,12 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 "/Package/Path/Sources/A.swift",
                 "/Package/Path/Sources/A+Ext.swift",
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -314,7 +321,7 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 {
                     path: "/Package/Path/Sources/A.swift",
@@ -325,6 +332,7 @@ suite('suggestTestFiles Test Suite', () => {
                     contents: "import struct OtherModule.Struct\n\nclass B { }",
                 },
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -360,13 +368,14 @@ suite('suggestTestFiles Test Suite', () => {
                 "/Package/Path/Tests/",
             ], undefined, testPackage);
 
-            const filePaths = swiftFiles(
+            const files = swiftFiles(
                 fixture.context.fileSystem,
                 {
                     path: "/Package/Path/Sources/A.swift",
                     contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                 },
             );
+            const filePaths = files.map(file => file.path);
             
             const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
 
@@ -427,13 +436,14 @@ suite('suggestTestFiles Test Suite', () => {
                         "/Package/Path/Tests/",
                     ], configuration, testPackage);
         
-                    const filePaths = swiftFiles(
+                    const files = swiftFiles(
                         fixture.context.fileSystem,
                         {
                             path: "/Package/Path/Sources/A.swift",
                             contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                         },
                     );
+                    const filePaths = files.map(file => file.path);
                     
                     const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
         
@@ -482,13 +492,14 @@ suite('suggestTestFiles Test Suite', () => {
                             "/Package/Path/Tests/",
                         ], configuration, testPackage);
             
-                        const filePaths = swiftFiles(
+                        const files = swiftFiles(
                             fixture.context.fileSystem,
                             {
                                 path: "/Package/Path/Sources/A.swift",
                                 contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                             },
                         );
+                        const filePaths = files.map(file => file.path);
                         
                         const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
             
@@ -560,13 +571,14 @@ suite('suggestTestFiles Test Suite', () => {
                             "/Package/Path/Tests/ModuleATests",
                         ], configuration, testPackage);
             
-                        const filePaths = swiftFiles(
+                        const files = swiftFiles(
                             fixture.context.fileSystem,
                             {
                                 path: "/Package/Path/Sources/ModuleA/A.swift",
                                 contents: "import ModuleB;import ModuleC;\n\nclass A { }",
                             },
                         );
+                        const filePaths = files.map(file => file.path);
                         
                         const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
             
@@ -615,13 +627,14 @@ suite('suggestTestFiles Test Suite', () => {
                         "/Package/Path/Tests/",
                     ], configuration, testPackage);
         
-                    const filePaths = swiftFiles(
+                    const files = swiftFiles(
                         fixture.context.fileSystem,
                         {
                             path: "/Package/Path/Sources/A.swift",
                             contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
                         },
                     );
+                    const filePaths = files.map(file => file.path);
                     
                     const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
         

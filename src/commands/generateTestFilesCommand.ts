@@ -73,10 +73,8 @@ export async function generateTestFilesCommand(
     }
 
     for (const [pkgPath, packageFiles] of packagesMap) {
-        const pkg = await context.packageProvider.swiftPackagePathManagerForFile(pkgPath, cancellation);
-        const files = await Promise.all(packageFiles.map((file) => { return pkg.loadSourceFile(file); }));
         const result = await suggestTestFiles(
-            files,
+            packageFiles,
             context.configuration,
             context,
             suggestTestFilesProgress,

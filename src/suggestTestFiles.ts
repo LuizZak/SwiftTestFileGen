@@ -2,9 +2,6 @@ import path = require('path');
 import * as vscode from 'vscode';
 import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFileDiagnosticResult';
 import { SwiftTestFile } from './data/swiftTestFile';
-import { PackageProviderInterface } from './interfaces/packageProviderInterface';
-import { SwiftFile } from './data/swiftFile';
-import { targetDependenciesByName } from './data/swiftPackage.ext';
 import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 import { SwiftFileSyntaxHelper } from './syntax/swiftFileSyntaxHelper';
 import { InvocationContext } from './interfaces/context';
@@ -18,14 +15,15 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
 /**
  * Returns a set of suggested test files for a list of .swift file paths.
  * 
- * @param files File paths to generate test files out of
+ * @param filePaths File paths to generate test files out of.
  * @param configuration The extension configurations object.
  * @param packageProvider A package provider for computing package for file Uris.
  * @param cancellation A cancellation token to stop the operation.
- * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
+ * @returns A list of Swift test files for the selected files, along with a list
+ *     of diagnostics generated.
  */
 export async function suggestTestFiles(
-    files: SwiftFile[],
+    filePaths: vscode.Uri[],
     configuration: Configuration,
     invocationContext: InvocationContext,
     progress?: NestableProgress,
@@ -33,8 +31,6 @@ export async function suggestTestFiles(
 ): Promise<SuggestTestFilesResult> {
 
     const packageProvider = invocationContext.packageProvider;
-
-    const filePaths = files.map(file => file.path);
 
     const directories = deduplicateStable(filePaths, (filePath) => {
         return path.dirname(filePath.path);
@@ -49,8 +45,8 @@ export async function suggestTestFiles(
     // Warm up the cache prior to the operation by querying the file directories
     // first
     // TODO: Allow parameterization of concurrent task count.
-    await limitWithParameters(10, async (filePath) => {
-        await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+    await limitWithParameters(10, async (directory) => {
+        await packageProvider.swiftPackagePathManagerForFile(directory, cancellation);
     }, directories, filesProgress, cancellation);
 
     // Do proper operation now
@@ -60,7 +56,10 @@ export async function suggestTestFiles(
 
     filesProgress?.reportMessage("Finding existing test files...");
 
-    const operation = async (file: SwiftFile): Promise<SuggestTestFilesResult> => {
+    const operation = async (filePath: vscode.Uri): Promise<SuggestTestFilesResult> => {
+        const pkgManager = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+        const file = await pkgManager.loadSourceFile(filePath);
+
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
@@ -244,7 +243,7 @@ class ${testClassName}: XCTestCase {
     };
 
     // TODO: Allow parameterization of concurrent task count.
-    const result = await limitWithParameters(20, operation, files, filesProgress, cancellation);
+    const result = await limitWithParameters(20, operation, filePaths, filesProgress, cancellation);
     return result.reduce(joinSuggestedTestFileResults);
 }
 
