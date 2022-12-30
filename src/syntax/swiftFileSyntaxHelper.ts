@@ -15,34 +15,29 @@ export class SwiftFileSyntaxHelper {
      * Returns a list of imported module names found on the source file.
      */
     async parseModuleImports(): Promise<string[]> {
-        // Attempt parse dump first
-        try {
-            const dumpParse = await this.attemptDumpParse();
+        // TODO: Implement `this.importDeclarationsIn()` and use `this.attemptDumpParse()` first before falling back to regex
 
-            return this.importDeclarationsIn(dumpParse);
-        } catch {
-            const fileContents = await this.fileContents();
-            
-            const moduleImport = /import\s+((?:\w+\.?)+)\s*(;|\n)/g;
-            const symbolImport = /import\s+(?:typealias|struct|class|enum|protocol|let|var|func)\s+((?:\w+\.?))+(?:\.\w+)\s*(;|\n)/g;
-            
-            let result: ({ module: string, offset: number })[] = [];
-
-            for (const match of fileContents.matchAll(moduleImport)) {
-                result.push({
-                    module: match[1],
-                    offset: match.index ?? 0
-                });
-            }
-            for (const match of fileContents.matchAll(symbolImport)) {
-                result.push({
-                    module: match[1],
-                    offset: match.index ?? 0
-                });
-            }
+        const fileContents = await this.fileContents();
         
-            return result.sort((a, b) => a.offset - b.offset).map((v) => v.module);
+        const moduleImport = /import\s+((?:\w+\.?)+)\s*(;|\n)/g;
+        const symbolImport = /import\s+(?:typealias|struct|class|enum|protocol|let|var|func)\s+((?:\w+\.?))+(?:\.\w+)\s*(;|\n)/g;
+        
+        let result: ({ module: string, offset: number })[] = [];
+
+        for (const match of fileContents.matchAll(moduleImport)) {
+            result.push({
+                module: match[1],
+                offset: match.index ?? 0
+            });
         }
+        for (const match of fileContents.matchAll(symbolImport)) {
+            result.push({
+                module: match[1],
+                offset: match.index ?? 0
+            });
+        }
+    
+        return result.sort((a, b) => a.offset - b.offset).map((v) => v.module);
     }
 
     private async attemptDumpParse(): Promise<string> {
@@ -52,15 +47,6 @@ export class SwiftFileSyntaxHelper {
     }
 
     private importDeclarationsIn(dumpParse: string): string[] {
-        // (import_decl range=[/home/luiz/dev/SwiftRewriter/Sources/Frontend/JavaScript/JsParser/JsParser.swift:6:1 - line:6:21] kind=class 'Antlr4.Parser')
-        const regex = /\(import_decl \)/;
-
-        const result: string[] = [];
-        
-        for (const match of dumpParse.matchAll(regex)) {
-            result.push(match[1]);
-        }
-
-        return result;
+        throw new Error("Not implemented");
     }
 }
