@@ -38,6 +38,7 @@ This extension contributes the following configurations:
 |---|---|
 | Value | Description |
 | `always` | Always emit `import <Module>`, mirroring imports on original file. |
+| `dependenciesOnly` | Only emit `import <Module>` for modules that are implicit or explicit dependencies in original package manifest. The dependency graph of the package is used to figure out whether a module being imported is a dependency. |
 | `explicitDependenciesOnly` | Only emit `import <Module>` for modules that are explicit dependencies in original package manifest. |
 | `never` | Never emit `import <Module>`, other than the module being tested and XCTest. |
 

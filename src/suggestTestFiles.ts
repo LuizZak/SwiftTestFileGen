@@ -232,8 +232,6 @@ async function generateTestFile(
     configuration: Configuration
 ): Promise<SwiftTestFile> {
 
-    let importLines: string[] = [];
-
     const syntaxHelper = new SwiftFileSyntaxHelper(
         sourceFile.path,
         context.fileSystem,
@@ -241,29 +239,42 @@ async function generateTestFile(
     );
 
     let detectedImports: string[] = [];
+    let importLines: string[] = [];
 
     switch (configuration.fileGen.emitImportDeclarations) {
         case EmitImportDeclarationsMode.always:
             detectedImports = await syntaxHelper.parseModuleImports();
-            detectedImports.forEach((moduleName) => {
-                importLines.push(emitImportLine(moduleName));
-            });
+            importLines = detectedImports.map(emitImportLine);
+
             break;
 
-        case EmitImportDeclarationsMode.explicitDependenciesOnly:
-            // From detected module imports, emit the ones that are explicit target
+        case EmitImportDeclarationsMode.dependenciesOnly:
+            // From detected module imports, emit the ones that are target
             // dependencies in the package manifest.
             if (target !== null) {
                 const dependencyGraph = pkg.dependencyGraph();
 
-                detectedImports = await syntaxHelper.parseModuleImports();
-                detectedImports.forEach((moduleName) => {
-                    if (dependencyGraph.hasDependencyPath(target, moduleName)) {
-                        importLines.push(emitImportLine(moduleName));
-                    }
+                const parsedImports = await syntaxHelper.parseModuleImports();
+                detectedImports = parsedImports.filter((moduleName) => {
+                    return dependencyGraph.hasDependencyPath(target, moduleName);
                 });
+                importLines = detectedImports.map(emitImportLine);
             }
             break;
+
+            case EmitImportDeclarationsMode.explicitDependenciesOnly:
+                // From detected module imports, emit the ones that are explicit target
+                // dependencies in the package manifest.
+                if (target !== null) {
+                    const dependencyGraph = pkg.dependencyGraph();
+    
+                    const parsedImports = await syntaxHelper.parseModuleImports();
+                    detectedImports = parsedImports.filter((moduleName) => {
+                        return dependencyGraph.hasDirectDependency(target, moduleName);
+                    });
+                    importLines = detectedImports.map(emitImportLine);
+                }
+                break;
 
         case EmitImportDeclarationsMode.never:
             break;

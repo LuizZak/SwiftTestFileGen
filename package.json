@@ -93,11 +93,13 @@
 					"enum": [
 						"always",
 						"explicitDependenciesOnly",
+						"dependenciesOnly",
 						"never"
 					],
 					"enumDescriptions": [
 						"Always emit 'import <Module>', mirroring imports on original file.",
 						"Only emit 'import <Module>' for modules that are explicit dependencies in original package manifest.",
+						"Only emit 'import <Module>' for modules that are implicit or explicit dependencies in original package manifest. The dependency graph of the package is used to figure out whether a module being imported is a dependency.",
 						"Never emit 'import <Module>', other than the module being tested and XCTest."
 					],
 					"description": "Whether to detect and emit import declarations from the original Swift file in generated test files. The import for the module being tested is always emitted no matter the configuration."

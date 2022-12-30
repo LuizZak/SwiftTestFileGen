@@ -15,5 +15,6 @@ export interface Configuration {
 export enum EmitImportDeclarationsMode {
     always = "always",
     explicitDependenciesOnly = "explicitDependenciesOnly",
+    dependenciesOnly = "dependenciesOnly",
     never = "never"
 }
