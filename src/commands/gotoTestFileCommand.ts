@@ -57,7 +57,6 @@ async function performFileSearch(
 ): Promise<TestFileSearchResult> {
     
     // Perform simple filename heuristic search, if enabled.
-    outer:
     if (context.configuration.gotoTestFile.useFilenameHeuristics) {
         const heuristicPattern = context.configuration.gotoTestFile.heuristicFilenamePattern;
 
@@ -68,52 +67,13 @@ async function performFileSearch(
             patterns = heuristicPattern;
         }
 
-        if (patterns.length === 0) {
-            // TODO: Emit diagnostics for the case of empty search patterns.
-            break outer;
-        }
+        // TODO: Emit diagnostics for the case of empty search patterns.
+        if (patterns.length > 0) {
+            let results = await performHeuristicSearch(fileUri, patterns, context);
 
-        let results: TestFileSearchResult = {
-            fileUris: [],
-            diagnostics: []
-        };
-
-        const swiftExt = ".swift";
-        const baseName = path.basename(fileUri.fsPath, swiftExt);
-
-        const placeholder = "$1";
-
-        for (const pattern of patterns) {
-            if (pattern.indexOf(placeholder) === -1) {
-                results.diagnostics.push({
-                    message: `Found  test file search pattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
-                    kind: TestFileDiagnosticKind.incorrectSearchPattern,
-                });
-                continue;
+            if (results.fileUris.length > 0 || results.fileUris.length > 0) {
+                return results;
             }
-
-            let fileName = pattern.replace(placeholder, baseName);
-
-            if (fileName !== sanitizeFilename(fileName)) {
-                fileName = sanitizeFilename(fileName);
-
-                results.diagnostics.push({
-                    message: `Found test file search pattern that does not resolve to a simple filename (i.e. contains special characters not allowed in file names): ${pattern}`,
-                    kind: TestFileDiagnosticKind.specialCharactersInSearchPattern,
-                });
-            }
-
-            // Correct patterns with an extra .swift extension
-            if (fileName.endsWith(swiftExt)) {
-                fileName = fileName.substring(0, fileName.length - swiftExt.length);
-            }
-
-            const matches = await context.fileSystem.findFiles(`**/${fileName}${swiftExt}`);
-            results.fileUris = results.fileUris.concat(matches);
-        }
-
-        if (results.fileUris.length > 0 || results.fileUris.length > 0) {
-            return results;
         }
     }
 
@@ -168,4 +128,53 @@ async function performFileSearch(
         fileUris: testFiles.map(f => f.path),
         diagnostics
     };
+}
+
+async function performHeuristicSearch(
+    fileUri: vscode.Uri,
+    patterns: string[],
+    context: InvocationContext
+): Promise<TestFileSearchResult> {
+
+    let results: TestFileSearchResult = {
+        fileUris: [],
+        diagnostics: []
+    };
+
+    const swiftExt = ".swift";
+    const baseName = path.basename(fileUri.fsPath, swiftExt);
+
+    const placeholder = "$1";
+
+    for (const pattern of patterns) {
+        if (pattern.indexOf(placeholder) === -1) {
+            results.diagnostics.push({
+                message: `Found test file search pattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
+                kind: TestFileDiagnosticKind.incorrectSearchPattern,
+            });
+
+            continue;
+        }
+
+        let fileName = pattern.replace(placeholder, baseName);
+
+        if (fileName !== sanitizeFilename(fileName)) {
+            fileName = sanitizeFilename(fileName);
+
+            results.diagnostics.push({
+                message: `Found test file search pattern that does not resolve to a simple filename (i.e. contains special characters not allowed in file names): ${pattern}`,
+                kind: TestFileDiagnosticKind.specialCharactersInSearchPattern,
+            });
+        }
+
+        // Correct patterns with an extra .swift extension
+        if (fileName.endsWith(swiftExt)) {
+            fileName = path.basename(fileName, swiftExt);
+        }
+
+        const matches = await context.fileSystem.findFiles(`**/${fileName}${swiftExt}`);
+        results.fileUris = results.fileUris.concat(matches);
+    }
+
+    return results;
 }

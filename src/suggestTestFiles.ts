@@ -9,6 +9,10 @@ import { NestableProgress, NestableProgressReportStyle } from './progress/nestab
 import { limitWithParameters } from './asyncUtils/asyncUtils';
 import { deduplicateStable } from './algorithms/dedupe';
 import { SwiftFileBuilder } from './syntax/swiftFileBuilder';
+import { SwiftFile } from './data/swiftFile';
+import { SwiftPackagePathsManager } from './swiftPackagePathsManager';
+import { SwiftTarget } from './data/swiftPackage';
+import { FileSystemInterface } from './interfaces/fileSystemInterface';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -18,7 +22,9 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
  * 
  * @param filePaths File paths to generate test files out of.
  * @param configuration The extension configurations object.
- * @param packageProvider A package provider for computing package for file Uris.
+ * @param context Context for invocation containing APIs to interact with to
+ *     produce the result of this operation.
+ * @param progress A progress object to report granular progress to.
  * @param cancellation A cancellation token to stop the operation.
  * @returns A list of Swift test files for the selected files, along with a list
  *     of diagnostics generated.
@@ -26,12 +32,10 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
 export async function suggestTestFiles(
     filePaths: vscode.Uri[],
     configuration: Configuration,
-    invocationContext: InvocationContext,
+    context: InvocationContext,
     progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
-
-    const packageProvider = invocationContext.packageProvider;
 
     const directories = deduplicateStable(filePaths, (filePath) => {
         return path.dirname(filePath.path);
@@ -47,7 +51,7 @@ export async function suggestTestFiles(
     // first
     // TODO: Allow parameterization of concurrent task count.
     await limitWithParameters(10, async (directory) => {
-        await packageProvider.swiftPackagePathManagerForFile(directory, cancellation);
+        await context.packageProvider.swiftPackagePathManagerForFile(directory, cancellation);
     }, directories, filesProgress, cancellation);
 
     // Do proper operation now
@@ -58,6 +62,8 @@ export async function suggestTestFiles(
     filesProgress?.reportMessage("Finding existing test files...");
 
     const operation = async (filePath: vscode.Uri): Promise<SuggestTestFilesResult> => {
+        const packageProvider = context.packageProvider;
+    
         const pkgManager = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
         const file = await pkgManager.loadSourceFile(filePath);
 
@@ -180,63 +186,17 @@ export async function suggestTestFiles(
                 );
         }
 
-        let importLines: string[] = [];
-        if (typeof targetName === "string") {
-            importLines.push(`@testable import ${targetName}`);
-        } else {
-            importLines.push(`@testable import <#TargetName#>`);
-        }
-
-        const syntaxHelper = new SwiftFileSyntaxHelper(
-            file.path,
-            invocationContext.fileSystem,
-            invocationContext.toolchain
+        const result = await generateTestFile(
+            fullTestFilePath,
+            targetName,
+            file,
+            target,
+            testClassName,
+            testFileName,
+            pkg,
+            context,
+            configuration
         );
-
-        const detectedImports = await syntaxHelper.parseModuleImports();
-
-        switch (configuration.fileGen.emitImportDeclarations) {
-            case EmitImportDeclarationsMode.always:
-                detectedImports.forEach((moduleName) => {
-                    importLines.push(emitImportLine(moduleName));
-                });
-                break;
-
-            case EmitImportDeclarationsMode.explicitDependenciesOnly:
-                // From detected module imports, emit the ones that are explicit target
-                // dependencies in the package manifest.
-                if (target !== null) {
-                    const dependencyGraph = pkg.dependencyGraph();
-
-                    detectedImports.forEach((moduleName) => {
-                        if (dependencyGraph.hasDependencyPath(target, moduleName)) {
-                            importLines.push(emitImportLine(moduleName));
-                        }
-                    });
-                }
-                break;
-            
-            case EmitImportDeclarationsMode.never:
-                break;
-        }
-
-        // Build test file contents
-        const fb = new SwiftFileBuilder();
-
-        fb.line("import XCTest");
-        fb.ensureEmptyLineSeparation();
-        fb.lines(...importLines);
-        fb.ensureEmptyLineSeparation();
-        fb.putEmptyClass(testClassName, ["XCTestCase"]);
-
-        const result: SwiftTestFile = {
-            name: testFileName,
-            path: fullTestFilePath,
-            originalFile: file.path,
-            existsOnDisk: false,
-            suggestedImports: detectedImports,
-            contents: fb.build()
-        };
 
         return {
             testFiles: [result],
@@ -249,30 +209,80 @@ export async function suggestTestFiles(
     return result.reduce(joinSuggestedTestFileResults);
 }
 
-/**
- * From a given Swift source file's contents, detects imported modules that may
- * be required to be imported in the test file.
- */
-function detectModuleImports(swiftFileContents: string): string[] {
-    let result: ({ module: string, offset: number })[] = [];
+async function generateTestFile(
+    fullTestFilePath: vscode.Uri,
+    targetName: string | null,
+    sourceFile: SwiftFile,
+    target: SwiftTarget | null,
+    testClassName: string,
+    testFileName: string,
+    pkg: SwiftPackagePathsManager,
+    context: InvocationContext,
+    configuration: Configuration
+): Promise<SwiftTestFile> {
 
-    const moduleImport = /import\s+((?:\w+\.?)+)\s*(;|\n)/g;
-    const symbolImport = /import\s+(?:typealias|struct|class|enum|protocol|let|var|func)\s+((?:\w+\.?))+(?:\.\w+)\s*(;|\n)/g;
+    let importLines: string[] = [];
 
-    for (const match of swiftFileContents.matchAll(moduleImport)) {
-        result.push({
-            module: match[1],
-            offset: match.index ?? 0
-        });
+    const syntaxHelper = new SwiftFileSyntaxHelper(
+        sourceFile.path,
+        context.fileSystem,
+        context.toolchain
+    );
+
+    const detectedImports = await syntaxHelper.parseModuleImports();
+
+    switch (configuration.fileGen.emitImportDeclarations) {
+        case EmitImportDeclarationsMode.always:
+            detectedImports.forEach((moduleName) => {
+                importLines.push(emitImportLine(moduleName));
+            });
+            break;
+
+        case EmitImportDeclarationsMode.explicitDependenciesOnly:
+            // From detected module imports, emit the ones that are explicit target
+            // dependencies in the package manifest.
+            if (target !== null) {
+                const dependencyGraph = pkg.dependencyGraph();
+
+                detectedImports.forEach((moduleName) => {
+                    if (dependencyGraph.hasDependencyPath(target, moduleName)) {
+                        importLines.push(emitImportLine(moduleName));
+                    }
+                });
+            }
+            break;
+
+        case EmitImportDeclarationsMode.never:
+            break;
     }
-    for (const match of swiftFileContents.matchAll(symbolImport)) {
-        result.push({
-            module: match[1],
-            offset: match.index ?? 0
-        });
+
+    let moduleImportLine: string;
+    if (typeof targetName === "string") {
+        moduleImportLine = `@testable import ${targetName}`;
+    } else {
+        moduleImportLine = `@testable import <#TargetName#>`;
     }
 
-    return result.sort((a, b) => a.offset - b.offset).map((v) => v.module);
+    // Build test file contents
+    const fb = new SwiftFileBuilder();
+
+    fb.line("import XCTest");
+    fb.ensureEmptyLineSeparation();
+    fb.line(moduleImportLine);
+    fb.lines(...importLines);
+    fb.ensureEmptyLineSeparation();
+    fb.putEmptyClass(testClassName, ["XCTestCase"]);
+
+    const result: SwiftTestFile = {
+        name: testFileName,
+        path: fullTestFilePath,
+        originalFile: sourceFile.path,
+        existsOnDisk: false,
+        suggestedImports: detectedImports,
+        contents: fb.build()
+    };
+
+    return result;
 }
 
 function emitImportLine(moduleName: string): string {
