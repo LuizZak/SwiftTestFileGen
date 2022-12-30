@@ -57,7 +57,7 @@ export class SwiftPackagePathsManager {
         fileSystem: FileSystemInterface
     ): Promise<SwiftPackagePathsManager> {
 
-        const targetPathList = await this.makeTargetPathMap(packageRoot, pkg, fileSystem);
+        const targetPathList = await _makeTargetPathMap(packageRoot, pkg, fileSystem);
 
         return new SwiftPackagePathsManager(
             packageRoot,
@@ -149,7 +149,7 @@ export class SwiftPackagePathsManager {
         for (const dirName of definitions.predefinedSourceSearchPaths) {
             const sourcesPath = vscode.Uri.joinPath(this.packageRoot, dirName);
 
-            if (await this.fileSystem.isDirectoryUri(sourcesPath) && isSubdirectory(sourcesPath, fileUri)) {
+            if (isSubdirectory(sourcesPath, fileUri) && await this.fileSystem.isDirectoryUri(sourcesPath)) {
                 return true;
             }
         }
@@ -179,7 +179,7 @@ export class SwiftPackagePathsManager {
         for (const dirName of definitions.predefinedTestSearchPaths) {
             const testsPath = vscode.Uri.joinPath(this.packageRoot, dirName);
 
-            if (await this.fileSystem.isDirectoryUri(testsPath) && isSubdirectory(testsPath, fileUri)) {
+            if (isSubdirectory(testsPath, fileUri) && await this.fileSystem.isDirectoryUri(testsPath)) {
                 return true;
             }
         }
@@ -225,7 +225,7 @@ export class SwiftPackagePathsManager {
      * Returns the target that contains a given file, or `null`, if no matching
      * target folder was found.
      */
-    async targetForFilePath(filePath: vscode.Uri): Promise<SwiftTarget | null> {
+    targetForFilePath(filePath: vscode.Uri): SwiftTarget | null {
         for (const target of this.targetPathList) {
             if (isSubdirectory(target.computedPath, filePath)) {
                 return target;
@@ -233,34 +233,6 @@ export class SwiftPackagePathsManager {
         }
         
         return null;
-    }
-
-    /**
-     * Returns a `TargetPathList` for the current package, mapping each known target
-     * in the package manifest to a directory on disk, if one can be found.
-     */
-    static async makeTargetPathMap(packageRoot: vscode.Uri, pkg: SwiftPackageManifest, fileSystem: FileSystemInterface): Promise<TargetPathList> {
-        const targets = pkg.targets;
-        
-        const compute: (target: SwiftTarget) => Promise<[vscode.Uri, SwiftTarget]> = (target) => {
-            return _computePathForTarget(target, packageRoot, fileSystem).then((result) => [result, target]);
-        };
-
-        const fullTargetPromises = await Promise.all(targets.map(compute));
-
-        let targetPathList: TargetPathList = [];
-
-        for (const [path, target] of fullTargetPromises) {
-            const finalTarget: InternalSwiftTarget = {
-                ...target,
-                computedPath: path,
-                hasDirectoryPath: await fileSystem.isDirectoryUri(path)
-            };
-
-            targetPathList.push(finalTarget);
-        }
-
-        return targetPathList;
     }
 
     /**
@@ -272,7 +244,7 @@ export class SwiftPackagePathsManager {
      * root.
      */
     async targetNameFromFilePath(filePath: vscode.Uri): Promise<string | null> {
-        for (const target of await this.targetPathList) {
+        for (const target of this.targetPathList) {
             if (isSubdirectory(target.computedPath, filePath)) {
                 return target.name;
             }
@@ -319,6 +291,34 @@ export class SwiftPackagePathsManager {
         return null;
     }
 };
+
+/**
+ * Returns a `TargetPathList` for the current package, mapping each known target
+ * in the package manifest to a directory on disk, if one can be found.
+ */
+async function _makeTargetPathMap(packageRoot: vscode.Uri, pkg: SwiftPackageManifest, fileSystem: FileSystemInterface): Promise<TargetPathList> {
+    const targets = pkg.targets;
+    
+    const compute: (target: SwiftTarget) => Promise<[vscode.Uri, SwiftTarget]> = (target) => {
+        return _computePathForTarget(target, packageRoot, fileSystem).then((result) => [result, target]);
+    };
+
+    const fullTargetPromises = await Promise.all(targets.map(compute));
+
+    let targetPathList: TargetPathList = [];
+
+    for (const [path, target] of fullTargetPromises) {
+        const finalTarget: InternalSwiftTarget = {
+            ...target,
+            computedPath: path,
+            hasDirectoryPath: await fileSystem.isDirectoryUri(path)
+        };
+
+        targetPathList.push(finalTarget);
+    }
+
+    return targetPathList;
+}
 
 /**
  * Returns the path for the given target, looking at either the configured path
