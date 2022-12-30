@@ -207,7 +207,7 @@ export class FullTestFixture {
         const textReplaced = wsEdits.flatMap(ws => ws.replaceDocumentText_calls);
 
         const textReplaceByFileUri = groupBy(textReplaced, (file) => {
-            return file[0];
+            return file[0].path;
         });
 
         for (let index = expectedFiles.length - 1; index >= 0; index--) {
@@ -236,7 +236,7 @@ export class FullTestFixture {
             }
 
             if (expectedContents) {
-                const fileReplaces = textReplaceByFileUri.get(fileCreated);
+                const fileReplaces = textReplaceByFileUri.get(fileCreated.path);
                 if (!fileReplaces || fileReplaces.length === 0) {
                     assert.fail(
                         `Expected to find text replace entry for file ${expectedFile} with contents: ${expectedContents} but found none.`
