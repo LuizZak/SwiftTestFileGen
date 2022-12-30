@@ -34,6 +34,13 @@ This extension contributes the following configurations:
 | `onlyOnDirectories` | Only requests confirmation if the selection contains one or more directories |
 | `never` | Never requests confirmation; always create test files straight away |
 
+| `swiftTestFileGen.fileGen.emitImportDeclarations` | Whether to detect and emit import declarations from the original Swift file in generated test files. The import for the module being tested is always emitted no matter the configuration. |
+|---|---|
+| Value | Description |
+| `always` | Always emit `import <Module>`, mirroring imports on original file. |
+| `explicitDependenciesOnly` | Only emit `import <Module>` for modules that are explicit dependencies in original package manifest. |
+| `never` | Never emit `import <Module>`, other than the module being tested and XCTest. |
+
 | Configuration | Description | Default Value | 
 |--|--|--|
 | `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` | Whether to use simple `<FileName>.swift` -> `<FileName><Suffix>.swift` heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths.</br></br>If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests. | `false` |

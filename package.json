@@ -100,7 +100,7 @@
 						"Only emit 'import <Module>' for modules that are explicit dependencies in original package manifest.",
 						"Never emit 'import <Module>', other than the module being tested and XCTest."
 					],
-					"description": "Whether to detect and emit import declarations from the original Swift file in generated test files."
+					"description": "Whether to detect and emit import declarations from the original Swift file in generated test files. The import for the module being tested is always emitted no matter the configuration."
 				}
   	  	  	}
   	  	}
