@@ -6,6 +6,7 @@ import { PackageProviderInterface } from './interfaces/packageProviderInterface'
 import { NestableProgress, NestableProgressReportStyle } from './progress/nestableProgress';
 import { limitWithParameters } from './asyncUtils/asyncUtils';
 import { deduplicateStable } from './algorithms/dedupe';
+import { SwiftFileBuilder } from './syntax/swiftFileBuilder';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -176,19 +177,20 @@ export async function suggestTestFiles(
             importLine = `@testable import <#TargetName#>`;
         }
 
+        // Build test file contents
+        const fb = new SwiftFileBuilder();
+
+        fb.line("import XCTest");
+        fb.ensureEmptyLineSeparation();
+        fb.lines(importLine);
+        fb.ensureEmptyLineSeparation();
+        fb.putEmptyClass(testClassName, ["XCTestCase"]);
+
         const result: SwiftTestFile = {
             name: testFileName,
             path: fullTestFilePath,
             originalFile: filePath,
-            contents:
-                `import XCTest
-
-${importLine}
-
-class ${testClassName}: XCTestCase {
-
-}
-`
+            contents: fb.build()
         };
 
         return {
