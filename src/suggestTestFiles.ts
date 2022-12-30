@@ -241,10 +241,11 @@ async function generateTestFile(
         context.toolchain
     );
 
-    const detectedImports = await syntaxHelper.parseModuleImports();
+    let detectedImports: string[] = [];
 
     switch (configuration.fileGen.emitImportDeclarations) {
         case EmitImportDeclarationsMode.always:
+            detectedImports = await syntaxHelper.parseModuleImports();
             detectedImports.forEach((moduleName) => {
                 importLines.push(emitImportLine(moduleName));
             });
@@ -256,6 +257,7 @@ async function generateTestFile(
             if (target !== null) {
                 const dependencyGraph = pkg.dependencyGraph();
 
+                detectedImports = await syntaxHelper.parseModuleImports();
                 detectedImports.forEach((moduleName) => {
                     if (dependencyGraph.hasDependencyPath(target, moduleName)) {
                         importLines.push(emitImportLine(moduleName));
