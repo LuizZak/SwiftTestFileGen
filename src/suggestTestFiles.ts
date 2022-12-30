@@ -74,7 +74,7 @@ export async function suggestTestFiles(
         const testClassName = replaceSpecialCharactersForTestName(`${fileNameWithoutExt}Tests`);
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
-        const target = await pkg.targetForFilePath(filePath);
+        const target = pkg.targetForFilePath(filePath);
         const targetName = target?.name ?? await pkg.targetNameFromFilePath(filePath);
         const testTarget = pkg.testTargetForTarget(target);
         const testsPath = await pkg.availableTestsPath();
@@ -82,6 +82,13 @@ export async function suggestTestFiles(
         // Compute relative paths to maintain directory substructure in tests folder
         let fileRelativeDirPath: string;
         const fileDir = path.dirname(filePath.fsPath);
+
+        // Priority when finding root target path to compute relative paths onto:
+        // 1. Target w/ explicit path
+        // 2. Target w/o explicit path: Path is assumed 'Sources/Target'
+        // 3. Deduced target name from path in the form './Sources/Target/File.swift'
+        // 4. Make path relative to first existing default sources subfolder
+
         if (typeof target?.path === "string") {
             fileRelativeDirPath = path.relative(path.join(pkg.packageRoot.fsPath, target.path), fileDir);
         } else if (target) {
@@ -121,6 +128,13 @@ export async function suggestTestFiles(
         }
 
         // Compute full test file path
+        
+        // Priority when finding root target path to compute relative paths onto:
+        // 1. Test target w/ explicit path
+        // 2. Test target w/o explicit path: Path is assumed 'Tests/Target'
+        // 3. Deduced test target name from path in the form './Sources/Target/File.swift'
+        // 4. Make path relative to first existing default tests subfolder
+
         let fullTestFilePath: vscode.Uri;
         if (typeof testTarget?.path === "string") {
             fullTestFilePath = vscode.Uri.joinPath(pkg.packageRoot, testTarget.path, fileRelativeDirPath, testFileName);
