@@ -1,12 +1,13 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { describe, it } from 'mocha';
-import { SwiftPackageManifest, TargetType } from '../../data/swiftPackage';
+import { SwiftPackageManifest, TargetDependency, TargetType } from '../../data/swiftPackage';
 import { replaceSpecialCharactersForTestName, suggestTestFiles } from '../../suggestTestFiles';
 import { TestFileDiagnosticKind } from '../../data/testFileDiagnosticResult';
 import { FullTestFixture, makeExpectedTestFileContentString, stubPackage, swiftFiles } from './fullTestFixture';
 import { Configuration, EmitImportDeclarationsMode } from '../../data/configurations/configuration';
 import { ConfirmationMode } from '../../data/configurations/confirmationMode';
+import { makePackageDependency, makeStringDependency } from './testMocks/testDataFactory';
 
 suite('suggestTestFiles Test Suite', () => {
     describe('suggestTestFiles', () => {
@@ -332,20 +333,8 @@ suite('suggestTestFiles Test Suite', () => {
                 it('must emit any import declarations found', async () => {
                     const testPackage = makeSingleTargetTestPackage();
                     testPackage.targets[0].dependencies = [
-                        {
-                            byName: [
-                                "ModuleA",
-                                null
-                            ],
-                        },
-                        {
-                            product: [
-                                "ModuleB",
-                                "module-b",
-                                null,
-                                null
-                            ],
-                        },
+                        makeStringDependency("ModuleA"),
+                        makePackageDependency("ModuleB", "module-b"),
                     ];
                     const fixture = new FullTestFixture([
                         "/Package/Path/Package.swift",
@@ -388,20 +377,8 @@ suite('suggestTestFiles Test Suite', () => {
                     it('must emit import declarations for targets that explicitly import other targets', async () => {
                         const testPackage = makeSingleTargetTestPackage();
                         testPackage.targets[0].dependencies = [
-                            {
-                                byName: [
-                                    "ModuleA",
-                                    null
-                                ],
-                            },
-                            {
-                                product: [
-                                    "ModuleB",
-                                    "module-b",
-                                    null,
-                                    null
-                                ],
-                            },
+                            makeStringDependency("ModuleA"),
+                            makePackageDependency("ModuleB", "module-b"),
                         ];
                         const fixture = new FullTestFixture([
                             "/Package/Path/Package.swift",
@@ -444,24 +421,14 @@ suite('suggestTestFiles Test Suite', () => {
                                 name: "ModuleA",
                                 type: TargetType.Regular,
                                 dependencies: [
-                                    {
-                                        byName: [
-                                            "ModuleB",
-                                            null,
-                                        ],
-                                    },
+                                    makeStringDependency("ModuleB"),
                                 ]
                             },
                             {
                                 name: "ModuleB",
                                 type: TargetType.Regular,
                                 dependencies: [
-                                    {
-                                        byName: [
-                                            "ModuleC",
-                                            null,
-                                        ],
-                                    },
+                                    makeStringDependency("ModuleC"),
                                 ]
                             },
                             {
@@ -472,12 +439,7 @@ suite('suggestTestFiles Test Suite', () => {
                                 name: "ModuleATests",
                                 type: TargetType.Test,
                                 dependencies: [
-                                    {
-                                        byName: [
-                                            "ModuleA",
-                                            null,
-                                        ],
-                                    },
+                                    makeStringDependency("ModuleA"),
                                 ],
                             },
                         ]);
@@ -523,20 +485,8 @@ suite('suggestTestFiles Test Suite', () => {
                 it('must not emit any import declarations found', async () => {
                     const testPackage = makeSingleTargetTestPackage();
                     testPackage.targets[0].dependencies = [
-                        {
-                            byName: [
-                                "ModuleA",
-                                null
-                            ],
-                        },
-                        {
-                            product: [
-                                "ModuleB",
-                                "module-b",
-                                null,
-                                null
-                            ],
-                        },
+                        makeStringDependency("ModuleA"),
+                        makePackageDependency("ModuleB", "module-b"),
                     ];
                     const fixture = new FullTestFixture([
                         "/Package/Path/Package.swift",

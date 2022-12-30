@@ -3,6 +3,7 @@ import { describe, it, beforeEach } from 'mocha';
 import { SwiftDependencyGraph } from '../../../data/swiftDependencyGraph';
 import { SwiftPackageManifest, TargetType } from '../../../data/swiftPackage';
 import { stubPackage } from '../fullTestFixture';
+import { makePackageDependency, makeStringDependency } from '../testMocks/testDataFactory';
 
 suite('swiftDependencyGraph.ts Test Suite', () => {
     describe('SwiftDependencyGraph', () => {
@@ -14,32 +15,15 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
                     name: "Target2",
                     type: TargetType.Regular,
                     dependencies: [
-                        {
-                            byName: [
-                                "Target1",
-                                null,
-                            ],
-                        },
+                        makeStringDependency("Target1"),
                     ],
                 },
                 {
                     name: "Target3",
                     type: TargetType.Regular,
                     dependencies: [
-                        {
-                            byName: [
-                                "Target2",
-                                null,
-                            ],
-                        },
-                        {
-                            product: [
-                                "ExternalTarget",
-                                "external-lib",
-                                null,
-                                null,
-                            ],
-                        },
+                        makeStringDependency("Target2"),
+                        makePackageDependency("ExternalTarget", "external-lib"),
                     ],
                 },
                 {
@@ -50,18 +34,8 @@ suite('swiftDependencyGraph.ts Test Suite', () => {
                     name: "Target4",
                     type: TargetType.Regular,
                     dependencies: [
-                        {
-                            byName: [
-                                "Target1",
-                                null,
-                            ],
-                        },
-                        {
-                            byName: [
-                                "Target3",
-                                null,
-                            ],
-                        },
+                        makeStringDependency("Target1"),
+                        makeStringDependency("Target3"),
                     ],
                 },
             ]);
