@@ -62,17 +62,15 @@ export async function suggestTestFiles(
     filesProgress?.reportMessage("Finding existing test files...");
 
     const operation = async (filePath: vscode.Uri): Promise<SuggestTestFilesResult> => {
-        const packageProvider = context.packageProvider;
-    
-        const pkgManager = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
-        const file = await pkgManager.loadSourceFile(filePath);
-
         if (cancellation?.isCancellationRequested) {
             throw new vscode.CancellationError();
         }
         
-        const pkg = await packageProvider.swiftPackagePathManagerForFile(file.path, cancellation);
-
+        const packageProvider = context.packageProvider;
+    
+        const pkg = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+        const file = await pkg.loadSourceFile(filePath);
+        
         // Ignore files that are not within the sources root directory
         if (!await pkg.isSourceFile(file.path)) {
             return {
