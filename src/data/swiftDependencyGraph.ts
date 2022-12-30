@@ -16,24 +16,26 @@ export class SwiftDependencyGraph extends DirectedGraph<string, number, number> 
         this._targetNameMap = new Map();
 
         for (const target of pkg.targets) {
-            let targetId = this._targetNameMap.get(target.name);
-            if (targetId === undefined) {
-                targetId = this.createNode(target.name);
-                this._targetNameMap.set(target.name, targetId);
-            }
+            let targetId = this.ensureNode(target.name);
 
             const dependencies = targetDependenciesByName(target);
 
             for (const dependencyName of dependencies) {
-                let dependencyId = this._targetNameMap.get(dependencyName);
-                if (dependencyId === undefined) {
-                    dependencyId = this.createNode(dependencyName);
-                    this._targetNameMap.set(dependencyName, dependencyId);
-                }
+                let dependencyId = this.ensureNode(dependencyName);
                 
                 this.createEdge(dependencyId, targetId);
             }
         }
+    }
+
+    private ensureNode(targetName: string) {
+        let targetId = this._targetNameMap.get(targetName);
+        if (targetId === undefined) {
+            targetId = this.createNode(targetName);
+            this._targetNameMap.set(targetName, targetId);
+        }
+
+        return targetId;
     }
 
     dependentsOf(target: SwiftTarget | string): string[] {

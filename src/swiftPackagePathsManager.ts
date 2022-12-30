@@ -31,7 +31,8 @@ interface InternalSwiftTarget extends SwiftTarget {
  * manifest on the file system.
  */
 export class SwiftPackagePathsManager {
-    targetPathList: TargetPathList;
+    private _targetPathList: TargetPathList;
+    private _dependencyGraph: SwiftDependencyGraph;
 
     /** Cached result for last query of `this.availableSourcesPath()` */
     private _sourcesPath?: vscode.Uri | null;
@@ -47,7 +48,8 @@ export class SwiftPackagePathsManager {
         targetPathList: TargetPathList
     ) {
 
-        this.targetPathList = targetPathList;
+        this._targetPathList = targetPathList;
+        this._dependencyGraph = new SwiftDependencyGraph(pkg);
     }
 
     public static async create(
@@ -66,6 +68,11 @@ export class SwiftPackagePathsManager {
             fileSystem,
             targetPathList
         );
+    }
+
+    /** Returns the dependency graph for the package being managed. */
+    dependencyGraph(): SwiftDependencyGraph {
+        return this._dependencyGraph;
     }
 
     /**
@@ -131,7 +138,7 @@ export class SwiftPackagePathsManager {
      * Returns `false` for files in test targets.
      */
     async isSourceFile(fileUri: vscode.Uri): Promise<boolean> {
-        for (const target of this.targetPathList) {
+        for (const target of this._targetPathList) {
             if (target.hasDirectoryPath && isSubdirectory(target.computedPath, fileUri)) {
                 switch (target.type) {
                     case TargetType.Executable:
@@ -162,7 +169,7 @@ export class SwiftPackagePathsManager {
      * given package.
      */
     async isTestFile(fileUri: vscode.Uri): Promise<boolean> {
-        for (const target of this.targetPathList) {
+        for (const target of this._targetPathList) {
             if (target.hasDirectoryPath && isSubdirectory(target.computedPath, fileUri)) {
                 switch (target.type) {
                     case TargetType.Test:
@@ -201,18 +208,13 @@ export class SwiftPackagePathsManager {
         };
     }
 
-    /** Returns the dependency graph for the package being managed. */
-    dependencyGraph(): SwiftDependencyGraph {
-        return new SwiftDependencyGraph(this.pkg);
-    }
-
     /**
      * Returns the path for the given target, looking at either the configured path
      * setting of the target, or by deriving the path from the first predefined source
      * search path, in case no custom path has been provided in the manifest.
      */
     async pathForTarget(target: SwiftTarget): Promise<vscode.Uri> {
-        for (const t of this.targetPathList) {
+        for (const t of this._targetPathList) {
             if (target.name === t.name) {
                 return t.computedPath;
             }
@@ -226,7 +228,7 @@ export class SwiftPackagePathsManager {
      * target folder was found.
      */
     targetForFilePath(filePath: vscode.Uri): SwiftTarget | null {
-        for (const target of this.targetPathList) {
+        for (const target of this._targetPathList) {
             if (isSubdirectory(target.computedPath, filePath)) {
                 return target;
             }
@@ -244,7 +246,7 @@ export class SwiftPackagePathsManager {
      * root.
      */
     async targetNameFromFilePath(filePath: vscode.Uri): Promise<string | null> {
-        for (const target of this.targetPathList) {
+        for (const target of this._targetPathList) {
             if (isSubdirectory(target.computedPath, filePath)) {
                 return target.name;
             }
