@@ -312,88 +312,6 @@ suite('suggestTestFiles Test Suite', () => {
             );
         });
 
-        it('must detect imported modules in original source file', async () => {
-            const testPackage = makeSingleTargetTestPackage();
-            const fixture = new FullTestFixture([
-                "/Package/Path/Package.swift",
-                "/Package/Path/Sources/A.swift",
-                "/Package/Path/Sources/B.swift",
-                "/Package/Path/Tests/",
-            ], undefined, testPackage);
-
-            const files = swiftFiles(
-                fixture.context.fileSystem,
-                {
-                    path: "/Package/Path/Sources/A.swift",
-                    contents: "import Module\n\nclass A { }",
-                },
-                {
-                    path: "/Package/Path/Sources/B.swift",
-                    contents: "import struct OtherModule.Struct\n\nclass B { }",
-                },
-            );
-            const filePaths = files.map(file => file.path);
-            
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
-
-            assert.deepStrictEqual(
-                result.testFiles,
-                [
-                    {
-                        name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
-                        contents: makeExpectedTestFileContentString("Target", "ATests"),
-                        originalFile: filePaths[0],
-                        existsOnDisk: false,
-                        suggestedImports: ["Module"],
-                    },
-                    {
-                        name: "BTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
-                        contents: makeExpectedTestFileContentString("Target", "BTests"),
-                        originalFile: filePaths[1],
-                        existsOnDisk: false,
-                        suggestedImports: ["OtherModule"],
-                    },
-                ]
-            );
-        });
-
-        it('must detect imported modules in original source file separated by semicolons', async () => {
-            const testPackage = makeSingleTargetTestPackage();
-            const fixture = new FullTestFixture([
-                "/Package/Path/Package.swift",
-                "/Package/Path/Sources/A.swift",
-                "/Package/Path/Sources/B.swift",
-                "/Package/Path/Tests/",
-            ], undefined, testPackage);
-
-            const files = swiftFiles(
-                fixture.context.fileSystem,
-                {
-                    path: "/Package/Path/Sources/A.swift",
-                    contents: "import ModuleA;import struct ModuleB.Struct;import ModuleC;\n\nclass A { }",
-                },
-            );
-            const filePaths = files.map(file => file.path);
-            
-            const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
-
-            assert.deepStrictEqual(
-                result.testFiles,
-                [
-                    {
-                        name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
-                        contents: makeExpectedTestFileContentString("Target", "ATests"),
-                        originalFile: filePaths[0],
-                        existsOnDisk: false,
-                        suggestedImports: ["ModuleA", "ModuleB", "ModuleC"],
-                    },
-                ]
-            );
-        });
-
         describe('when detecting import declarations', () => {
             function makeConfig(mode: EmitImportDeclarationsMode): Configuration {
                 return {
@@ -647,7 +565,7 @@ suite('suggestTestFiles Test Suite', () => {
                                 contents: makeExpectedTestFileContentString("Target", "ATests"),
                                 originalFile: filePaths[0],
                                 existsOnDisk: false,
-                                suggestedImports: ["ModuleA", "ModuleB", "ModuleC"],
+                                suggestedImports: [],
                             },
                         ]
                     );

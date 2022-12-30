@@ -5,6 +5,14 @@ import { StringBuilder } from '../../../syntax/stringBuilder';
 
 suite('StringBuilder Test Suite', () => {
     describe('ensureBufferEnd', () => {
+        it("appends the full text if the buffer is empty", () => {
+            const sut = new StringBuilder("");
+            
+            sut.ensureBufferEnd("0123");
+
+            assert.strictEqual(sut.build(), "0123");
+        });
+
         it("appends the full text if it doesn't match the buffer's end", () => {
             const sut = new StringBuilder("abcdef");
             
