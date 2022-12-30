@@ -12,7 +12,6 @@ import { SwiftFileBuilder } from './syntax/swiftFileBuilder';
 import { SwiftFile } from './data/swiftFile';
 import { SwiftPackagePathsManager } from './swiftPackagePathsManager';
 import { SwiftTarget } from './data/swiftPackage';
-import { FileSystemInterface } from './interfaces/fileSystemInterface';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;

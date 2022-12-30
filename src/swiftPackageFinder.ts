@@ -17,7 +17,7 @@ export async function mapPathsToSwiftPackages(
     packageProvier: PackageProviderInterface,
     progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
-): Promise<[packageMap: Map<vscode.Uri, vscode.Uri[]>, notInPackage: vscode.Uri[]]> {
+): Promise<[packageMap: Map<string, vscode.Uri[]>, notInPackage: vscode.Uri[]]> {
 
     const generator = (fileUri: vscode.Uri): Promise<[vscode.Uri | null, vscode.Uri]> => {
         return packageProvier.swiftPackageManifestPathForFile(fileUri, cancellation)
@@ -37,7 +37,7 @@ export async function mapPathsToSwiftPackages(
         cancellation
     );
 
-    const packageMap = new Map<vscode.Uri, vscode.Uri[]>();
+    const packageMap = new Map<string, vscode.Uri[]>();
     const nonPackage: vscode.Uri[] = [];
 
     for (const packagePathPair of packagePathPairs) {
@@ -48,9 +48,9 @@ export async function mapPathsToSwiftPackages(
             continue;
         }
 
-        const existing = packageMap.get(packagePath);
+        const existing = packageMap.get(packagePath.path);
         if (!existing) {
-            packageMap.set(packagePath, [filePath]);
+            packageMap.set(packagePath.path, [filePath]);
         } else {
             existing.push(filePath);
         }
