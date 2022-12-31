@@ -253,7 +253,7 @@ export class SwiftPackagePathsManager {
         }
 
         const candidates: string[] = [];
-        for (const sourcePath of definitions.predefinedSourceSearchPaths) {
+        for (const sourcePath of definitions.predefinedSourceSearchPaths.concat(definitions.predefinedTestSearchPaths)) {
             const targetPath = vscode.Uri.joinPath(this.packageRoot, sourcePath);
             if (!isSubdirectory(targetPath, filePath)) {
                 continue;
@@ -286,6 +286,38 @@ export class SwiftPackagePathsManager {
         for (const t of this.pkg.targets) {
             // TODO: Allow customizing test target search patterns
             if (t.type === TargetType.Test && t.name === `${target.name}Tests`) {
+                return t;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Returns a potential source target for a given input test target, or `null`
+     * if `target` is `null` or if no potential source target was found.
+     */
+    sourceTargetForTestTarget(target: SwiftTarget | null): SwiftTarget | null {
+        if (target === null) {
+            return null;
+        }
+        if (target.type !== TargetType.Test) {
+            return null;
+        }
+
+        // TODO: Allow customizing test target search patterns
+        if (!target.name.endsWith("Tests")) {
+            return null;
+        }
+
+        const searchTarget = target.name.slice(0, target.name.length - "Tests".length);
+
+        for (const t of this.pkg.targets) {
+            if (t.type === TargetType.Test) {
+                continue;
+            }
+
+            if (t.name === searchTarget) {
                 return t;
             }
         }

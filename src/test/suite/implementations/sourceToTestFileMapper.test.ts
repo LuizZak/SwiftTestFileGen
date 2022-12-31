@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as assert from 'assert';
-import { describe, it, test } from 'mocha';
+import { describe, it, test, beforeEach } from 'mocha';
 import { SwiftPackageManifest, TargetType } from '../../../data/swiftPackage';
 import { FullTestFixture, swiftFiles } from '../fullTestFixture';
 import { SourceToTestFileMapper } from '../../../implementations/sourceToTestFileMapper';
@@ -36,189 +36,344 @@ describe("SourceToTestFileMapper Test Suite", () => {
     }
 
     describe('suggestedTestPathFor', () => {
-        test('with target rooted in Sources/', async () => {
-            const filePaths = await setupTestFixture(
-                makeSingleTargetTestPackage(),
-                [
-                    "/Package/Path/Package.swift",
-                    "/Package/Path/Sources/A.swift",
-                    "/Package/Path/Sources/B.swift",
-                    "/Package/Path/Tests/",
-                ],
-                [
-                    "/Package/Path/Sources/A.swift",
-                ],
-            );
+        describe('with target rooted in Sources/', () => {
+            let filePaths: vscode.Uri[];
 
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/A.swift
-                await sut.suggestedTestPathFor(filePaths[1]),
-                {
-                    originalPath: filePaths[1],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
-                    diagnostics: [],
-                },
-            );
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/B.swift
-                await sut.suggestedTestPathFor(filePaths[2]),
-                {
-                    originalPath: filePaths[2],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
-                    diagnostics: [],
-                },
-            );
+            beforeEach(async () => {
+                filePaths = await setupTestFixture(
+                    makeSingleTargetTestPackage(),
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/A.swift",
+                        "/Package/Path/Sources/B.swift",
+                        "/Package/Path/Tests/",
+                        "/Package/Path/Tests/ATests.swift",
+                        "/Package/Path/Tests/BTests.swift",
+                    ],
+                    [
+                        "/Package/Path/Sources/A.swift",
+                    ],
+                );
+            });
+
+            it('should properly map files from Sources/ to Tests/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/A.swift
+                    await sut.suggestedTestPathFor(filePaths[1]),
+                    {
+                        originalPath: filePaths[1],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/B.swift
+                    await sut.suggestedTestPathFor(filePaths[2]),
+                    {
+                        originalPath: filePaths[2],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
+                        diagnostics: [],
+                    },
+                );
+            });
+
+            it('should properly map files from Tests/ to Sources/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/ATests.swift
+                    await sut.suggestedSourcePathFor(filePaths[4]),
+                    {
+                        originalPath: filePaths[4],
+                        transformedPath: filePaths[1],
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/BTests.swift
+                    await sut.suggestedSourcePathFor(filePaths[5]),
+                    {
+                        originalPath: filePaths[5],
+                        transformedPath: filePaths[2],
+                        diagnostics: [],
+                    },
+                );
+            });
         });
 
-        test('with file in nested folder', async () => {
-            const filePaths = await setupTestFixture(
-                makeMultiTargetTestPackage(),
-                [
-                    "/Package/Path/Package.swift",
-                    "/Package/Path/Sources/Target/SubfolderA/A.swift",
-                    "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
-                    "/Package/Path/Tests/",
-                ],
-                [
-                    "/Package/Path/Sources/Target/SubfolderA/A.swift",
-                    "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
-                ],
-            );
+        describe('with file in nested folder', () => {
+            let filePaths: vscode.Uri[];
 
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/Target/SubfolderA/A.swift
-                await sut.suggestedTestPathFor(filePaths[1]),
-                {
-                    originalPath: filePaths[1],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
-                    diagnostics: [],
-                },
-            );
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift
-                await sut.suggestedTestPathFor(filePaths[2]),
-                {
-                    originalPath: filePaths[2],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
-                    diagnostics: [],
-                },
-            );
+            beforeEach(async () => {
+                filePaths = await setupTestFixture(
+                    makeMultiTargetTestPackage(),
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/Target/SubfolderA/A.swift",
+                        "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
+                        "/Package/Path/Tests/",
+                        "/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift",
+                        "/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift",
+                    ],
+                    [
+                        "/Package/Path/Sources/Target/SubfolderA/A.swift",
+                        "/Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift",
+                    ],
+                );
+            });
+
+            it('should properly map files from Sources/ to Tests/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/Target/SubfolderA/A.swift
+                    await sut.suggestedTestPathFor(filePaths[1]),
+                    {
+                        originalPath: filePaths[1],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift
+                    await sut.suggestedTestPathFor(filePaths[2]),
+                    {
+                        originalPath: filePaths[2],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
+                        diagnostics: [],
+                    },
+                );
+            });
+
+            it('should properly map files from Tests/ to Sources/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/TargetTests/SubfolderA/ATests.swift
+                    await sut.suggestedSourcePathFor(filePaths[4]),
+                    {
+                        originalPath: filePaths[4],
+                        transformedPath: filePaths[1],
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift
+                    await sut.suggestedSourcePathFor(filePaths[5]),
+                    {
+                        originalPath: filePaths[5],
+                        transformedPath: filePaths[2],
+                        diagnostics: [],
+                    },
+                );
+            });
         });
 
-        test('with target with explicit path', async () => {
-            const filePaths = await setupTestFixture(
-                makeMultiTargetTestPackage(),
-                [
-                    "/Package/Path/Package.swift",
-                    "/Package/Path/Sources/ExplicitPath/A.swift",
-                    "/Package/Path/Sources/ExplicitPath/B.swift",
-                    "/Package/Path/Tests/",
-                ],
-                [
-                    "/Package/Path/Sources/ExplicitPath/A.swift",
-                    "/Package/Path/Sources/ExplicitPath/B.swift",
-                ],
-            );
+        describe('with target with explicit path', () => {
+            let filePaths: vscode.Uri[];
 
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/ExplicitPath/A.swift
-                await sut.suggestedTestPathFor(filePaths[1]),
-                {
-                    originalPath: filePaths[1],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
-                    diagnostics: [],
-                },
-            );
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift
-                await sut.suggestedTestPathFor(filePaths[2]),
-                {
-                    originalPath: filePaths[2],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
-                    diagnostics: [],
-                },
-            );
+            beforeEach(async () => {
+                filePaths = await setupTestFixture(
+                    makeMultiTargetTestPackage(),
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/ExplicitPath/A.swift",
+                        "/Package/Path/Sources/ExplicitPath/B.swift",
+                        "/Package/Path/Tests/",
+                        "/Package/Path/Tests/TargetWithPathTests/ATests.swift",
+                        "/Package/Path/Tests/TargetWithPathTests/BTests.swift",
+                    ],
+                    [
+                        "/Package/Path/Sources/ExplicitPath/A.swift",
+                        "/Package/Path/Sources/ExplicitPath/B.swift",
+                    ],
+                );
+            });
+
+            it('should properly map files from Sources/ to Tests/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/ExplicitPath/A.swift
+                    await sut.suggestedTestPathFor(filePaths[1]),
+                    {
+                        originalPath: filePaths[1],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/ExplicitPath/SubfolderA/SubfolderB/B.swift
+                    await sut.suggestedTestPathFor(filePaths[2]),
+                    {
+                        originalPath: filePaths[2],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
+                        diagnostics: [],
+                    },
+                );
+            });
+
+            it('should properly map files from Tests/ to Sources/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/TargetWithPathTests/ATests.swift
+                    await sut.suggestedSourcePathFor(filePaths[4]),
+                    {
+                        originalPath: filePaths[4],
+                        transformedPath: filePaths[1],
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/TargetWithPathTests/BTests.swift
+                    await sut.suggestedSourcePathFor(filePaths[5]),
+                    {
+                        originalPath: filePaths[5],
+                        transformedPath: filePaths[2],
+                        diagnostics: [],
+                    },
+                );
+            });
         });
 
-        test('with test target with explicit path', async () => {
-            const filePaths = await setupTestFixture(
-                makeExplicitTestTargetPathTestPackage(),
-                [
-                    "/Package/Path/Package.swift",
-                    "/Package/Path/Sources/Target/A.swift",
-                    "/Package/Path/Sources/Target/B.swift",
-                    "/Package/Path/Tests/AlternatePath/",
-                ],
-                [
-                    "/Package/Path/Sources/Target/A.swift",
-                    "/Package/Path/Sources/Target/B.swift",
-                ],
-            );
+        describe('with test target with explicit path', () => {
+            let filePaths: vscode.Uri[];
 
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/Target/A.swift
-                await sut.suggestedTestPathFor(filePaths[1]),
-                {
-                    originalPath: filePaths[1],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
-                    diagnostics: [],
-                },
-            );
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/Target/B.swift
-                await sut.suggestedTestPathFor(filePaths[2]),
-                {
-                    originalPath: filePaths[2],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
-                    diagnostics: [],
-                },
-            );
+            beforeEach(async () => {
+                filePaths = await setupTestFixture(
+                    makeExplicitTestTargetPathTestPackage(),
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/Target/A.swift",
+                        "/Package/Path/Sources/Target/B.swift",
+                        "/Package/Path/Tests/AlternatePath/",
+                        "/Package/Path/Tests/AlternatePath/ATests.swift",
+                        "/Package/Path/Tests/AlternatePath/BTests.swift",
+                    ],
+                    [
+                        "/Package/Path/Sources/Target/A.swift",
+                        "/Package/Path/Sources/Target/B.swift",
+                    ],
+                );
+            });
+
+            it('should properly map files from Sources/ to Tests/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/Target/A.swift
+                    await sut.suggestedTestPathFor(filePaths[1]),
+                    {
+                        originalPath: filePaths[1],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/Target/B.swift
+                    await sut.suggestedTestPathFor(filePaths[2]),
+                    {
+                        originalPath: filePaths[2],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
+                        diagnostics: [],
+                    },
+                );
+            });
+
+            it('should properly map files from Tests/ to Sources/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/AlternatePath/ATests.swift
+                    await sut.suggestedSourcePathFor(filePaths[4]),
+                    {
+                        originalPath: filePaths[4],
+                        transformedPath: filePaths[1],
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/AlternatePath/BTests.swift
+                    await sut.suggestedSourcePathFor(filePaths[5]),
+                    {
+                        originalPath: filePaths[5],
+                        transformedPath: filePaths[2],
+                        diagnostics: [],
+                    },
+                );
+            });
         });
 
-        test('with unknown targets', async () => {
-            const filePaths = await setupTestFixture(
-                makeExplicitTestTargetPathTestPackage(),
-                [
-                    "/Package/Path/Package.swift",
-                    "/Package/Path/Sources/TargetA/A.swift",
-                    "/Package/Path/Sources/TargetB/B.swift",
-                    "/Package/Path/Sources/C.swift",
-                    "/Package/Path/Tests/",
-                ],
-                [
-                    "/Package/Path/Sources/TargetA/A.swift",
-                    "/Package/Path/Sources/TargetB/B.swift",
-                    "/Package/Path/Sources/C.swift",
-                ],
-            );
+        describe('with unknown targets', () => {
+            let filePaths: vscode.Uri[];
 
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/TargetA/A.swift
-                await sut.suggestedTestPathFor(filePaths[1]),
-                {
-                    originalPath: filePaths[1],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
-                    diagnostics: [],
-                },
-            );
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/TargetA/B.swift
-                await sut.suggestedTestPathFor(filePaths[2]),
-                {
-                    originalPath: filePaths[2],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
-                    diagnostics: [],
-                },
-            );
-            assert.deepStrictEqual(
-                // /Package/Path/Sources/C.swift
-                await sut.suggestedTestPathFor(filePaths[3]),
-                {
-                    originalPath: filePaths[3],
-                    transformedPath: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
-                    diagnostics: [],
-                },
-            );
+            beforeEach(async () => {
+                filePaths = await setupTestFixture(
+                    makeEmptyTestPackage(),
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/TargetA/A.swift",
+                        "/Package/Path/Sources/TargetB/B.swift",
+                        "/Package/Path/Sources/C.swift",
+                        "/Package/Path/Tests/",
+                        "/Package/Path/Tests/TargetATests/ATests.swift",
+                        "/Package/Path/Tests/TargetBTests/BTests.swift",
+                        "/Package/Path/Tests/CTests.swift",
+                    ],
+                    [
+                        "/Package/Path/Sources/TargetA/A.swift",
+                        "/Package/Path/Sources/TargetB/B.swift",
+                        "/Package/Path/Sources/C.swift",
+                    ],
+                );
+            });
+
+            it('should properly map files from Sources/ to Tests/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/TargetA/A.swift
+                    await sut.suggestedTestPathFor(filePaths[1]),
+                    {
+                        originalPath: filePaths[1],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/TargetA/B.swift
+                    await sut.suggestedTestPathFor(filePaths[2]),
+                    {
+                        originalPath: filePaths[2],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Sources/C.swift
+                    await sut.suggestedTestPathFor(filePaths[3]),
+                    {
+                        originalPath: filePaths[3],
+                        transformedPath: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
+                        diagnostics: [],
+                    },
+                );
+            });
+
+            it('should properly map files from Tests/ to Sources/', async () => {
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/TargetATests/ATests.swift
+                    await sut.suggestedSourcePathFor(filePaths[5]),
+                    {
+                        originalPath: filePaths[5],
+                        transformedPath: filePaths[1],
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/TargetBTests/BTests.swift
+                    await sut.suggestedSourcePathFor(filePaths[6]),
+                    {
+                        originalPath: filePaths[6],
+                        transformedPath: filePaths[2],
+                        diagnostics: [],
+                    },
+                );
+                assert.deepStrictEqual(
+                    // /Package/Path/Tests/CTests.swift
+                    await sut.suggestedSourcePathFor(filePaths[7]),
+                    {
+                        originalPath: filePaths[7],
+                        transformedPath: filePaths[3],
+                        diagnostics: [],
+                    },
+                );
+            });
         });
         
         test('with files in tests folder', async () => {

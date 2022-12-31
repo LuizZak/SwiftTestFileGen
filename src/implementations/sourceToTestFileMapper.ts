@@ -85,6 +85,85 @@ export class SourceToTestFileMapper {
     }
 
     /**
+     * From a given test file URL that is contained within a known Swift package
+     * target directory, returns a path to a source file that mirrors that test
+     * file's name and relative path, but as an absolute path in an associated
+     * source target.
+     *
+     * Returns a `null` transformed path if the file's target could not be deduced.
+     */
+    async suggestedSourcePathFor(testFileUrl: vscode.Uri): Promise<SourceToTestMapResult> {
+        if (!(await this.pkg.isTestFile(testFileUrl))) {
+            return {
+                originalPath: testFileUrl,
+                transformedPath: null,
+                diagnostics: [{
+                    message: "File is not contained within a recognized Tests/ folder",
+                    sourceFile: testFileUrl,
+                    kind: TestFileDiagnosticKind.fileNotInTestsFolder,
+                }]
+            };
+        }
+
+        // Compute source file name
+        const fileNameWithoutExt = path.basename(testFileUrl.fsPath, ".swift");
+        if (!fileNameWithoutExt.endsWith("Tests")) {
+            return {
+                originalPath: testFileUrl,
+                transformedPath: null,
+                diagnostics: [{
+                    message: "Test file name has unrecognized test file name pattern",
+                    sourceFile: testFileUrl,
+                    kind: TestFileDiagnosticKind.unrecognizedTestFileNamePattern,
+                }]
+            };
+        }
+
+        const sourceFileName = `${fileNameWithoutExt.slice(0, fileNameWithoutExt.length - "Tests".length)}.swift`;
+
+        const target = this.pkg.targetForFilePath(testFileUrl);
+        const targetName = target?.name ?? await this.pkg.targetNameFromFilePath(testFileUrl);
+        const sourceTarget = this.pkg.sourceTargetForTestTarget(target);
+
+        // Compute relative paths to maintain directory substructure in sources folder
+        const fileRelativeDirPath = await this.findRelativeTargetPath(testFileUrl);
+        if (typeof fileRelativeDirPath !== "string") {
+            return {
+                originalPath: testFileUrl,
+                transformedPath: null,
+                ...fileRelativeDirPath
+            };
+        }
+
+        // Transpose relative path to test target
+        const sourcesPath = await this.pkg.availableSourcesPath();
+
+        const fullTestFilePath = await this.transposeToSourceTarget(
+            testFileUrl,
+            fileRelativeDirPath,
+            sourcesPath,
+            sourceFileName,
+            sourceTarget,
+            targetName,
+            this.testToSourceNameMapper
+        );
+
+        if (!(fullTestFilePath instanceof vscode.Uri)) {
+            return {
+                originalPath: testFileUrl,
+                transformedPath: null,
+                ...fullTestFilePath
+            };
+        }
+
+        return {
+            originalPath: testFileUrl,
+            transformedPath: fullTestFilePath,
+            diagnostics: [],
+        };
+    }
+
+    /**
      * Returns the relative path that a given source file has compared to the
      * root of that source file's target folder.
      *
@@ -217,5 +296,79 @@ export class SourceToTestFileMapper {
                 sourceFile: fullFileUri,
             }],
         };
+    }
+
+    async transposeToSourceTarget(
+        fullFileUri: vscode.Uri,
+        fileRelativeDirPath: string,
+        sourcesRootPath: vscode.Uri | null,
+        fileName: string,
+        target: SwiftTarget | null,
+        targetName: string | null,
+        targetNameTransformer: (original: string) => string | null
+    ): Promise<FallibleOperation<vscode.Uri>> {
+
+        // 1. Target w/ explicit path
+        if (typeof target?.path === "string") {
+            return vscode.Uri.joinPath(this.pkg.packageRoot, target.path, fileRelativeDirPath, fileName);
+        }
+        
+        // 2. Target w/o explicit path: Path is assumed '[Sources|Tests]/Target'
+        if (target) {
+            const sourceTargetPath = await this.pkg.pathForTarget(target);
+
+            return vscode.Uri.joinPath(sourceTargetPath, fileRelativeDirPath, fileName);
+        }
+        
+        // 3. Deduced target name from path in the form './[Sources|Tests]/Target/File.swift'
+        if (typeof targetName === "string") {
+            const finalTargetName = targetNameTransformer(targetName);
+
+            if (!sourcesRootPath || !finalTargetName) {
+                return {
+                    diagnostics: [{
+                        message: "Could not locate sources folder for a file's package",
+                        kind: TestFileDiagnosticKind.sourcesFolderNotFound,
+                        sourceFile: fullFileUri,
+                    }],
+                };
+            }
+
+            return vscode.Uri.joinPath(
+                sourcesRootPath,
+                finalTargetName,
+                fileRelativeDirPath,
+                fileName
+            );
+        }
+        
+        // 4. Make path relative to first existing default source subfolder
+        if (sourcesRootPath) {
+            return vscode.Uri.joinPath(
+                sourcesRootPath,
+                fileRelativeDirPath,
+                fileName
+            );
+        }
+        
+        return {
+            diagnostics: [{
+                message: "Could not locate sources folder for a file's package",
+                kind: TestFileDiagnosticKind.sourcesFolderNotFound,
+                sourceFile: fullFileUri,
+            }],
+        };
+    }
+
+    private sourceToTestNameMapper(name: string): string {
+        return `${name}Tests`;
+    }
+
+    private testToSourceNameMapper(name: string): string | null {
+        if (name.endsWith("Tests")) {
+            return name.slice(0, name.length - "Tests".length);
+        }
+
+        return null;
     }
 }

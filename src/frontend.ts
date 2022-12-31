@@ -43,3 +43,22 @@ export async function gotoTestFileEntry(fileUri: vscode.Uri, context: Invocation
         );
     });
 }
+
+/** Main entry point for `Go to Source File` command */
+export async function gotoSourceFileEntry(fileUri: vscode.Uri, context: InvocationContext) {
+    await context.workspace.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: "Going to source file..."
+    }, (progress, cancellation) => {
+
+        const nestedProgress = new NestableProgress(progress);
+
+        return gotoTestFileCommand(
+            fileUri,
+            context,
+            vscode.ViewColumn.Active,
+            nestedProgress,
+            cancellation
+        );
+    });
+}
