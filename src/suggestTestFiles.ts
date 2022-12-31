@@ -12,6 +12,7 @@ import { SwiftFileBuilder } from './syntax/swiftFileBuilder';
 import { SwiftFile } from './data/swiftFile';
 import { SwiftPackagePathsManager } from './swiftPackagePathsManager';
 import { SwiftTarget } from './data/swiftPackage';
+import { SourceToTestFileMapper } from './implementations/sourceToTestFileMapper';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -70,15 +71,13 @@ export async function suggestTestFiles(
         const pkg = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
         const file = await pkg.loadSourceFile(filePath);
         
-        // Ignore files that are not within the sources root directory
-        if (!await pkg.isSourceFile(file.path)) {
+        const pathMapper = new SourceToTestFileMapper(pkg);
+
+        const suggestedTestPath = await pathMapper.suggestedTestPathFor(file.path);
+        if (!suggestedTestPath.transformedPath) {
             return {
                 testFiles: [],
-                diagnostics: [{
-                    message: "File is not contained within a recognized Sources/ folder",
-                    sourceFile: file.path,
-                    kind: TestFileDiagnosticKind.fileNotInSourcesFolder
-                }]
+                ...suggestedTestPath,
             };
         }
 
@@ -88,118 +87,9 @@ export async function suggestTestFiles(
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
         const target = pkg.targetForFilePath(file.path);
-        const targetName = target?.name ?? await pkg.targetNameFromFilePath(file.path);
-        const testTarget = pkg.testTargetForTarget(target);
-        const testsPath = await pkg.availableTestsPath();
-
-        // Compute relative paths to maintain directory substructure in tests folder
-        let fileRelativeDirPath: string;
-        const fileDir = path.dirname(file.path.fsPath);
-
-        // Priority when finding root target path to compute relative paths onto:
-        // 1. Target w/ explicit path
-        // 2. Target w/o explicit path: Path is assumed 'Sources/Target'
-        // 3. Deduced target name from path in the form './Sources/Target/File.swift'
-        // 4. Make path relative to first existing default sources subfolder
-
-        if (typeof target?.path === "string") {
-            fileRelativeDirPath = path.relative(path.join(pkg.packageRoot.fsPath, target.path), fileDir);
-        } else if (target) {
-            const targetPath = await pkg.pathForTarget(target);
-
-            fileRelativeDirPath = path.relative(targetPath.fsPath, fileDir);
-        } else if (typeof targetName === "string") {
-            const sourcesPath = await pkg.availableSourcesPath();
-            if (sourcesPath === null) {
-                return {
-                    testFiles: [],
-                    diagnostics: [{
-                        message: "Cannot find folder that contains a source file!",
-                        kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
-                        sourceFile: file.path
-                    }]
-                };
-            }
-
-            const targetPath = vscode.Uri.joinPath(sourcesPath, targetName);
-
-            fileRelativeDirPath = path.relative(targetPath.fsPath, fileDir);
-        } else {
-            const sourcesPath = await pkg.availableSourcesPath();
-            if (sourcesPath === null) {
-                return {
-                    testFiles: [],
-                    diagnostics: [{
-                        message: "Cannot find folder that contains a source file!",
-                        kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
-                        sourceFile: file.path
-                    }]
-                };
-            }
-
-            fileRelativeDirPath = path.relative(sourcesPath.fsPath, fileDir);
-        }
-
-        // Compute full test file path
-        
-        // Priority when finding root target path to compute relative paths onto:
-        // 1. Test target w/ explicit path
-        // 2. Test target w/o explicit path: Path is assumed 'Tests/Target'
-        // 3. Deduced test target name from path in the form './Sources/Target/File.swift'
-        // 4. Make path relative to first existing default tests subfolder
-
-        let fullTestFilePath: vscode.Uri;
-        if (typeof testTarget?.path === "string") {
-            fullTestFilePath = vscode.Uri.joinPath(pkg.packageRoot, testTarget.path, fileRelativeDirPath, testFileName);
-        } else if (testTarget) {
-            const testTargetPath = await pkg.pathForTarget(testTarget);
-
-            fullTestFilePath = vscode.Uri.joinPath(testTargetPath, fileRelativeDirPath, testFileName);
-        } else if (typeof targetName === "string") {
-            if (!testsPath) {
-                return {
-                    testFiles: [],
-                    diagnostics: [{
-                        message: "Could not locate tests folder for a file's package",
-                        kind: TestFileDiagnosticKind.testsFolderNotFound,
-                        sourceFile: file.path
-                    }]
-                };
-            }
-
-            // Replace <TargetName>/ with <TargetName>Tests/
-            let testTargetName = `${targetName}Tests`;
-
-            fullTestFilePath =
-                vscode.Uri.joinPath(
-                    testsPath,
-                    testTargetName,
-                    fileRelativeDirPath,
-                    testFileName
-                );
-        } else {
-            if (!testsPath) {
-                return {
-                    testFiles: [],
-                    diagnostics: [{
-                        message: "Could not locate tests folder for a file's package",
-                        kind: TestFileDiagnosticKind.testsFolderNotFound,
-                        sourceFile: file.path
-                    }]
-                };
-            }
-
-            fullTestFilePath =
-                vscode.Uri.joinPath(
-                    testsPath,
-                    fileRelativeDirPath,
-                    testFileName
-                );
-        }
 
         const result = await generateTestFile(
-            fullTestFilePath,
-            targetName,
+            suggestedTestPath.transformedPath,
             file,
             target,
             testClassName,
@@ -211,7 +101,7 @@ export async function suggestTestFiles(
 
         return {
             testFiles: [result],
-            diagnostics: []
+            diagnostics: suggestedTestPath.diagnostics
         };
     };
 
@@ -222,7 +112,6 @@ export async function suggestTestFiles(
 
 async function generateTestFile(
     fullTestFilePath: vscode.Uri,
-    targetName: string | null,
     sourceFile: SwiftFile,
     target: SwiftTarget | null,
     testClassName: string,
@@ -231,6 +120,8 @@ async function generateTestFile(
     context: InvocationContext,
     configuration: Configuration
 ): Promise<SwiftTestFile> {
+
+    const targetName = target?.name ?? await pkg.targetNameFromFilePath(sourceFile.path);
 
     const syntaxHelper = new SwiftFileSyntaxHelper(
         sourceFile.path,
@@ -303,7 +194,7 @@ async function generateTestFile(
         originalFile: sourceFile.path,
         existsOnDisk: false,
         suggestedImports: detectedImports,
-        contents: fb.build()
+        contents: fb.build(),
     };
 
     return result;

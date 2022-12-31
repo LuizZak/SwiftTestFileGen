@@ -19,6 +19,12 @@ export interface TestFileDiagnosticResult {
 /** Describes a type that contains a list of diagnostics attached to it. */
 export type OperationWithDiagnostics<T> = T & { diagnostics: TestFileDiagnosticResult[] };
 
+/**
+ * Describes the intersection between an operation's results, or a list of
+ * diagnostics.
+ */
+export type FallibleOperation<T> = T | { diagnostics: TestFileDiagnosticResult[] };
+
 export enum TestFileDiagnosticKind {
     /** An input file was not located in a recognized Sources folder. */
     fileNotInSourcesFolder,

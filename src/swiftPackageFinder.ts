@@ -1,4 +1,3 @@
-import path = require('path');
 import * as vscode from 'vscode';
 import { NestableProgress, NestableProgressReportStyle } from './progress/nestableProgress';
 import { limitWithParameters } from './asyncUtils/asyncUtils';

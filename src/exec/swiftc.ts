@@ -1,4 +1,4 @@
-import { exec, spawn, SpawnOptionsWithoutStdio } from 'child_process';
+import { spawn, SpawnOptionsWithoutStdio } from 'child_process';
 import * as vscode from 'vscode';
 
 export async function dumpSwiftAst(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<string> {
