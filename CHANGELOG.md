@@ -4,7 +4,7 @@ All notable changes to the "Swift Test File Generator" extension will be documen
 
 ## [import-detection]
 
-- Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enabled mirroring certain import declarations from the original source file into the test file.
+- Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enables copying import declarations from the original source file into the test file as a quick convenience.
 
 ## [0.4.1]
 
