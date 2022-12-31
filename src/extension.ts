@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Configuration } from './data/configurations/configuration';
+import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 import { ConfirmationMode } from './data/configurations/confirmationMode';
 import { generateTestFilesEntry, gotoTestFileEntry } from './frontend';
 import { FileSystem } from './implementations/fileSystem';
@@ -9,6 +9,8 @@ import { InvocationContext } from './interfaces/context';
 import { FileSystemInterface } from './interfaces/fileSystemInterface';
 import { PackageProviderInterface } from './interfaces/packageProviderInterface';
 import { VscodeWorkspaceInterface } from './interfaces/vscodeWorkspaceInterface';
+import { SwiftToolchainInterface } from './interfaces/swiftToolchainInterface';
+import { FileDiskSwiftToolchain } from './implementations/fileDiskSwiftToolchain';
 
 export async function activate(context: vscode.ExtensionContext) {
 	let disposable: vscode.Disposable;
@@ -35,17 +37,23 @@ export async function activate(context: vscode.ExtensionContext) {
 
 function makeContext(): InvocationContext {
 	const fs = fileSystem();
+	const toolchain = swiftToolchain();
 
 	return {
 		fileSystem: fs,
 		workspace: workspace(),
-		packageProvider: packageProvider(fs),
-		configuration: configuration()
+		packageProvider: packageProvider(fs, toolchain),
+		configuration: configuration(),
+		toolchain: toolchain,
 	};
 }
 
 function fileSystem(): FileSystemInterface {
 	return new FileSystem();
+}
+
+function swiftToolchain(): SwiftToolchainInterface {
+	return new FileDiskSwiftToolchain();
 }
 
 function workspace(): VscodeWorkspaceInterface {
@@ -55,7 +63,8 @@ function workspace(): VscodeWorkspaceInterface {
 function configuration(): Configuration {
 	const config = vscode.workspace.getConfiguration('swiftTestFileGen');
 	const fileGen: Configuration["fileGen"] = config.get("fileGen") ?? {
-		confirmation: ConfirmationMode.always
+		confirmation: ConfirmationMode.always,
+		emitImportDeclarations: EmitImportDeclarationsMode.never,
 	};
 	const gotoTestFile: Configuration["gotoTestFile"] = config.get("gotoTestFile") ?? {
 		useFilenameHeuristics: false,
@@ -68,6 +77,6 @@ function configuration(): Configuration {
 	};
 }
 
-function packageProvider(fileSystem: FileSystemInterface): PackageProviderInterface {
-	return new FileDiskPackageProvider(fileSystem);
+function packageProvider(fileSystem: FileSystemInterface, toolchain: SwiftToolchainInterface): PackageProviderInterface {
+	return new FileDiskPackageProvider(fileSystem, toolchain);
 }

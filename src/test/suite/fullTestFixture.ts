@@ -1,10 +1,11 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { Configuration } from '../../data/configurations/configuration';
-import { makeTestContext, TestContext, TestVscodeWorkspaceEdit } from './testMocks/testContext';
+import { makeTestContext, TestContext, TestFileSystem, TestVscodeWorkspaceEdit } from './testMocks/testContext';
 import { SwiftPackageManifest, SwiftTarget, TargetType } from '../../data/swiftPackage';
 import { groupBy } from '../../algorithms/groupBy';
 import path = require('path');
+import { SwiftFile } from '../../data/swiftFile';
 
 export interface ShowFileArguments {
     fileUri: vscode.Uri | string,
@@ -206,7 +207,7 @@ export class FullTestFixture {
         const textReplaced = wsEdits.flatMap(ws => ws.replaceDocumentText_calls);
 
         const textReplaceByFileUri = groupBy(textReplaced, (file) => {
-            return file[0];
+            return file[0].path;
         });
 
         for (let index = expectedFiles.length - 1; index >= 0; index--) {
@@ -235,7 +236,7 @@ export class FullTestFixture {
             }
 
             if (expectedContents) {
-                const fileReplaces = textReplaceByFileUri.get(fileCreated);
+                const fileReplaces = textReplaceByFileUri.get(fileCreated.path);
                 if (!fileReplaces || fileReplaces.length === 0) {
                     assert.fail(
                         `Expected to find text replace entry for file ${expectedFile} with contents: ${expectedContents} but found none.`
@@ -275,15 +276,56 @@ export function fileUris(...filePaths: string[]): vscode.Uri[] {
     return filePaths.map(fileUri);
 }
 
+export function swiftFiles(fileDisk: TestFileSystem, ...filePaths: ({ path: string, contents: string } | string | vscode.Uri)[]): SwiftFile[] {
+    return filePaths.map((value) => {
+        if (typeof value === "string") {
+            return {
+                name: path.basename(value),
+                path: fileUri(value),
+                contents: "",
+                existsOnDisk: true
+            };
+        }
+        if (value instanceof vscode.Uri) {
+            return {
+                name: path.basename(value.fsPath),
+                path: value,
+                contents: "",
+                existsOnDisk: true
+            };
+        }
+
+        fileDisk.createOrUpdateFileContents(fileUri(value.path), value.contents);
+
+        return {
+            name: path.basename(value.path),
+            path: fileUri(value.path),
+            contents: value.contents,
+            existsOnDisk: true
+        };
+    });
+}
+
 export function fileUri(filePath: string): vscode.Uri {
     return vscode.Uri.file(filePath);
 }
 
 /** Helper function for generating an expected templated test file string. */
-export function makeExpectedTestFileContentString(targetName: string, testName: string): string {
+export function makeExpectedTestFileContentString(
+    targetName: string,
+    testName: string,
+    ...extraImports: string[]
+): string {
+    let importLines: string;
+    if (extraImports.length > 0) {
+        importLines = `\n${extraImports.map((m) => `import ${m}`).join("\n")}`;
+    } else {
+        importLines = "";
+    }
+
     return `import XCTest
 
-@testable import ${targetName}
+@testable import ${targetName}${importLines}
 
 class ${testName}: XCTestCase {
 

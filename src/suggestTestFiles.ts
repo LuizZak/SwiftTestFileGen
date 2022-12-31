@@ -2,11 +2,16 @@ import path = require('path');
 import * as vscode from 'vscode';
 import { OperationWithDiagnostics, TestFileDiagnosticKind } from './data/testFileDiagnosticResult';
 import { SwiftTestFile } from './data/swiftTestFile';
-import { PackageProviderInterface } from './interfaces/packageProviderInterface';
+import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
+import { SwiftFileSyntaxHelper } from './syntax/swiftFileSyntaxHelper';
+import { InvocationContext } from './interfaces/context';
 import { NestableProgress, NestableProgressReportStyle } from './progress/nestableProgress';
 import { limitWithParameters } from './asyncUtils/asyncUtils';
 import { deduplicateStable } from './algorithms/dedupe';
 import { SwiftFileBuilder } from './syntax/swiftFileBuilder';
+import { SwiftFile } from './data/swiftFile';
+import { SwiftPackagePathsManager } from './swiftPackagePathsManager';
+import { SwiftTarget } from './data/swiftPackage';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -14,14 +19,19 @@ export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: Swift
 /**
  * Returns a set of suggested test files for a list of .swift file paths.
  * 
- * @param filePaths File paths to generate test files out of
- * @param packageProvider A package provider for computing package for file Uris.
+ * @param filePaths File paths to generate test files out of.
+ * @param configuration The extension configurations object.
+ * @param context Context for invocation containing APIs to interact with to
+ *     produce the result of this operation.
+ * @param progress A progress object to report granular progress to.
  * @param cancellation A cancellation token to stop the operation.
- * @returns A list of Swift test files for the selected files, along with a list of diagnostics generated.
+ * @returns A list of Swift test files for the selected files, along with a list
+ *     of diagnostics generated.
  */
 export async function suggestTestFiles(
     filePaths: vscode.Uri[],
-    packageProvider: PackageProviderInterface,
+    configuration: Configuration,
+    context: InvocationContext,
     progress?: NestableProgress,
     cancellation?: vscode.CancellationToken
 ): Promise<SuggestTestFilesResult> {
@@ -39,8 +49,8 @@ export async function suggestTestFiles(
     // Warm up the cache prior to the operation by querying the file directories
     // first
     // TODO: Allow parameterization of concurrent task count.
-    await limitWithParameters(10, async (filePath) => {
-        await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
+    await limitWithParameters(10, async (directory) => {
+        await context.packageProvider.swiftPackagePathManagerForFile(directory, cancellation);
     }, directories, filesProgress, cancellation);
 
     // Do proper operation now
@@ -55,33 +65,36 @@ export async function suggestTestFiles(
             throw new vscode.CancellationError();
         }
         
+        const packageProvider = context.packageProvider;
+    
         const pkg = await packageProvider.swiftPackagePathManagerForFile(filePath, cancellation);
-
+        const file = await pkg.loadSourceFile(filePath);
+        
         // Ignore files that are not within the sources root directory
-        if (!await pkg.isSourceFile(filePath)) {
+        if (!await pkg.isSourceFile(file.path)) {
             return {
                 testFiles: [],
                 diagnostics: [{
                     message: "File is not contained within a recognized Sources/ folder",
-                    sourceFile: filePath,
+                    sourceFile: file.path,
                     kind: TestFileDiagnosticKind.fileNotInSourcesFolder
                 }]
             };
         }
 
         // Compute file / test class names
-        const fileNameWithoutExt = path.basename(filePath.fsPath, ".swift");
+        const fileNameWithoutExt = path.basename(file.path.fsPath, ".swift");
         const testClassName = replaceSpecialCharactersForTestName(`${fileNameWithoutExt}Tests`);
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
-        const target = pkg.targetForFilePath(filePath);
-        const targetName = target?.name ?? await pkg.targetNameFromFilePath(filePath);
+        const target = pkg.targetForFilePath(file.path);
+        const targetName = target?.name ?? await pkg.targetNameFromFilePath(file.path);
         const testTarget = pkg.testTargetForTarget(target);
         const testsPath = await pkg.availableTestsPath();
 
         // Compute relative paths to maintain directory substructure in tests folder
         let fileRelativeDirPath: string;
-        const fileDir = path.dirname(filePath.fsPath);
+        const fileDir = path.dirname(file.path.fsPath);
 
         // Priority when finding root target path to compute relative paths onto:
         // 1. Target w/ explicit path
@@ -103,7 +116,7 @@ export async function suggestTestFiles(
                     diagnostics: [{
                         message: "Cannot find folder that contains a source file!",
                         kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -119,7 +132,7 @@ export async function suggestTestFiles(
                     diagnostics: [{
                         message: "Cannot find folder that contains a source file!",
                         kind: TestFileDiagnosticKind.fileNotInSourcesFolder,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -149,7 +162,7 @@ export async function suggestTestFiles(
                     diagnostics: [{
                         message: "Could not locate tests folder for a file's package",
                         kind: TestFileDiagnosticKind.testsFolderNotFound,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -171,7 +184,7 @@ export async function suggestTestFiles(
                     diagnostics: [{
                         message: "Could not locate tests folder for a file's package",
                         kind: TestFileDiagnosticKind.testsFolderNotFound,
-                        sourceFile: filePath
+                        sourceFile: file.path
                     }]
                 };
             }
@@ -184,28 +197,17 @@ export async function suggestTestFiles(
                 );
         }
 
-        let importLine: string;
-        if (typeof targetName === "string") {
-            importLine = `@testable import ${targetName}`;
-        } else {
-            importLine = `@testable import <#TargetName#>`;
-        }
-
-        // Build test file contents
-        const fb = new SwiftFileBuilder();
-
-        fb.line("import XCTest");
-        fb.ensureEmptyLineSeparation();
-        fb.lines(importLine);
-        fb.ensureEmptyLineSeparation();
-        fb.putEmptyClass(testClassName, ["XCTestCase"]);
-
-        const result: SwiftTestFile = {
-            name: testFileName,
-            path: fullTestFilePath,
-            originalFile: filePath,
-            contents: fb.build()
-        };
+        const result = await generateTestFile(
+            fullTestFilePath,
+            targetName,
+            file,
+            target,
+            testClassName,
+            testFileName,
+            pkg,
+            context,
+            configuration
+        );
 
         return {
             testFiles: [result],
@@ -216,6 +218,99 @@ export async function suggestTestFiles(
     // TODO: Allow parameterization of concurrent task count.
     const result = await limitWithParameters(20, operation, filePaths, filesProgress, cancellation);
     return result.reduce(joinSuggestedTestFileResults);
+}
+
+async function generateTestFile(
+    fullTestFilePath: vscode.Uri,
+    targetName: string | null,
+    sourceFile: SwiftFile,
+    target: SwiftTarget | null,
+    testClassName: string,
+    testFileName: string,
+    pkg: SwiftPackagePathsManager,
+    context: InvocationContext,
+    configuration: Configuration
+): Promise<SwiftTestFile> {
+
+    const syntaxHelper = new SwiftFileSyntaxHelper(
+        sourceFile.path,
+        context.fileSystem,
+        context.toolchain
+    );
+
+    let detectedImports: string[] = [];
+    let importLines: string[] = [];
+
+    switch (configuration.fileGen.emitImportDeclarations) {
+        case EmitImportDeclarationsMode.always:
+            detectedImports = await syntaxHelper.parseModuleImports();
+            importLines = detectedImports.map(emitImportLine);
+
+            break;
+
+        case EmitImportDeclarationsMode.dependenciesOnly:
+            // From detected module imports, emit the ones that are target
+            // dependencies in the package manifest.
+            if (target !== null) {
+                const dependencyGraph = pkg.dependencyGraph();
+
+                const parsedImports = await syntaxHelper.parseModuleImports();
+                detectedImports = parsedImports.filter((moduleName) => {
+                    return dependencyGraph.hasDependencyPath(target, moduleName);
+                });
+                importLines = detectedImports.map(emitImportLine);
+            }
+            break;
+
+            case EmitImportDeclarationsMode.explicitDependenciesOnly:
+                // From detected module imports, emit the ones that are explicit target
+                // dependencies in the package manifest.
+                if (target !== null) {
+                    const dependencyGraph = pkg.dependencyGraph();
+    
+                    const parsedImports = await syntaxHelper.parseModuleImports();
+                    detectedImports = parsedImports.filter((moduleName) => {
+                        return dependencyGraph.hasDirectDependency(target, moduleName);
+                    });
+                    importLines = detectedImports.map(emitImportLine);
+                }
+                break;
+
+        case EmitImportDeclarationsMode.never:
+            break;
+    }
+
+    let moduleImportLine: string;
+    if (typeof targetName === "string") {
+        moduleImportLine = `@testable import ${targetName}`;
+    } else {
+        moduleImportLine = `@testable import <#TargetName#>`;
+    }
+
+    // Build test file contents
+    const fb = new SwiftFileBuilder();
+
+    fb.line("import XCTest");
+    fb.ensureEmptyLineSeparation();
+    fb.line(moduleImportLine);
+    fb.lines(...importLines);
+    fb.ensureEmptyLineSeparation();
+    fb.putEmptyClass(testClassName, ["XCTestCase"]);
+
+    const result: SwiftTestFile = {
+        name: testFileName,
+        path: fullTestFilePath,
+        originalFile: sourceFile.path,
+        existsOnDisk: false,
+        suggestedImports: detectedImports,
+        contents: fb.build()
+    };
+
+    return result;
+}
+
+function emitImportLine(moduleName: string): string {
+    return `import ${moduleName}`;
 }
 
 /** Utility function for joining `SuggestTestFilesResult` objects. */

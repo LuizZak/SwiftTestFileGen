@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { SwiftPackageManifest } from '../data/swiftPackage';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
-import { FileSystemInterface } from './fileSystemInterface';
 
 /** Interface for objects that can provide a SwiftPackageManifest for a file in a disk. */
 export interface PackageProviderInterface {

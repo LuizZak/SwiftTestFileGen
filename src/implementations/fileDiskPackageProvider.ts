@@ -1,10 +1,10 @@
 import path = require('path');
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
 import { SwiftPackageManifest, SwiftPackageManifestParser } from '../data/swiftPackage';
 import { PackageProviderInterface } from "../interfaces/packageProviderInterface";
 import { FileSystemInterface } from '../interfaces/fileSystemInterface';
 import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
+import { SwiftToolchainInterface } from '../interfaces/swiftToolchainInterface';
 import { isSubdirectory } from '../pathUtils';
 import * as definitions from '../definitions';
 
@@ -16,7 +16,7 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
 
     private packageManagerCache: Map<string, SwiftPackagePathsManager> = new Map();
 
-    constructor(public fileSystem: FileSystemInterface) {
+    constructor(public fileSystem: FileSystemInterface, public toolchain: SwiftToolchainInterface) {
 
     }
 
@@ -53,34 +53,18 @@ export class FileDiskPackageProvider implements PackageProviderInterface {
      * process within a given file's containing directory.
      */
     async swiftPackageManifestForFile(fileUri: vscode.Uri, cancellation?: vscode.CancellationToken): Promise<SwiftPackageManifest> {
-        const directory = path.dirname(fileUri.fsPath);
-
+        
+        const directory = path.dirname(fileUri.path);
+        
         const cached = this.packageCachePerDirectory.get(directory);
         if (cached) {
             return cached;
         }
 
-        const promise = new Promise<string>((resolve, reject) => {
-            const childProc = exec("swift package dump-package", { cwd: directory }, function (err, stdout, stderr) {
-                if (err !== null) {
-                    throw err;
-                }
-                if (stderr !== '') {
-                    reject(stderr);
-                }
-
-                resolve(stdout.trim());
-            });
-
-            cancellation?.onCancellationRequested(() => {
-                reject(new vscode.CancellationError());
-
-                childProc.kill();
-            });
-        }).then((response) => {
-            return SwiftPackageManifestParser.toSwiftPackageManifest(response);
+        const promise = this.toolchain.dumpPackage(fileUri, cancellation).then((packageStr) => {
+            return SwiftPackageManifestParser.toSwiftPackageManifest(packageStr);
         });
-
+        
         this.packageCachePerDirectory.set(directory, promise);
 
         return promise;

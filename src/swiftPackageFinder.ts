@@ -48,9 +48,9 @@ export async function mapPathsToSwiftPackages(
             continue;
         }
 
-        const existing = packageMap.get(packagePath.fsPath);
+        const existing = packageMap.get(packagePath.path);
         if (!existing) {
-            packageMap.set(packagePath.fsPath, [filePath]);
+            packageMap.set(packagePath.path, [filePath]);
         } else {
             existing.push(filePath);
         }

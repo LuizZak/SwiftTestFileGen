@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import path = require("path");
 import minimatch = require('minimatch');
 
-export type VirtualDiskObject = VirtualDiskRoot | VirtualDiskDirectory | VirtualDiskFile;
+export type VirtualDiskObject = VirtualDiskRoot | VirtualDiskDirectory | VirtualDiskEntry | VirtualDiskFile;
 
 export interface VirtualDiskEntryContainer {
     contents: VirtualDiskEntry[];
@@ -26,6 +26,15 @@ export class VirtualDisk {
 
     findEntry(filePath: string | vscode.Uri): VirtualDiskObject | undefined {
         return this.findPath(filePath);
+    }
+
+    findFile(filePath: string | vscode.Uri): VirtualDiskFile | undefined {
+        const object = this.findEntry(filePath);
+        if (object === undefined) {
+            return undefined;
+        }
+
+        return object as VirtualDiskFile;
     }
 
     /**
@@ -126,7 +135,7 @@ export class VirtualDisk {
      * Order of resulting file list is not defined.
      */
     allFilesRecursive(container: VirtualDiskEntryContainer): VirtualDiskFile[] {
-        let result: VirtualDiskEntry[] = [];
+        let result: VirtualDiskFile[] = [];
 
         container.contents.forEach(entry => {
             if (entry instanceof VirtualDiskFile) {
@@ -335,5 +344,9 @@ export class VirtualDiskDirectory extends VirtualDiskEntry implements VirtualDis
 }
 
 export class VirtualDiskFile extends VirtualDiskEntry {
+    constructor(name: string, public contents: string = "", public parent?: VirtualDiskEntryContainer) {
+        super(name, parent);
 
+        this.contents = contents;
+    }
 }

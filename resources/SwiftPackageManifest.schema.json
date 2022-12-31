@@ -1,0 +1,169 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "dependencies": {
+            "type": "array",
+            "items": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "sourceControl": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "identity": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "identity"
+                                    ]
+                                }
+                            ]
+                        },
+                        "fileSystem": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "identity": {
+                                            "type": "string"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "productFilter": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "identity",
+                                        "path",
+                                        "productFilter"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "name": {
+            "type": "string"
+        },
+        "targets": {
+            "type": "array",
+            "items": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "binary",
+                                "executable",
+                                "plugin",
+                                "regular",
+                                "snippet",
+                                "system",
+                                "test"
+                            ]
+                        },
+                        "dependencies": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "product": {
+                                            "type": "array",
+                                            "items": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "null"
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        },
+                                        "byName": {
+                                            "type": "array",
+                                            "items": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "exclude": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "resources": {
+                            "type": "array",
+                            "items": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "path"
+                                    ]
+                                }
+                            ]
+                        },
+                        "path": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "type"
+                    ]
+                }
+            ]
+        },
+        "toolsVersion": {
+            "type": "object",
+            "properties": {
+                "_version": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "_version"
+            ]
+        }
+    },
+    "required": [
+        "name",
+        "targets",
+        "toolsVersion"
+    ]
+}
