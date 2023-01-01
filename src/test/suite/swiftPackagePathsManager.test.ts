@@ -7,359 +7,361 @@ import { SwiftPackagePathsManager } from '../../swiftPackagePathsManager';
 import { TestFileSystem } from './testMocks/testContext';
 import { VirtualDiskEntryType } from './testMocks/virtualFileDisk';
 
-suite('SwiftPackagePathsManager Test Suite', () => {
-    let fileSystem: TestFileSystem;
-    beforeEach(() => {
-        fileSystem = new TestFileSystem();
-    });
-
-    describe('isSourceFile', () => {
-        test('returns true for files in Sources/', async () => {
-            const pkg = makeStandardTestPackage();
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
-        });
-        
-        test('returns true for files in Executable targets in Sources/', async () => {
-            const pkg = makeStandardTestPackage();
-            pkg.targets[0].type = TargetType.Executable;
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
-        });
-        
-        test('returns true for files in Plugin targets in Sources/', async () => {
-            const pkg = makeStandardTestPackage();
-            pkg.targets[0].type = TargetType.Plugin;
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
-        });
-        
-        test('returns false for files in Test targets in Sources/', async () => {
-            const pkg = makeStandardTestPackage();
-            pkg.targets[0].type = TargetType.Test;
-            pkg.targets[0].path = "Sources";
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), false);
+suite('swiftPackagePathsManager Test Suite', () => {
+    describe("swiftPackagePathsManager", () => {
+        let fileSystem: TestFileSystem;
+        beforeEach(() => {
+            fileSystem = new TestFileSystem();
         });
 
-        test('returns true for files in Source/', async () => {
-            const pkg = makeStandardTestPackage();
+        describe('isSourceFile', () => {
+            test('returns true for files in Sources/', async () => {
+                const pkg = makeStandardTestPackage();
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Source", "file.swift");
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
 
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+            
+            test('returns true for files in Executable targets in Sources/', async () => {
+                const pkg = makeStandardTestPackage();
+                pkg.targets[0].type = TargetType.Executable;
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+            
+            test('returns true for files in Plugin targets in Sources/', async () => {
+                const pkg = makeStandardTestPackage();
+                pkg.targets[0].type = TargetType.Plugin;
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+            
+            test('returns false for files in Test targets in Sources/', async () => {
+                const pkg = makeStandardTestPackage();
+                pkg.targets[0].type = TargetType.Test;
+                pkg.targets[0].path = "Sources";
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), false);
+            });
+
+            test('returns true for files in Source/', async () => {
+                const pkg = makeStandardTestPackage();
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Source", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+
+            test('returns true for files in src/', async () => {
+                const pkg = makeStandardTestPackage();
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "src", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+
+            test('returns true for files in srcs/', async () => {
+                const pkg = makeStandardTestPackage();
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "srcs", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+
+            test('returns true for files in custom path source target', async () => {
+                const pkg = makeExplicitTestTargetPathPackage(
+                    "AlternativeSources",
+                    "AlternativeTests"
+                );
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeSources", "Target", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), true);
+            });
+
+            test('returns false for files in test locations', async () => {
+                const pkg = makeExplicitTestTargetPathPackage(
+                    "AlternativeSources",
+                    "AlternativeTests"
+                );
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeTests", "TargetTests", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isSourceFile(fileUri), false);
+            });
+
+            test('returns false for files in non-source locations', async () => {
+                const pkg = makeExplicitTestTargetPathPackage(
+                    "AlternativeSources",
+                    "AlternativeTests"
+                );
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(
+                    await sut.isSourceFile(
+                        vscode.Uri.joinPath(baseUri, "UnknownFolder", "file.swift"),
+                    ),
+                    false
+                );
+                assert.strictEqual(
+                    await sut.isSourceFile(
+                        vscode.Uri.joinPath(baseUri, "UnknownFolder2", "Subfolder", "file.swift"),
+                    ),
+                    false
+                );
+            });
         });
 
-        test('returns true for files in src/', async () => {
-            const pkg = makeStandardTestPackage();
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "src", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
-        });
-
-        test('returns true for files in srcs/', async () => {
-            const pkg = makeStandardTestPackage();
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "srcs", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
-        });
-
-        test('returns true for files in custom path source target', async () => {
-            const pkg = makeExplicitTestTargetPathPackage(
-                "AlternativeSources",
-                "AlternativeTests"
-            );
+        describe('isTestFile', () => {
+            test('returns true for files in Tests/', async () => {
+                const pkg = makeStandardTestPackage();
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeSources", "Target", "file.swift");
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Tests", "file.swift");
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isSourceFile(fileUri), true);
-        });
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
 
-        test('returns false for files in test locations', async () => {
-            const pkg = makeExplicitTestTargetPathPackage(
-                "AlternativeSources",
-                "AlternativeTests"
-            );
+                assert.strictEqual(await sut.isTestFile(fileUri), true);
+            });
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeTests", "TargetTests", "file.swift");
+            test('returns true for files in Sources/', async () => {
+                const pkg = makeStandardTestPackage();
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            assert.strictEqual(await sut.isSourceFile(fileUri), false);
-        });
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
 
-        test('returns false for files in non-source locations', async () => {
-            const pkg = makeExplicitTestTargetPathPackage(
-                "AlternativeSources",
-                "AlternativeTests"
-            );
+                assert.strictEqual(await sut.isTestFile(fileUri), true);
+            });
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+            test('returns true for files in Source/', async () => {
+                const pkg = makeStandardTestPackage();
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-            );
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "Source", "file.swift");
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            assert.strictEqual(
-                await sut.isSourceFile(
-                    vscode.Uri.joinPath(baseUri, "UnknownFolder", "file.swift"),
-                ),
-                false
-            );
-            assert.strictEqual(
-                await sut.isSourceFile(
-                    vscode.Uri.joinPath(baseUri, "UnknownFolder2", "Subfolder", "file.swift"),
-                ),
-                false
-            );
-        });
-    });
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
 
-    describe('isTestFile', () => {
-        test('returns true for files in Tests/', async () => {
-            const pkg = makeStandardTestPackage();
+                assert.strictEqual(await sut.isTestFile(fileUri), true);
+            });
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Tests", "file.swift");
+            test('returns true for files in src/', async () => {
+                const pkg = makeStandardTestPackage();
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "src", "file.swift");
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            assert.strictEqual(await sut.isTestFile(fileUri), true);
-        });
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
 
-        test('returns true for files in Sources/', async () => {
-            const pkg = makeStandardTestPackage();
+                assert.strictEqual(await sut.isTestFile(fileUri), true);
+            });
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Sources", "file.swift");
+            test('returns true for files in srcs/', async () => {
+                const pkg = makeStandardTestPackage();
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "srcs", "file.swift");
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            assert.strictEqual(await sut.isTestFile(fileUri), true);
-        });
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
 
-        test('returns true for files in Source/', async () => {
-            const pkg = makeStandardTestPackage();
+                assert.strictEqual(await sut.isTestFile(fileUri), true);
+            });
 
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "Source", "file.swift");
+            test('returns true for files in custom path test target', async () => {
+                const pkg = makeExplicitTestTargetPathPackage(
+                    "AlternativeSources",
+                    "AlternativeTests"
+                );
 
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeTests", "TargetTests", "file.swift");
 
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
 
-            assert.strictEqual(await sut.isTestFile(fileUri), true);
-        });
-
-        test('returns true for files in src/', async () => {
-            const pkg = makeStandardTestPackage();
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "src", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isTestFile(fileUri), true);
-        });
-
-        test('returns true for files in srcs/', async () => {
-            const pkg = makeStandardTestPackage();
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "srcs", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isTestFile(fileUri), true);
-        });
-
-        test('returns true for files in custom path test target', async () => {
-            const pkg = makeExplicitTestTargetPathPackage(
-                "AlternativeSources",
-                "AlternativeTests"
-            );
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeTests", "TargetTests", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isTestFile(fileUri), true);
-        });
-
-        test('returns false for files in source locations', async () => {
-            const pkg = makeExplicitTestTargetPathPackage(
-                "AlternativeSources",
-                "AlternativeTests"
-            );
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-            const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeSources", "Target", "file.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-                [fileUri, VirtualDiskEntryType.file]
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(await sut.isTestFile(fileUri), false);
-        });
-
-        test('returns false for files in non-target locations', async () => {
-            const pkg = makeExplicitTestTargetPathPackage(
-                "AlternativeSources",
-                "AlternativeTests"
-            );
-
-            const baseUri = vscode.Uri.file(path.join("base", "path"));
-            const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
-
-            fileSystem.createEntriesWithKind(
-                [baseUri, VirtualDiskEntryType.directory],
-            );
-
-            const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
-
-            assert.strictEqual(
-                await sut.isTestFile(
-                    vscode.Uri.joinPath(baseUri, "UnknownFolder", "file.swift"),
-                ),
-                false
-            );
-            assert.strictEqual(
-                await sut.isTestFile(
-                    vscode.Uri.joinPath(baseUri, "UnknownFolder2", "Subfolder", "file.swift"),
-                ),
-                false
-            );
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isTestFile(fileUri), true);
+            });
+
+            test('returns false for files in source locations', async () => {
+                const pkg = makeExplicitTestTargetPathPackage(
+                    "AlternativeSources",
+                    "AlternativeTests"
+                );
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+                const fileUri = vscode.Uri.joinPath(baseUri, "AlternativeSources", "Target", "file.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                    [fileUri, VirtualDiskEntryType.file]
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(await sut.isTestFile(fileUri), false);
+            });
+
+            test('returns false for files in non-target locations', async () => {
+                const pkg = makeExplicitTestTargetPathPackage(
+                    "AlternativeSources",
+                    "AlternativeTests"
+                );
+
+                const baseUri = vscode.Uri.file(path.join("base", "path"));
+                const manifestUri = vscode.Uri.joinPath(baseUri, "Package.swift");
+
+                fileSystem.createEntriesWithKind(
+                    [baseUri, VirtualDiskEntryType.directory],
+                );
+
+                const sut = await SwiftPackagePathsManager.create(baseUri, manifestUri, pkg, fileSystem);
+
+                assert.strictEqual(
+                    await sut.isTestFile(
+                        vscode.Uri.joinPath(baseUri, "UnknownFolder", "file.swift"),
+                    ),
+                    false
+                );
+                assert.strictEqual(
+                    await sut.isTestFile(
+                        vscode.Uri.joinPath(baseUri, "UnknownFolder2", "Subfolder", "file.swift"),
+                    ),
+                    false
+                );
+            });
         });
     });
 });

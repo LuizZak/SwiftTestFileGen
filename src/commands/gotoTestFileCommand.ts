@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { emitDiagnostics, OperationWithDiagnostics, TestFileDiagnosticKind } from '../data/testFileDiagnosticResult';
 import { generateTestFilesEntry } from '../frontend';
 import { InvocationContext } from '../interfaces/context';
-import { SwiftPackagePathsManager } from '../swiftPackagePathsManager';
 import { suggestTestFiles } from '../suggestTestFiles';
 import { sanitizeFilename } from '../pathUtils';
 import { NestableProgress } from '../progress/nestableProgress';
@@ -71,7 +70,7 @@ async function performFileSearch(
         if (patterns.length > 0) {
             let results = await performHeuristicSearch(fileUri, patterns, context);
 
-            if (results.fileUris.length > 0 || results.fileUris.length > 0) {
+            if (results.fileUris.length > 0) {
                 return results;
             }
         }
@@ -79,31 +78,11 @@ async function performFileSearch(
 
     progress?.reportMessage("Finding Swift package...");
 
-    const pkgPath = await context.packageProvider.swiftPackageManifestPathForFile(fileUri, cancellation);
-    if (pkgPath === null) {
-        return {
-            fileUris: [],
-            diagnostics: [{
-                message: "Cannot find Package.swift manifest for the current workspace.",
-                kind: TestFileDiagnosticKind.packageManifestNotFound,
-                sourceFile: fileUri
-            }]
-        };
-    }
-
-    const pkg = await context.packageProvider.swiftPackageManifestForFile(fileUri, cancellation);
-
     if (cancellation?.isCancellationRequested) {
         throw new vscode.CancellationError();
     }
 
-    const pkgRoot = vscode.Uri.joinPath(pkgPath, "..");
-    const pathManager = await SwiftPackagePathsManager.create(
-        pkgRoot,
-        pkgPath,
-        pkg,
-        context.fileSystem
-    );
+    const pathManager = await context.packageProvider.swiftPackagePathManagerForFile(fileUri);
 
     if (await pathManager.isTestFile(fileUri)) {
         return {

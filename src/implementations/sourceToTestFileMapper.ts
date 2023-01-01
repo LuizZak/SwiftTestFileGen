@@ -1,7 +1,7 @@
 import path = require("path");
 import * as vscode from "vscode";
 import { SwiftTarget } from "../data/swiftPackage";
-import { FallibleOperation, OperationWithDiagnostics, TestFileDiagnosticKind, TestFileDiagnosticResult } from "../data/testFileDiagnosticResult";
+import { FallibleOperation, OperationWithDiagnostics, TestFileDiagnosticKind } from "../data/testFileDiagnosticResult";
 import { SwiftPackagePathsManager } from "../swiftPackagePathsManager";
 
 /** Result object for a `suggestTestFiles` call. */
