@@ -4,7 +4,7 @@ All notable changes to the "Swift Test File Generator" extension will be documen
 
 ## [test-to-source-command]
 
-- Adding 'Goto Source File...' that complements 'Goto Test File...' and works the opposite way.
+- Adding 'Go to Source File...' that complements 'Go to Test File...' and works the opposite way.
 
 ## [0.5.0]
 
