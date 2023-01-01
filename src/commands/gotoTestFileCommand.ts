@@ -6,6 +6,7 @@ import { InvocationContext } from '../interfaces/context';
 import { suggestTestFiles } from '../suggestTestFiles';
 import { sanitizeFilename } from '../pathUtils';
 import { NestableProgress } from '../progress/nestableProgress';
+import { validatePattern } from '../patternValidator';
 
 export async function gotoTestFileCommand(
     fileUri: vscode.Uri,
@@ -126,12 +127,10 @@ async function performHeuristicSearch(
     const placeholder = "$1";
 
     for (const pattern of patterns) {
-        if (pattern.indexOf(placeholder) === -1) {
-            results.diagnostics.push({
-                message: `Found test file search pattern that does not contain a required '${placeholder}' placeholder : ${pattern}`,
-                kind: TestFileDiagnosticKind.incorrectSearchPattern,
-            });
+        const isPatternValid = validatePattern(pattern);
+        results.diagnostics.push(...isPatternValid.diagnostics);
 
+        if (!isPatternValid.isValid) {
             continue;
         }
 

@@ -5,6 +5,7 @@ import { emitDiagnostics, OperationWithDiagnostics, TestFileDiagnosticKind, Test
 import { InvocationContext } from '../interfaces/context';
 import { NestableProgress } from '../progress/nestableProgress';
 import { SourceToTestFileMapper } from '../implementations/sourceToTestFileMapper';
+import { validatePattern } from '../patternValidator';
 
 export async function gotoSourceFileCommand(
     fileUri: vscode.Uri,
@@ -93,17 +94,11 @@ async function performHeuristicSearch(
     const baseName = path.basename(fileUri.fsPath, swiftExt);
 
     const placeholder = "$1";
-    const placeholderRegex = /\$1/;
 
     for (let pattern of patterns) {
-        const placeholderMatches = placeholderRegex.exec(pattern);
-        
-        if (!placeholderMatches || placeholderMatches.length !== 1) {
-            diagnostics.push({
-                message: `Found test file search pattern that does not contain exactly one copy of '${placeholder}' placeholder : ${pattern}`,
-                kind: TestFileDiagnosticKind.incorrectSearchPattern,
-            });
-
+        const isPatternValid = validatePattern(pattern);
+        diagnostics.push(...isPatternValid.diagnostics);
+        if (!isPatternValid.isValid) {
             continue;
         }
 
