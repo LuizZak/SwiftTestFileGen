@@ -13,6 +13,8 @@ export async function gotoSourceFileCommand(
     cancellation?: vscode.CancellationToken
 ): Promise<void> {
 
+    progress?.reportMessage("Parsing Swift package...");
+
     const pkg = await context.packageProvider.swiftPackagePathManagerForFile(
         fileUri,
         cancellation
@@ -32,4 +34,6 @@ export async function gotoSourceFileCommand(
             `Source file for ${path.basename(fileUri.fsPath)} not found!`
         );
     }
+
+    progress?.complete();
 }

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { generateTestFilesCommand } from './commands/generateTestFilesCommand';
+import { gotoSourceFileCommand } from './commands/gotoSourceFileCommand';
 import { gotoTestFileCommand } from './commands/gotoTestFileCommand';
 import { InvocationContext } from './interfaces/context';
 import { NestableProgress } from './progress/nestableProgress';
@@ -53,7 +54,7 @@ export async function gotoSourceFileEntry(fileUri: vscode.Uri, context: Invocati
 
         const nestedProgress = new NestableProgress(progress);
 
-        return gotoTestFileCommand(
+        return gotoSourceFileCommand(
             fileUri,
             context,
             vscode.ViewColumn.Active,

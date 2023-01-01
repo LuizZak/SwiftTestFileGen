@@ -18,14 +18,14 @@ describe("SourceToTestFileMapper Test Suite", () => {
         filesToCreate: string[],
     ): Promise<vscode.Uri[]> {
 
-        const fixture = new FullTestFixture([
+        fixture = new FullTestFixture([
             ...filePaths,
         ], undefined, testPackage);
-        const files = swiftFiles(
+        swiftFiles(
             fixture.context.fileSystem,
             ...filesToCreate,
         );
-        const pkg = await fixture.context
+        pkg = await fixture.context
             .packageProvider
             .swiftPackagePathManagerForFile(
                 vscode.Uri.file("/Package/Path/Package.swift")
