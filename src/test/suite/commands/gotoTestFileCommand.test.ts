@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { describe, it } from 'mocha';
+import { describe, it, beforeEach } from 'mocha';
 import { gotoTestFileCommand } from '../../../commands/gotoTestFileCommand';
 import { fileUri, FullTestFixture, makeExpectedTestFileContentString, stubPackage } from '../fullTestFixture';
 import assert = require('assert');
@@ -119,16 +119,20 @@ suite('gotoTestFileCommand Test Suite', () => {
         });
 
         describe("with heuristics enabled", () => {
-            const configuration: Configuration = {
-                fileGen: {
-                    confirmation: ConfirmationMode.always,
-                    emitImportDeclarations: EmitImportDeclarationsMode.never,
-                },
-                gotoTestFile: {
-                    useFilenameHeuristics: true,
-                    heuristicFilenamePattern: "$1TestFile.swift",
-                }
-            };
+            let configuration: Configuration;
+
+            beforeEach(() => {
+                configuration = {
+                    fileGen: {
+                        confirmation: ConfirmationMode.always,
+                        emitImportDeclarations: EmitImportDeclarationsMode.never,
+                    },
+                    gotoTestFile: {
+                        useFilenameHeuristics: true,
+                        heuristicFilenamePattern: "$1TestFile.swift",
+                    }
+                };
+            });
 
             it('should use a provided pattern', async () => {
                 const file = fileUri(

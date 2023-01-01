@@ -44,6 +44,11 @@
   	  	  	  	"command": "swifttestfilegen.gotoTestFile",
   	  	  	  	"title": "SwiftTestFileGen: Go to Test File...",
   	  	  	  	"shortTitle": "Go to Test File..."
+  	  	  	},
+  	  	  	{
+  	  	  	  	"command": "swifttestfilegen.gotoSourceFile",
+  	  	  	  	"title": "SwiftTestFileGen: Go to Source File...",
+  	  	  	  	"shortTitle": "Go to Source File..."
   	  	  	}
   	  	],
   	  	"menus": {
@@ -68,7 +73,7 @@
   	  	  	  	  	  	"string"
   	  	  	  	  	],
   	  	  	  	  	"default": "$1Tests",
-  	  	  	  	  	"description": "A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files. Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive. Any special character is stripped from the file name after the placeholder is replaced and before the file is created. Ignored if `useFilenameHeuristics` is false."
+  	  	  	  	  	"description": "A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files. Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive. Any special character is stripped from the file name after the placeholder is replaced and before the file is created. Supports an array of strings as well, which are used in the order they are defined when finding test/source files. Ignored if `useFilenameHeuristics` is false."
   	  	  	  	},
   	  	  	  	"swiftTestFileGen.fileGen.confirmation": {
   	  	  	  	  	"type": "string",

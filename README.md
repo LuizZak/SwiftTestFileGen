@@ -45,7 +45,7 @@ This extension contributes the following configurations:
 | Configuration | Description | Default Value | 
 |--|--|--|
 | `swiftTestFileGen.gotoTestFile.useFilenameHeuristics` | Whether to use simple `<FileName>.swift` -> `<FileName><Suffix>.swift` heuristics (according to heuristicFilenamePattern) to find test files, instead of querying through the package manifest for paths.</br></br>If enabled, it might increase the speed of file switching at the cost of accuracy on projects with multiple Package.swift manifests. | `false` |
-| `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` | A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files.</br></br>Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive.</br></br>Ignored if `useFilenameHeuristics` is false. | `"$1Tests.swift"` |
+| `swiftTestFileGen.gotoTestFile.heuristicFilenamePattern` | A string template-like pattern string or array of patterns that contain a '$1' for substituting the original source file name and searching all workspace files.</br></br>Pattern is applied to filenames only, before the '.swift' extension, and is case-sensitive.</br></br>Supports an array of strings as well, in which case they are tested in the order they are defined when finding test/source files.</br></br>Ignored if `useFilenameHeuristics` is false. | `"$1Tests.swift"` |
 
 ## Known Issues
 

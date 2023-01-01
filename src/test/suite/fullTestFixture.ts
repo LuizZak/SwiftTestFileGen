@@ -61,15 +61,15 @@ export class FullTestFixture {
 
     /** Asserts that no mutating actions have been performed on a given test context. */
     assertNoActions(): FullTestFixture {
-        assert.strictEqual(this.context.workspace.saveOpenedDocument_calls.length, 0);
-        assert.strictEqual(this.context.workspace.showTextDocument_calls.length, 0);
+        assert.strictEqual(this.context.workspace.saveOpenedDocument_calls.length, 0, "Found this.context.workspace.saveOpenedDocument() calls");
+        assert.strictEqual(this.context.workspace.showTextDocument_calls.length, 0, "Found this.context.workspace.showTextDocument() calls");
 
         if (this.context.workspace.makeWorkspaceEdit_calls.length > 0) {
             const calls = this.context.workspace.makeWorkspaceEdit_calls;
 
             for (const call of calls) {
-                assert.strictEqual(call.createFile_calls.length, 0);
-                assert.strictEqual(call.replaceDocumentText_calls.length, 0);
+                assert.strictEqual(call.createFile_calls.length, 0, "Found this.context.workspace.makeWorkspaceEdit().createFile() calls");
+                assert.strictEqual(call.replaceDocumentText_calls.length, 0, "Found this.context.workspace.makeWorkspaceEdit().replaceDocumentText() calls");
             }
         }
 
@@ -111,40 +111,79 @@ export class FullTestFixture {
      * that matches.
      */
     assertShownError(message?: string, items?: string[]): FullTestFixture {
-        const errorMsgs = this.context.workspace.showErrorMessage_calls;
+        const msgs = this.context.workspace.showErrorMessage_calls;
 
-        assert.notStrictEqual(errorMsgs.length, 0);
+        assert.notStrictEqual(msgs.length, 0, "Expected at least one call to this.context.workspace.showErrorMessage");
 
         if (message || items) {
-            let foundMsg = false;
-
-            for (const errorMsg of errorMsgs) {
-                if (message && errorMsg[0] !== message) {
-                    continue;
-                }
-                if (items) {
-                    if (items.length !== errorMsg[1].length) {
-                        continue;
-                    }
-                    if (!errorMsg[1].every((v, i) => v === items[i])) {
-                        continue;
-                    }
-                }
-
-                foundMsg = true;
-                break;
-            }
-
-            if (!foundMsg) {
+            if (!this.matchesMessageOrItem(msgs, message, items)) {
                 assert.fail(
                     `Failed to find expected error message ${message ?? "<none>"} with items ${items ?? "<none>"}.\n` +
                     `Found these messages instead:\n` +
-                    `${errorMsgs}`
+                    `${msgs}`
                 );
             }
         }
 
         return this;
+    }
+
+    /**
+     * Asserts that an error dialog has been shown, optionally specifying the
+     * message and/or items that it contained.
+     * 
+     * When asserting for specific message/items, if more than one error message
+     * dialog has been shown, this method queries all shown messages to find one
+     * that matches.
+     */
+    assertShownInformation(message?: string, items?: string[]): FullTestFixture {
+        const msgs = this.context.workspace.showInformationMessage_calls;
+
+        assert.notStrictEqual(msgs.length, 0, "Expected at least one call to this.context.workspace.showInformationMessage");
+
+        if (message || items) {
+            if (!this.matchesMessageOrItem(msgs, message, items)) {
+                assert.fail(
+                    `Failed to find expected information message ${message ?? "<none>"} with items ${items ?? "<none>"}.\n` +
+                    `Found these messages instead:\n` +
+                    `${msgs}`
+                );
+            }
+        }
+
+        return this;
+    }
+
+    private matchesMessageOrItem(
+        actual: [message: string, items: string[]][],
+        message?: string,
+        items?: string[]
+    ): boolean {
+
+        if (!message && !items) {
+            return false;
+        }
+        
+        let foundMsg = false;
+
+        for (const errorMsg of actual) {
+            if (message && errorMsg[0] !== message) {
+                continue;
+            }
+            if (items) {
+                if (items.length !== errorMsg[1].length) {
+                    continue;
+                }
+                if (!errorMsg[1].every((v, i) => v === items[i])) {
+                    continue;
+                }
+            }
+
+            foundMsg = true;
+            break;
+        }
+
+        return foundMsg;
     }
 
     /** 

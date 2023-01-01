@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
+import * as frontend from './frontend';
 import { Configuration, EmitImportDeclarationsMode } from './data/configurations/configuration';
 import { ConfirmationMode } from './data/configurations/confirmationMode';
-import { generateTestFilesEntry, gotoTestFileEntry } from './frontend';
 import { FileSystem } from './implementations/fileSystem';
 import { FileDiskPackageProvider } from './implementations/fileDiskPackageProvider';
 import { VscodeWorkspace } from './implementations/vscodeWorkspace';
@@ -17,7 +17,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	disposable = vscode.commands.registerCommand('swifttestfilegen.generateTestFiles', async (_, fileUris: vscode.Uri[] | undefined) => {
 		if (fileUris) {
-			await generateTestFilesEntry(fileUris, makeContext());
+			await frontend.generateTestFilesEntry(fileUris, makeContext());
 		}
 	});
 	context.subscriptions.push(disposable);
@@ -29,7 +29,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (editor.document.uri.scheme === "file") {
-			await gotoTestFileEntry(editor.document.uri, makeContext());
+			await frontend.gotoTestFileEntry(editor.document.uri, makeContext());
+		}
+	});
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('swifttestfilegen.gotoSourceFile', async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor === undefined) {
+			return;
+		}
+
+		if (editor.document.uri.scheme === "file") {
+			await frontend.gotoSourceFileEntry(editor.document.uri, makeContext());
 		}
 	});
 	context.subscriptions.push(disposable);

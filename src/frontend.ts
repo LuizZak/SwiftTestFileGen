@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { generateTestFilesCommand } from './commands/generateTestFilesCommand';
+import { gotoSourceFileCommand } from './commands/gotoSourceFileCommand';
 import { gotoTestFileCommand } from './commands/gotoTestFileCommand';
 import { InvocationContext } from './interfaces/context';
 import { NestableProgress } from './progress/nestableProgress';
@@ -35,6 +36,25 @@ export async function gotoTestFileEntry(fileUri: vscode.Uri, context: Invocation
         const nestedProgress = new NestableProgress(progress);
 
         return gotoTestFileCommand(
+            fileUri,
+            context,
+            vscode.ViewColumn.Active,
+            nestedProgress,
+            cancellation
+        );
+    });
+}
+
+/** Main entry point for `Go to Source File` command */
+export async function gotoSourceFileEntry(fileUri: vscode.Uri, context: InvocationContext) {
+    await context.workspace.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: "Going to source file..."
+    }, (progress, cancellation) => {
+
+        const nestedProgress = new NestableProgress(progress);
+
+        return gotoSourceFileCommand(
             fileUri,
             context,
             vscode.ViewColumn.Active,

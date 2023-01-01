@@ -29,8 +29,17 @@ export enum TestFileDiagnosticKind {
     /** An input file was not located in a recognized Sources folder. */
     fileNotInSourcesFolder,
 
+    /** An input file was not located in a recognized Tests folder. */
+    fileNotInTestsFolder,
+
+    /** An input test file path was not in a recognized test file name pattern. */
+    unrecognizedTestFileNamePattern,
+
     /** A package manifest for an input file was not found. */
     packageManifestNotFound,
+
+    /** A folder for the sources of a package was not found. */
+    sourcesFolderNotFound,
 
     /** A folder for the tests of a package was not found. */
     testsFolderNotFound,
@@ -109,6 +118,9 @@ function _severityForDiagnosticKind(kind: TestFileDiagnosticKind): vscode.Diagno
 
         case TestFileDiagnosticKind.incorrectSearchPattern:
         case TestFileDiagnosticKind.fileNotInSourcesFolder:
+        case TestFileDiagnosticKind.fileNotInTestsFolder:
+        case TestFileDiagnosticKind.unrecognizedTestFileNamePattern:
+        case TestFileDiagnosticKind.sourcesFolderNotFound:
         case TestFileDiagnosticKind.testsFolderNotFound:
             return vscode.DiagnosticSeverity.Warning;
 
