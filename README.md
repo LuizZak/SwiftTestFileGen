@@ -59,6 +59,10 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 ## Release Notes
 (of last 3 updates)
 
+### 0.5.0
+
+- Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enables copying import declarations from the original source file into the test file as a quick convenience.
+
 ### 0.4.1
 
 - Adding a "[(current)/(total)]" progress to some steps of test file generation progress reporting.
@@ -69,9 +73,5 @@ Add support for going back from a Tests/ file to a Sources/ file to compliment t
 - Improving progress reporting on notification while generating test files.
 - Improving speed of file testing generation on large number of files sharing the same folders.
 - Improving general throughput of I/O operations to reduce number of disk hits simultaneously.
-
-### 0.3.5
-
-- Fixing error message when running 'Generate Test File(s)...' command from the command palette.
 
 Full changelog available at: [CHANGELOG.md](CHANGELOG.md)

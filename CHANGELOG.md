@@ -6,7 +6,7 @@ All notable changes to the "Swift Test File Generator" extension will be documen
 
 - Adding 'Goto Source File...' that complements 'Goto Test File...' and works the opposite way.
 
-## [import-detection]
+## [0.5.0]
 
 - Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enables copying import declarations from the original source file into the test file as a quick convenience.
 
