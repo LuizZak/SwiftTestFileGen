@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { describe, it } from 'mocha';
-import { targetDependenciesByName } from '../../../data/swiftPackage.ext';
+import { targetDependenciesByName, targetProductDependencies } from '../../../data/swiftPackage.ext';
 import { SwiftPackageManifest, SwiftPackageManifestParser } from '../../../data/swiftPackage';
 
 suite('swiftPackage.ext Test Suite', () => {
@@ -15,6 +15,19 @@ suite('swiftPackage.ext Test Suite', () => {
                 "ObjcParser",
                 "SwiftSyntaxParser",
                 "SwiftFormat",
+            ]);
+        });
+    });
+
+    describe('targetProductDependencies', () => {
+        it('must return package target dependencies from "product" entries', () => {
+            const sut = makeTestPackage();
+
+            const result = targetProductDependencies(sut.targets[0]);
+
+            assert.deepStrictEqual(result, [
+                ["SwiftSyntaxParser", "swift-syntax"],
+                ["SwiftFormat", "swift-format"],
             ]);
         });
     });

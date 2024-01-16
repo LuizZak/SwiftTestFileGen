@@ -25,3 +25,27 @@ export function targetDependenciesByName(target: SwiftTarget): string[] {
 
     return result;
 };
+
+export function targetProductDependencies(target: SwiftTarget): [name: string, productPackage: string][] {
+    const dependencies = target.dependencies;
+    if (dependencies === undefined) {
+        return [];
+    }
+
+    const result: [string, string][] = [];
+
+    dependencies.forEach((dep) => {
+        if (dep.product !== undefined && dep.product.length >= 4) {
+            const name = dep.product[0];
+            const pkg = dep.product[1];
+
+            if (name === null || pkg === null) {
+                return;
+            }
+
+            result.push([name, pkg]);
+        }
+    });
+
+    return result;
+}

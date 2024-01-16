@@ -11,8 +11,9 @@ import { deduplicateStable } from './algorithms/dedupe';
 import { SwiftFileBuilder } from './syntax/swiftFileBuilder';
 import { SwiftFile } from './data/swiftFile';
 import { SwiftPackagePathsManager } from './swiftPackagePathsManager';
-import { SwiftTarget } from './data/swiftPackage';
+import { SwiftTarget, TargetType } from './data/swiftPackage';
 import { SourceToTestFileMapper } from './implementations/sourceToTestFileMapper';
+import { targetProductDependencies } from './data/swiftPackage.ext';
 
 /** Result object for a `suggestTestFiles` call. */
 export type SuggestTestFilesResult = OperationWithDiagnostics<{ testFiles: SwiftTestFile[] }>;
@@ -87,11 +88,13 @@ export async function suggestTestFiles(
         const testFileName = `${fileNameWithoutExt}Tests.swift`;
 
         const target = pkg.targetForFilePath(file.path);
+        const testTarget = pkg.targetForFilePath(suggestedTestPath.transformedPath);
 
         const result = await generateTestFile(
             suggestedTestPath.transformedPath,
             file,
             target,
+            testTarget,
             testClassName,
             testFileName,
             pkg,
@@ -114,6 +117,7 @@ async function generateTestFile(
     fullTestFilePath: vscode.Uri,
     sourceFile: SwiftFile,
     target: SwiftTarget | null,
+    testTarget: SwiftTarget | null,
     testClassName: string,
     testFileName: string,
     pkg: SwiftPackagePathsManager,
@@ -178,6 +182,12 @@ async function generateTestFile(
         moduleImportLine = `@testable import <#TargetName#>`;
     }
 
+    // Emit auxiliary testing imports for Swift macro targets
+    if (isMacroTestTarget(target, testTarget)) {
+        importLines.push(emitImportLine("SwiftSyntaxMacros"));
+        importLines.push(emitImportLine("SwiftSyntaxMacrosTestSupport"));
+    }
+
     // Build test file contents
     const fb = new SwiftFileBuilder();
 
@@ -202,6 +212,28 @@ async function generateTestFile(
 
 function emitImportLine(moduleName: string): string {
     return `import ${moduleName}`;
+}
+
+function isMacroTestTarget(target: SwiftTarget | null, testTarget: SwiftTarget | null): boolean {
+    if (!target || !testTarget) {
+        return false;
+    }
+    if (target.type !== TargetType.Macro) {
+        return false;
+    }
+
+    const targetDep = targetProductDependencies(testTarget);
+    const expectedDeps: [string, string][] = [
+        ["SwiftSyntaxMacros", "swift-syntax"],
+        ["SwiftSyntaxMacrosTestSupport", "swift-syntax"],
+    ];
+    for (const exp of expectedDeps) {
+        if (!targetDep.find(dep => dep[0] === exp[0] && dep[1] === exp[1])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /** Utility function for joining `SuggestTestFilesResult` objects. */

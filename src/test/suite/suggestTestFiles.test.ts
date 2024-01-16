@@ -9,6 +9,7 @@ import { Configuration, EmitImportDeclarationsMode } from '../../data/configurat
 import { ConfirmationMode } from '../../data/configurations/confirmationMode';
 import { makePackageDependency, makeStringDependency } from './testMocks/testDataFactory';
 import { SwiftPackagePathsManager } from '../../swiftPackagePathsManager';
+import { vscodeUriFile, vscodeUriFile_fsPath } from './testUtils';
 
 suite('suggestTestFiles Test Suite', () => {
     let fixture: FullTestFixture;
@@ -67,7 +68,7 @@ suite('suggestTestFiles Test Suite', () => {
                 [
                     {
                         name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0],
                         existsOnDisk: false,
@@ -75,7 +76,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "BTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/BTests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/BTests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "BTests"),
                         originalFile: filePaths[1],
                         existsOnDisk: false,
@@ -108,7 +109,7 @@ suite('suggestTestFiles Test Suite', () => {
                 [
                     {
                         name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/TargetTests/SubfolderA/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0],
                         existsOnDisk: false,
@@ -116,7 +117,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "BTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/TargetWithPathTests/SubfolderA/SubfolderB/BTests.swift"),
                         contents: makeExpectedTestFileContentString("TargetWithPath", "BTests"),
                         originalFile: filePaths[1],
                         existsOnDisk: false,
@@ -150,7 +151,7 @@ suite('suggestTestFiles Test Suite', () => {
                 [
                     {
                         name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/TargetWithPathTests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("TargetWithPath", "ATests"),
                         originalFile: filePaths[0],
                         existsOnDisk: false,
@@ -158,7 +159,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "BTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/TargetWithPathTests/BTests.swift"),
                         contents: makeExpectedTestFileContentString("TargetWithPath", "BTests"),
                         originalFile: filePaths[1],
                         existsOnDisk: false,
@@ -192,7 +193,7 @@ suite('suggestTestFiles Test Suite', () => {
                 [
                     {
                         name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/ATests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/AlternatePath/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0],
                         existsOnDisk: false,
@@ -200,7 +201,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "BTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/AlternatePath/BTests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/AlternatePath/BTests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "BTests"),
                         originalFile: filePaths[1],
                         existsOnDisk: false,
@@ -236,7 +237,7 @@ suite('suggestTestFiles Test Suite', () => {
                 [
                     {
                         name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/TargetATests/ATests.swift"),
+                        path: vscodeUriFile("/Package/Path/Tests/TargetATests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("TargetA", "ATests"),
                         originalFile: filePaths[0],
                         existsOnDisk: false,
@@ -244,7 +245,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "BTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/TargetBTests/BTests.swift"),
+                        path: vscodeUriFile("/Package/Path/Tests/TargetBTests/BTests.swift"),
                         contents: makeExpectedTestFileContentString("TargetB", "BTests"),
                         originalFile: filePaths[1],
                         existsOnDisk: false,
@@ -252,7 +253,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "CTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/CTests.swift"),
+                        path: vscodeUriFile("/Package/Path/Tests/CTests.swift"),
                         contents: makeExpectedTestFileContentString("<#TargetName#>", "CTests"),
                         originalFile: filePaths[2],
                         existsOnDisk: false,
@@ -320,7 +321,7 @@ suite('suggestTestFiles Test Suite', () => {
                 [
                     {
                         name: "ATests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/ATests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "ATests"),
                         originalFile: filePaths[0],
                         existsOnDisk: false,
@@ -328,7 +329,7 @@ suite('suggestTestFiles Test Suite', () => {
                     },
                     {
                         name: "A+ExtTests.swift",
-                        path: vscode.Uri.file("/Package/Path/Tests/A+ExtTests.swift"),
+                        path: vscodeUriFile_fsPath("/Package/Path/Tests/A+ExtTests.swift"),
                         contents: makeExpectedTestFileContentString("Target", "A_ExtTests"),
                         originalFile: filePaths[1],
                         existsOnDisk: false,
@@ -385,7 +386,7 @@ suite('suggestTestFiles Test Suite', () => {
                         [
                             {
                                 name: "ATests.swift",
-                                path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                path: vscodeUriFile_fsPath("/Package/Path/Tests/ATests.swift"),
                                 contents: makeExpectedTestFileContentString("Target", "ATests", "ModuleA", "ModuleB", "ModuleC"),
                                 originalFile: filePaths[0],
                                 existsOnDisk: false,
@@ -430,7 +431,7 @@ suite('suggestTestFiles Test Suite', () => {
                             [
                                 {
                                     name: "ATests.swift",
-                                    path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                    path: vscodeUriFile_fsPath("/Package/Path/Tests/ATests.swift"),
                                     contents: makeExpectedTestFileContentString("Target", "ATests", "ModuleA", "ModuleB"),
                                     originalFile: filePaths[0],
                                     existsOnDisk: false,
@@ -495,7 +496,7 @@ suite('suggestTestFiles Test Suite', () => {
                             [
                                 {
                                     name: "ATests.swift",
-                                    path: vscode.Uri.file("/Package/Path/Tests/ModuleATests/ATests.swift"),
+                                    path: vscodeUriFile_fsPath("/Package/Path/Tests/ModuleATests/ATests.swift"),
                                     contents: makeExpectedTestFileContentString("ModuleA", "ATests", "ModuleB", "ModuleC"),
                                     originalFile: filePaths[0],
                                     existsOnDisk: false,
@@ -541,7 +542,7 @@ suite('suggestTestFiles Test Suite', () => {
                             [
                                 {
                                     name: "ATests.swift",
-                                    path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                    path: vscodeUriFile_fsPath("/Package/Path/Tests/ATests.swift"),
                                     contents: makeExpectedTestFileContentString("Target", "ATests", "ModuleA", "ModuleB"),
                                     originalFile: filePaths[0],
                                     existsOnDisk: false,
@@ -606,7 +607,7 @@ suite('suggestTestFiles Test Suite', () => {
                             [
                                 {
                                     name: "ATests.swift",
-                                    path: vscode.Uri.file("/Package/Path/Tests/ModuleATests/ATests.swift"),
+                                    path: vscodeUriFile_fsPath("/Package/Path/Tests/ModuleATests/ATests.swift"),
                                     contents: makeExpectedTestFileContentString("ModuleA", "ATests", "ModuleB"),
                                     originalFile: filePaths[0],
                                     existsOnDisk: false,
@@ -651,7 +652,7 @@ suite('suggestTestFiles Test Suite', () => {
                         [
                             {
                                 name: "ATests.swift",
-                                path: vscode.Uri.file("/Package/Path/Tests/ATests.swift"),
+                                path: vscodeUriFile_fsPath("/Package/Path/Tests/ATests.swift"),
                                 contents: makeExpectedTestFileContentString("Target", "ATests"),
                                 originalFile: filePaths[0],
                                 existsOnDisk: false,
@@ -660,6 +661,97 @@ suite('suggestTestFiles Test Suite', () => {
                         ]
                     );
                 });
+            });
+        });
+
+        describe('with macro target', async () => {
+            it('should emit test files for macro targets', async () => {
+                const testPackage = makeMacroTargetTestPackage();
+                const filePaths = await setupTestFixture(
+                    testPackage,
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/Target/A.swift",
+                        "/Package/Path/Sources/Macro/B.swift",
+                        "/Package/Path/Tests/MacroTests",
+                    ],
+                    [
+                        "/Package/Path/Sources/Target/A.swift",
+                        "/Package/Path/Sources/Macro/B.swift",
+                    ]
+                );
+    
+                const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
+    
+                assert.deepStrictEqual(
+                    result.testFiles,
+                    [
+                        {
+                            name: "ATests.swift",
+                            path: vscodeUriFile_fsPath("/Package/Path/Tests/TargetTests/ATests.swift"),
+                            contents: makeExpectedTestFileContentString("Target", "ATests"),
+                            originalFile: filePaths[0],
+                            existsOnDisk: false,
+                            suggestedImports: [],
+                        },
+                        {
+                            name: "BTests.swift",
+                            path: vscodeUriFile_fsPath("/Package/Path/Tests/MacroTests/BTests.swift"),
+                            contents: makeExpectedTestFileContentString("Macro", "BTests"),
+                            originalFile: filePaths[1],
+                            existsOnDisk: false,
+                            suggestedImports: [],
+                        },
+                    ]
+                );
+            });
+
+            it('should emit SwiftSyntax import declarations for test targets of macros with the appropriate dependencies specified', async () => {
+                const testPackage = makeMacroTargetTestPackage([
+                    {
+                        product: ["SwiftSyntaxMacrosTestSupport", "swift-syntax", null, null],
+                    },
+                    {
+                        product: ["SwiftSyntaxMacros", "swift-syntax", null, null]
+                    },
+                ]);
+                const filePaths = await setupTestFixture(
+                    testPackage,
+                    [
+                        "/Package/Path/Package.swift",
+                        "/Package/Path/Sources/Target/A.swift",
+                        "/Package/Path/Sources/Macro/B.swift",
+                        "/Package/Path/Tests/MacroTests",
+                    ],
+                    [
+                        "/Package/Path/Sources/Target/A.swift",
+                        "/Package/Path/Sources/Macro/B.swift",
+                    ]
+                );
+    
+                const result = await suggestTestFiles(filePaths, fixture.context.configuration, fixture.context);
+    
+                assert.deepStrictEqual(
+                    result.testFiles,
+                    [
+                        {
+                            name: "ATests.swift",
+                            path: vscodeUriFile_fsPath("/Package/Path/Tests/TargetTests/ATests.swift"),
+                            contents: makeExpectedTestFileContentString("Target", "ATests"),
+                            originalFile: filePaths[0],
+                            existsOnDisk: false,
+                            suggestedImports: [],
+                        },
+                        {
+                            name: "BTests.swift",
+                            path: vscodeUriFile_fsPath("/Package/Path/Tests/MacroTests/BTests.swift"),
+                            contents: makeExpectedTestFileContentString("Macro", "BTests", "SwiftSyntaxMacros", "SwiftSyntaxMacrosTestSupport"),
+                            originalFile: filePaths[1],
+                            existsOnDisk: false,
+                            suggestedImports: [],
+                        },
+                    ]
+                );
             });
         });
     });
@@ -768,6 +860,33 @@ function makeExplicitTestTargetPathTestPackage(): SwiftPackageManifest {
                 name: "TargetTests",
                 type: TargetType.Test,
                 path: "Tests/AlternatePath",
+            },
+        ],
+        toolsVersion: {
+            _version: "5.5.0",
+        },
+    };
+}
+
+function makeMacroTargetTestPackage(macroTestDependences: TargetDependency[] | undefined = undefined): SwiftPackageManifest {
+    return {
+        name: "TestPackage",
+        targets: [
+            {
+                name: "Target",
+                type: TargetType.Regular,
+                path: "Sources/Target",
+            },
+            {
+                name: "Macro",
+                type: TargetType.Macro,
+                path: "Sources/Macro",
+            },
+            {
+                name: "MacroTests",
+                type: TargetType.Test,
+                path: "Tests/MacroTests",
+                dependencies: macroTestDependences
             },
         ],
         toolsVersion: {
