@@ -2,7 +2,7 @@
 
 All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
-## [main]
+## [0.6.0]
 
 - Adding 'Go to Source File...' that complements 'Go to Test File...' and works the opposite way.
 - Adding 'macro' target type support.

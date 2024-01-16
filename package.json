@@ -2,13 +2,13 @@
   	"name": "swifttestfilegen",
   	"displayName": "Swift Test File Generator",
   	"description": "Generates test files from Swift Package Manager target files",
-  	"version": "0.5.0",
+  	"version": "0.6.0",
   	"author": "LuizZak",
   	"publisher": "LuizZak",
   	"license": "MIT",
   	"icon": "icon.png",
   	"engines": {
-  	  	"vscode": "^1.74.0"
+  	  	"vscode": "^1.85.0"
   	},
   	"categories": [
   	  	"Testing",
