@@ -2,9 +2,11 @@
 
 All notable changes to the "Swift Test File Generator" extension will be documented in this file.
 
-## [test-to-source-command]
+## [main]
 
 - Adding 'Go to Source File...' that complements 'Go to Test File...' and works the opposite way.
+- Adding 'macro' target type support.
+    - When a macro test target is detected, `SwiftSyntaxMacros` and `SwiftSyntaxMacrosTestSupport` are automatically imported in test files generated for that target.
 
 ## [0.5.0]
 
