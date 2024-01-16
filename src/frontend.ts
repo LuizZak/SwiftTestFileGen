@@ -14,13 +14,13 @@ export async function generateTestFilesEntry(fileUris: vscode.Uri[], context: In
     }, (progress, cancellation) => {
 
         const confirmationMode = context.configuration.fileGen.confirmation;
-        const nestedProgress = new NestableProgress(progress);
+        const nestableProgress = new NestableProgress(progress);
 
         return generateTestFilesCommand(
             fileUris,
             confirmationMode,
             context,
-            nestedProgress,
+            nestableProgress,
             cancellation
         );
     });
@@ -33,13 +33,13 @@ export async function gotoTestFileEntry(fileUri: vscode.Uri, context: Invocation
         title: "Going to test file..."
     }, (progress, cancellation) => {
 
-        const nestedProgress = new NestableProgress(progress);
+        const nestableProgress = new NestableProgress(progress);
 
         return gotoTestFileCommand(
             fileUri,
             context,
             vscode.ViewColumn.Active,
-            nestedProgress,
+            nestableProgress,
             cancellation
         );
     });
@@ -52,13 +52,13 @@ export async function gotoSourceFileEntry(fileUri: vscode.Uri, context: Invocati
         title: "Going to source file..."
     }, (progress, cancellation) => {
 
-        const nestedProgress = new NestableProgress(progress);
+        const nestableProgress = new NestableProgress(progress);
 
         return gotoSourceFileCommand(
             fileUri,
             context,
             vscode.ViewColumn.Active,
-            nestedProgress,
+            nestableProgress,
             cancellation
         );
     });

@@ -32,6 +32,10 @@ suite('swiftPackage Test Suite', () => {
             it("should recognize 'snippet' targets", () => {
                 assertParsesTargetType("snippet");
             });
+
+            it("should recognize 'macro' targets", () => {
+                assertParsesTargetType("macro");
+            });
         });
     });
 });

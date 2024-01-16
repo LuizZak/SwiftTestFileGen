@@ -57,6 +57,7 @@ export enum TargetType {
     Snippet = "snippet",
     System = "system",
     Test = "test",
+    Macro = "macro",
 }
 
 export interface ToolsVersion {
@@ -252,5 +253,6 @@ const typeMap: any = {
         "snippet",
         "system",
         "test",
+        "macro",
     ],
 };

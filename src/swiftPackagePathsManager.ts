@@ -367,7 +367,7 @@ async function _computePathForTarget(target: SwiftTarget, packageRoot: vscode.Ur
         return vscode.Uri.joinPath(packageRoot, target.path);
     }
 
-    let pathsToSearch: string[];
+    let pathsToSearch: string[] = [];
     switch (target.type) {
     case TargetType.Executable:
     case TargetType.Regular:
@@ -375,6 +375,7 @@ async function _computePathForTarget(target: SwiftTarget, packageRoot: vscode.Ur
     case TargetType.System:
     case TargetType.Snippet:
     case TargetType.Binary:
+    case TargetType.Macro:
         pathsToSearch = definitions.predefinedSourceSearchPaths;
         break;
 

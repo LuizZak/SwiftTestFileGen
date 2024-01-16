@@ -73,7 +73,8 @@
                                 "regular",
                                 "snippet",
                                 "system",
-                                "test"
+                                "test",
+                                "macro"
                             ]
                         },
                         "dependencies": {
