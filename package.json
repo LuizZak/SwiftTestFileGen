@@ -57,7 +57,13 @@
   	  	  	  	  	"command": "swifttestfilegen.generateTestFiles",
   	  	  	  	  	"when": "resourceExtname == .swift || explorerResourceIsFolder"
   	  	  	  	}
-  	  	  	]
+  	  	  	],
+			"editor/title/context": [
+				{
+					"command": "swifttestfilegen.generateTestFiles",
+					"when": "resourceExtname == .swift || explorerResourceIsFolder"
+			  	}
+			]
   	  	},
   	  	"configuration": {
   	  	  	"title": "Swift Test File Generator",

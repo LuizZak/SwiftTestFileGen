@@ -15,8 +15,10 @@ import { FileDiskSwiftToolchain } from './implementations/fileDiskSwiftToolchain
 export async function activate(context: vscode.ExtensionContext) {
 	let disposable: vscode.Disposable;
 
-	disposable = vscode.commands.registerCommand('swifttestfilegen.generateTestFiles', async (_, fileUris: vscode.Uri[] | undefined) => {
-		if (fileUris) {
+	disposable = vscode.commands.registerCommand('swifttestfilegen.generateTestFiles', async (context, fileUris: vscode.Uri[] | undefined) => {
+		if (context instanceof vscode.Uri) {
+			await frontend.generateTestFilesEntry([context], makeContext());
+		} else if (fileUris) {
 			await frontend.generateTestFilesEntry(fileUris, makeContext());
 		}
 	});
