@@ -2,7 +2,7 @@
   	"name": "swifttestfilegen",
   	"displayName": "Swift Test File Generator",
   	"description": "Generates test files from Swift Package Manager target files",
-  	"version": "0.6.0",
+  	"version": "0.6.1",
   	"author": "LuizZak",
   	"publisher": "LuizZak",
   	"license": "MIT",

@@ -59,6 +59,10 @@ This extension contributes the following configurations:
 ## Release Notes
 (of last 3 updates)
 
+### 0.6.1
+
+- Adding 'Generate Test File(s)...' to editor tab context menu.
+
 ### 0.6.0
 
 - Adding 'Go to Source File...' that complements 'Go to Test File...' and works the opposite way.
@@ -68,10 +72,5 @@ This extension contributes the following configurations:
 ### 0.5.0
 
 - Adding `swiftTestFileGen.fileGen.emitImportDeclarations` configuration that enables copying import declarations from the original source file into the test file as a quick convenience.
-
-### 0.4.1
-
-- Adding a "[(current)/(total)]" progress to some steps of test file generation progress reporting.
-- Improving speed that large number of files are mapped to their respective Swift packages.
 
 Full changelog available at: [CHANGELOG.md](CHANGELOG.md)
